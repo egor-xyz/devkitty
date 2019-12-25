@@ -1,0 +1,56 @@
+.root {
+  position: relative;
+  overflow-y: auto;
+  height: calc(100vh - 50px - 22px);
+  scroll-behavior: smooth;
+  padding-bottom: 4px;
+  transition: all 333ms ease-in-out;
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+.group {
+  position: relative;
+  margin-bottom: 2px;
+  &:first-child {
+    padding-top: 2px;
+  }
+}
+.noFooter {
+  height: calc(100vh - 50px);
+}
+.fire {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+  height: calc(100vh - 50px - 22px);
+  pointer-events: none;
+}
+.loader {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate3d(-50%, -50%, 0);
+}
+.toaster {
+  padding-top: 0 !important;
+  padding-left: 80px !important;
+  top: -15px !important;
+
+  :global(.bp3-toast) {
+    box-shadow: none !important;
+    max-width: 400px;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+  span {
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
+  }
+}
+.jenkinsGroup {
+  position: relative;
+  margin: 2px 0;
+}

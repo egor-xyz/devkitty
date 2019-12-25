@@ -1,0 +1,27 @@
+.sectionHeader {
+  color: inherit;
+  margin-bottom: 16px;
+}
+.sectionDesc {
+  font-size: 12px;
+  margin: -6px 0 16px;
+  color: #5c7080;
+  :global(.bp3-dark) & {
+    color: #a7b6c2;
+  }
+}
+.divider {
+  margin: 16px 0;
+  &.top {
+    margin-top: 0;
+  }
+}
+.input {
+  max-width: 400px !important;
+  & + & {
+    margin-top: 10px;
+  }
+}
+.actions {
+  margin-top: 20px;
+}
