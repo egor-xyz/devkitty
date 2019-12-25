@@ -1,0 +1,72 @@
+@import '~@blueprintjs/core/lib/scss/variables';
+
+.root {
+  position: sticky;
+  top: 0;
+  right: 0;
+  left: 0;
+  a, button {
+    cursor: default;
+  }
+}
+.macOs {
+  padding-left: 80px;
+}
+.logoWrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-right: 0;
+}
+.logo {
+  height: 32px;
+  display: inline-block;
+  vert-align: middle;
+  margin-left: 2px;
+  :global(.bp3-dark) & {
+    :global(.cat) {
+      fill: $gray3;
+    }
+    :global(.tail) {
+      fill: $gray3;
+    }
+  }
+}
+.logo_text {
+  display: inline-block;
+  margin-left: 8px;
+
+  vert-align: middle;
+}
+.link {
+  text-decoration: none;
+  color: white !important;
+  &:visited {
+    color: white;
+  }
+  &:hover {
+    text-decoration: none;
+  }
+  & + & {
+    margin-left: 8px;
+  }
+}
+.darkBtn {
+  margin-right: 8px;
+}
+.mr {
+  margin-right: 10px;
+}
+.ml {
+  margin-left: 8px;
+}
+.jenkinsLogo {
+  margin-right: 4px;
+}
+.gitHubBtn {
+  color: inherit;
+  svg {
+    height: 16px;
+    fill: currentColor;
+  }
+}

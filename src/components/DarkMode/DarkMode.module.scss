@@ -1,0 +1,26 @@
+.root {
+  width: 420px;
+  display: flex;
+  justify-content: space-between;
+  margin: 0 auto 20px;
+}
+.imgBtn {
+  cursor: pointer;
+}
+.img {
+  overflow: hidden;
+  display: block;
+  border-radius: 10px;
+  width: 120px;
+  border: 3px solid transparent;
+  object-fit: cover;
+}
+.active {
+  border-color: #669eff;
+}
+.title {
+  font-weight: 600;
+  text-align: center;
+  font-size: 12px;
+  margin-top: 5px;
+}

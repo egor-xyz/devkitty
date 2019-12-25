@@ -1,0 +1,28 @@
+.root {
+  :global(.bp3-popover-arrow) {
+    display: none !important;
+  }
+}
+.selectBtn {
+  width: 250px;
+  justify-content: space-between;
+  white-space: nowrap;
+  span {
+    max-width: 90%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
+.selectBtnText {
+  display: flex;
+  align-items: center;
+  span + span {
+    margin-left: 10px;
+  }
+}
+.menuItem {
+  width: 240px;
+  z-index: 1;
+  padding: 4px;
+  cursor: pointer;
+}
