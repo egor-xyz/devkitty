@@ -1,0 +1,44 @@
+.sectionHeader {
+  color: inherit;
+  margin-bottom: 16px;
+}
+.sectionDesc {
+  font-size: 12px;
+  margin: -6px 0 16px;
+  color: #5c7080;
+  :global(.bp3-dark) & {
+    color: #a7b6c2;
+  }
+}
+.divider {
+  margin: 16px 0;
+  &.top {
+    margin-top: 0;
+  }
+}
+.list {
+  position: relative;
+  margin-top: 20px;
+}
+.item {
+  display: flex;
+  align-items: center;
+  padding: 5px 0;
+}
+.addBtn {
+  margin-top: 10px;
+}
+.name {
+  min-width: 30%;
+}
+.domain {
+  opacity: .6;
+  margin: 0 10px;
+}
+.divider {
+  margin: 10px 0;
+}
+.actions {
+  position: absolute;
+  right: 0;
+}

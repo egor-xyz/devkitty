@@ -1,0 +1,72 @@
+@font-face {
+  font-family: JetBrainsMono;
+  src: url('/assets/fonts/JetBrainsMono-Regular.ttf');
+  font-weight: 400;
+}
+@font-face {
+  font-family: JetBrainsMono;
+  src: url('/assets/fonts/JetBrainsMono-Italic.ttf');
+  font-weight: 400;
+  font-style: italic;
+}
+@font-face {
+  font-family: JetBrainsMono;
+  src: url('/assets/fonts/JetBrainsMono-Medium.ttf');
+  font-weight: 500;
+}
+@font-face {
+  font-family: JetBrainsMono;
+  src: url('/assets/fonts/JetBrainsMono-Medium-Italic.ttf');
+  font-weight: 500;
+  font-style: italic;
+}
+@font-face {
+  font-family: JetBrainsMono;
+  src: url('/assets/fonts/JetBrainsMono-Bold.ttf');
+  font-weight: 600;
+}
+@font-face {
+  font-family: JetBrainsMono;
+  src: url('/assets/fonts/JetBrainsMono-Bold-Italic.ttf');
+  font-weight: 600;
+  font-style: italic;
+}
+@font-face {
+  font-family: JetBrainsMono;
+  src: url('/assets/fonts/JetBrainsMono-ExtraBold.ttf');
+  font-weight: 700;
+}
+@font-face {
+  font-family: JetBrainsMono;
+  src: url('/assets/fonts/JetBrainsMono-ExtraBold-Italic.ttf');
+  font-weight: 700;
+  font-style: italic;
+}
+html {
+  scroll-behavior: smooth;
+}
+body {
+  -webkit-app-region: drag;
+  overflow: hidden;
+  width: 100vw;
+  height: 100vh;
+}
+body::-webkit-scrollbar {
+  display: none;
+}
+* {
+  outline: none !important;
+}
+
+.win32 *::-webkit-scrollbar
+{
+  width: 4px;
+  background-color: #ccc;
+}
+
+.win32 *::-webkit-scrollbar-thumb
+{
+  border-radius: 4px;
+  -webkit-box-shadow: inset 0 0 6px rgba(0,0,0,.3);
+  background-color: #555;
+}

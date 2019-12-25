@@ -1,0 +1,55 @@
+{
+  "asar": false,
+  "appId": "app.devkitty",
+  "productName": "Devkitty",
+  "copyright": "Copyright © year ${author}",
+  "extends": null,
+  "directories": {
+    "output": "packages"
+  },
+  "files": [
+    "build/**/*",
+    "electron/**/*",
+    "electron/build/electron.js"
+  ],
+  "npmRebuild": true,
+  "buildDependenciesFromSource": true,
+  "publish": [
+    {
+      "provider": "github",
+      "owner": "egor-xyz",
+      "repo": "devkitty",
+      "releaseType": "draft"
+    }
+  ],
+  "releaseInfo": {
+    "releaseNotesFile": "electron/release-notes.md"
+  },
+  "mac": {
+    "target": [
+      "dmg",
+      "zip"
+    ],
+    "type": "distribution",
+    "artifactName": "Devkitty.setup.${version}.${ext}",
+    "hardenedRuntime": true,
+    "gatekeeperAssess": false,
+    "entitlements": "electron/entitlements.mac.plist",
+    "entitlementsInherit": "electron/entitlements.mac.plist",
+    "category": "public.app-category.developer-tools",
+    "darkModeSupport": true,
+    "icon": "electron/icons/png/1024x1024.png"
+  },
+  "dmg": {
+    "sign": false
+  },
+  "afterSign": "electron/notarize.js",
+  "win": {
+    "icon": "electron/icons/win/icon.ico",
+    "target": [
+      "nsis"
+    ],
+    "publisherName": "Egor Stronhin",
+    "rfc3161TimeStampServer": "http://timestamp.digicert.com"
+  }
+}

@@ -1,0 +1,59 @@
+.root {
+  overflow-y: auto;
+  min-height: 450px;
+  text-align: left;
+  padding-top: 5px;
+  :global(#bp3-tab-panel_settings_modules) {
+    margin-top: 0;
+  }
+}
+.tabs {
+  height: calc(100vh - 50px);
+  padding-top: 0;
+}
+.bp3-tab-panel {
+  width: 100%;
+}
+.card {
+  padding: 10px 20px 20px;
+  margin: 0 auto;
+  text-align: left;
+  min-height: 100%;
+  box-shadow: none;
+}
+.line {
+  & + & {
+    margin: 14px 0;
+  }
+}
+.sectionHeader {
+  color: inherit;
+  margin-bottom: 16px;
+}
+.sectionDesc {
+  font-size: 12px;
+  margin: -6px 0 16px;
+  color: #5c7080;
+  :global(.bp3-dark) & {
+    color: #a7b6c2;
+  }
+}
+.input {
+  max-width: 400px !important;
+}
+.divider {
+  margin: 16px 0;
+  &.top {
+    margin-top: 0;
+  }
+}
+.mtSections {
+  margin-top: 20px;
+}
+.ml {
+  margin-left: 10px;
+}
+.btn {
+  min-width: 200px;
+  justify-content: space-between;
+}

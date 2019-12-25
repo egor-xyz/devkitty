@@ -1,0 +1,37 @@
+@import '~@blueprintjs/core/lib/scss/variables';
+
+.root {
+  min-width: 200px;
+  min-height: 100px;
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+  justify-content: center;
+  padding: 10px;
+  background-color: $pt-app-background-color;
+  :global(.bp3-dark) & {
+    background-color: $pt-dark-app-background-color;
+  }
+}
+.row {
+  display: flex;
+  :global(.bp3-input-group) {
+    width: 100px;
+  }
+  button {
+    margin-left: 5px;
+  }
+}
+.row2 {
+  margin-top: 10px;
+}
+.params {
+  padding: 4px 20px;
+}
+.table {
+  max-width: 400px;
+  overflow: auto;
+  :global(.bp3-popover-content) {
+    overflow: auto;
+  }
+}

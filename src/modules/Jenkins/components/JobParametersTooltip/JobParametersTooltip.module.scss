@@ -1,0 +1,15 @@
+.root {
+  :global {
+    .bp3-popover-content {
+      background-color: #fff !important;
+      padding: 0;
+      border-radius: 11px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      max-height: 200px;
+      :global(.bp3-dark) & {
+        background-color: #394b59 !important;
+      }
+    }
+  }
+}
