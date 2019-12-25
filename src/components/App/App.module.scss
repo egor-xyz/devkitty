@@ -1,0 +1,9 @@
+.root {
+  --bgColor: #f1f1f1;
+  width: 100%;
+  min-height: 100vh;
+  background-color: var(--bgColor);
+  &.dark {
+    --bgColor: #282522;
+  }
+}

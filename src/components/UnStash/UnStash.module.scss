@@ -1,0 +1,56 @@
+@import '~@blueprintjs/core/lib/scss/variables';
+
+.root {
+  b {
+    font-weight: 500;
+    min-width: 120px;
+    display: inline-block;
+  }
+}
+.section {
+  margin-top: 5px;
+}
+.listWrap {
+  display: flex;
+  justify-content: space-between;
+  margin: 5px 0;
+}
+.list {
+  overflow: auto;
+  width: 408px;
+  max-height: 150px;
+  padding: 5px;
+  border: 1px solid $pt-heading-color;
+  :global(.bp3-dark) & {
+    border: 1px solid $pt-dark-heading-color;
+  }
+}
+.listActions {
+  display: flex;
+  justify-content: center;
+  flex-direction: column;
+  margin-left: 10px;
+}
+.btn {
+  & + & {
+    margin-top: 10px;
+  }
+}
+.item {
+  cursor: pointer;
+  white-space: nowrap;
+}
+.selected {
+  background-color: $pt-icon-color-selected;
+  :global(.bp3-dark) & {
+    background-color: $pt-dark-icon-color-selected;
+  }
+}
+.popCheckbox {
+  margin-top: 10px;
+}
+.actions {
+  text-align: right;
+  margin-top: 15px;
+  padding-right: 10px;
+}

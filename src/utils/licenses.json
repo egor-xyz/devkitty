@@ -1,0 +1,38 @@
+{
+    "electron-is-dev@1.2.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/sindresorhus/electron-is-dev",
+        "licenseUrl": "https://github.com/sindresorhus/electron-is-dev/raw/master/license",
+        "parents": "devkitty"
+    },
+    "electron-settings@4.0.2": {
+        "licenses": "MIT",
+        "repository": "https://github.com/nathanbuchar/electron-settings",
+        "licenseUrl": "https://github.com/nathanbuchar/electron-settings/raw/master/LICENSE",
+        "parents": "devkitty"
+    },
+    "electron-unhandled@3.0.2": {
+        "licenses": "MIT",
+        "repository": "https://github.com/sindresorhus/electron-unhandled",
+        "licenseUrl": "https://github.com/sindresorhus/electron-unhandled/raw/master/license",
+        "parents": "devkitty"
+    },
+    "electron-updater@4.3.4": {
+        "licenses": "MIT",
+        "repository": "https://github.com/electron-userland/electron-builder",
+        "licenseUrl": "https://github.com/electron-userland/electron-builder",
+        "parents": "devkitty"
+    },
+    "electron-util@0.14.2": {
+        "licenses": "MIT",
+        "repository": "https://github.com/sindresorhus/electron-util",
+        "licenseUrl": "https://github.com/sindresorhus/electron-util/raw/master/license",
+        "parents": "devkitty"
+    },
+    "fix-path@3.0.0": {
+        "licenses": "MIT",
+        "repository": "https://github.com/sindresorhus/fix-path",
+        "licenseUrl": "https://github.com/sindresorhus/fix-path/raw/master/license",
+        "parents": "devkitty"
+    }
+}
