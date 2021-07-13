@@ -1,4 +1,4 @@
-name: Devkitty New Release
+name: New Release
 
 on:
   push:
