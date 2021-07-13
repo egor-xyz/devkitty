@@ -4,7 +4,7 @@
 [![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/egor-xyz/devkitty/blob/main/LICENSE)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/egor-xyz/devkitty/pulls)
 
-Easy manage multiple Git repos / Jenkins jobs in one screen
+Easy manage multiple Git repos / Jenkins jobs in one screen.
 
 ## License
 
