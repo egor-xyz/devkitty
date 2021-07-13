@@ -2,8 +2,8 @@ name: Devkitty New Release
 
 on:
   push:
-    branches: [master]
-  # workflow_dispatch:
+    branches: [main]
+  workflow_dispatch:
 
 jobs:
   build:
