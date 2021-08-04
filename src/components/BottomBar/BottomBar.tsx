@@ -18,14 +18,13 @@ const updateApp = () => {
   api.shell.openExternal('https://devkitty.app/');
 };
 
-export const BottomBar:FC = () => {
+export const BottomBar: FC = () => {
   const { loading, appStatus, bottomBar, appUpdated, logIntent, online } = useAppStore();
   const dispatch = useAppStoreDispatch();
 
-  const hidden = !bottomBar && !appUpdated && !appUpdated && online;
-  const isLoading = Object.values(loading).includes(true);
-
   return useMemo(() => {
+    const hidden = !bottomBar && !appUpdated && !appUpdated && online;
+    const isLoading = Object.values(loading).includes(true);
     return (
       <div className={clsx(css.root, { [css.hidden]: hidden })}>
         <div className={clsx(css.content, { [css.contentHidden]: hidden })} >
@@ -78,14 +77,6 @@ export const BottomBar:FC = () => {
             className={css.group}
           >
             <ButtonGroup>
-              {/*<Button*/}
-              {/*  className={clsx(css.btn, Classes.MINIMAL)}*/}
-              {/*  icon={'console'}*/}
-              {/*  intent={logIntent}*/}
-              {/*  small={true}*/}
-              {/*  onClick={() => dispatch({ type: 'toggleLog' })}*/}
-              {/*/>*/}
-
               <a
                 className={clsx(css.btn, Classes.MINIMAL, 'bp3-button', 'bp3-small')}
                 href='mailto:info@devkitty.app'
@@ -105,5 +96,5 @@ export const BottomBar:FC = () => {
         />
       </div>
     );
-  }, [loading, appStatus, bottomBar, appUpdated, logIntent, online, isLoading]); // eslint-disable-line
+  }, [loading, appStatus, bottomBar, appUpdated, logIntent, online]);
 };

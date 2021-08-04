@@ -1,4 +1,4 @@
-import { FC, useMemo, useState } from 'react';
+import { FC, useCallback, useMemo, useState } from 'react';
 import { Button, MenuItem } from '@blueprintjs/core';
 import { Select } from '@blueprintjs/select';
 import clsx from 'clsx';
@@ -14,7 +14,7 @@ interface Props {
   className?: string;
 }
 
-export const GroupSelect:FC<Props> = ({ className }) => {
+export const GroupSelect: FC<Props> = ({ className }) => {
   const state = useAppStore();
   const dispatch = useAppStoreDispatch();
 
@@ -23,7 +23,7 @@ export const GroupSelect:FC<Props> = ({ className }) => {
 
   const { groups, groupId, projectsSettings } = state;
 
-  const deleteGroup = (group: Group) => {
+  const deleteGroup = useCallback((group: Group) => {
     if (defGroupsIds.includes(group.id)) return;
 
     // Change to default group
@@ -55,9 +55,9 @@ export const GroupSelect:FC<Props> = ({ className }) => {
     });
 
     return;
-  };
+  }, [groupId, groups, projectsSettings]);
 
-  const onChange = (group: Group, event?: MouseEvent) => {
+  const onChange = useCallback((group: Group, event?: MouseEvent) => {
     // delete group
     if (event?.altKey) {
       deleteGroup(group);
@@ -65,9 +65,9 @@ export const GroupSelect:FC<Props> = ({ className }) => {
     }
 
     dispatch({ payload: group.id, type: 'setGroupId' });
-  };
+  }, [deleteGroup]);
 
-  const addGroup = () => {
+  const addGroup = useCallback(() => {
     if (defGroupsNames.includes(query.toLowerCase().trim())) return;
     dispatch({
       payload: {
@@ -77,17 +77,17 @@ export const GroupSelect:FC<Props> = ({ className }) => {
       },
       type: 'addGroup'
     });
-  };
-
-  const allGroups: Groups = [
-    ...groups
-  ];
-
-  const filtered = allGroups.filter(({ name }) => !query || name.toLowerCase().includes(query.toLowerCase()));
-  const group = find(groups, { id: groupId }) ?? find(groups, { id: '0' });
+  }, [query]);
 
   return useMemo(() => {
+    const allGroups: Groups = [
+      ...groups
+    ];
+    const filtered = allGroups.filter(({ name }) => !query || name.toLowerCase().includes(query.toLowerCase()));
+    const group = find(groups, { id: groupId }) ?? find(groups, { id: '0' });
+
     if (!group) return null;
+
     return (
       <div
         onKeyDown={event => {
@@ -142,5 +142,5 @@ export const GroupSelect:FC<Props> = ({ className }) => {
         </Select>
       </div>
     );
-  }, [del, query, group, groups, groupId, projectsSettings, filtered, allGroups]); // eslint-disable-line
+  }, [del, query, groups, groupId, projectsSettings]);
 };

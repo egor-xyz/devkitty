@@ -1,4 +1,4 @@
-import { FC, useMemo } from 'react';
+import { FC, useCallback, useMemo } from 'react';
 import {
   Alignment,
   Button,
@@ -38,14 +38,14 @@ export const Header: FC = () => {
   const state = useAppStore();
   const dispatch = useAppStoreDispatch();
 
-  const { snow, darkModeOS, showLogo, groupFilter, groupId, projects } = state;
+  const { darkModeOS, showLogo, groupFilter, groupId, projects } = state;
 
-  const addGitRepo = async () => {
+  const addGitRepo = useCallback(async () => {
     const res = await addFolders(state, dispatch);
     if (!res) return;
     push('/');
     scanFolders({ dispatch, state });
-  };
+  }, [state]);
 
   return useMemo(() => (
     <Navbar className={clsx(css.root, { [css.macOs]: is.macos })}>
@@ -142,17 +142,6 @@ export const Header: FC = () => {
           <NavbarDivider />
         </>)}
 
-        {snow && (<>
-          <Button
-            active={snow}
-            className={Classes.MINIMAL}
-            icon='snowflake'
-            intent={snow ? 'success' : 'none'}
-            onClick={() => dispatch({ payload: 'snow', type: 'toggle' })}
-          />
-          <NavbarDivider />
-        </>)}
-
         {!darkModeOS && (
           <Button
             className={clsx(Classes.MINIMAL, css.darkBtn)}
@@ -191,7 +180,6 @@ export const Header: FC = () => {
     groupId,
     path,
     showLogo,
-    snow,
     path,
     projects,
     isActive,

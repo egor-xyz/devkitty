@@ -43,7 +43,6 @@ export interface AppStoreState {
   showAbout: boolean;
   showLog?: boolean;
   showLogo: boolean;
-  snow: boolean;
 }
 
 export type AppStoreActions =
@@ -53,10 +52,12 @@ export type AppStoreActions =
   | { payload?: string, type: 'setAppUpdated' }
   | { payload: number, type: 'setAutoFetchInterval' }
   | { payload: boolean, type: 'setDarkMode' }
-  | { payload: {
-    darkMode: boolean,
-    darkModeOS: boolean
-  }, type: 'setDarkModeOS' }
+  | {
+    payload: {
+      darkMode: boolean,
+      darkModeOS: boolean
+    }, type: 'setDarkModeOS'
+  }
   | { payload: boolean, type: 'setOnline' }
   | { payload: string, type: 'setIDE' }
   | { payload: string, type: 'setShell' }
@@ -70,11 +71,13 @@ export type AppStoreActions =
     },
     type: 'setLoading'
   }
-  | {type: 'toggleLog'}
-  | {payload: {
-    log: Log,
-    logIntent?: Intent;
-  }, type: 'log'}
+  | { type: 'toggleLog' }
+  | {
+    payload: {
+      log: Log,
+      logIntent?: Intent;
+    }, type: 'log'
+  }
   | { type: 'clearLog' }
   | { payload: Intent, type: 'setLogIntent' }
   | { payload: MergeFavorites, type: 'setMergeFavorites' }
@@ -82,7 +85,7 @@ export type AppStoreActions =
   | { payload: ProjectSettings, type: 'setProjectSettings' }
   | { payload: ProjectsSettings, type: 'setProjectsSettings' }
   | { payload: Projects, type: 'setProjects' }
-  | { payload: keyof AppStoreState, type: 'toggle'}
+  | { payload: keyof AppStoreState, type: 'toggle' }
   | { type: 'toggleAbout' }
   | { payload: boolean, type: 'setGroupFilter' }
   | { payload: string, type: 'toggleCollapsedGroup' }

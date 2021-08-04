@@ -1,10 +1,10 @@
-import { FC, useEffect, useRef } from 'react';
+import { FC, memo, useEffect, useRef } from 'react';
 import { api } from 'electron-util';
 
 import { useAppStore, useAppStoreDispatch } from 'context';
 import { scanFolders } from 'utils';
 
-export const AutoFetch:FC = () => {
+export const AutoFetch: FC = memo(() => {
   const state = useAppStore();
   const dispatch = useAppStoreDispatch();
 
@@ -53,8 +53,8 @@ export const AutoFetch:FC = () => {
     api.remote.powerMonitor.on('resume', autoFetchProjects);
     api.remote.powerMonitor.on('suspend', unsubscribeAutoFetch);
 
-    window.addEventListener('online',  autoFetchProjects);
-    window.addEventListener('offline',  unsubscribeAutoFetch);
+    window.addEventListener('online', autoFetchProjects);
+    window.addEventListener('offline', unsubscribeAutoFetch);
   };
 
   useEffect(() => {
@@ -63,5 +63,4 @@ export const AutoFetch:FC = () => {
   }, []); // eslint-disable-line
 
   return null;
-};
-
+});

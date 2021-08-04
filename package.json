@@ -85,7 +85,6 @@
     "electron-builder": "^22.11.7",
     "electron-icon-maker": "^0.0.5",
     "electron-notarize": "^1.0.0",
-    "fireworks-canvas": "^2.6.0",
     "foreman": "^3.0.1",
     "framer-motion": "^4.1.17",
     "git-url-parse": "^11.5.0",
