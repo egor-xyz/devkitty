@@ -130,7 +130,7 @@ export const Header: FC = () => {
             <Button
               active={groupFilter}
               className={css.mr}
-              icon={'sort'}
+              icon={'filter'}
               minimal={true}
               title='Sort by Groups'
               onClick={() => dispatch({ payload: !groupFilter, type: 'setGroupFilter' })}
