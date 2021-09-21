@@ -114,30 +114,30 @@ export const Header: FC = () => {
 
       <NavbarGroup align={Alignment.RIGHT}>
         {path === '/' && (<>
-
           <Tooltip
             content={'Refresh all (not hidden) Git Projects'}
             hoverOpenDelay={TOOLTIP_DELAY}
           >
             <Button
-              className={clsx(Classes.MINIMAL, css.mr)}
+              className={clsx(Classes.MINIMAL)}
               icon={'refresh'}
               onClick={() => scanFolders({ dispatch, state })}
             />
           </Tooltip>
 
+          {path === '/' && <NavbarDivider />}
+
           {groupId === '0' && (
             <Button
               active={groupFilter}
-              className={css.mr}
-              icon={'filter'}
+              icon={'sort'}
               minimal={true}
               title='Sort by Groups'
               onClick={() => dispatch({ payload: !groupFilter, type: 'setGroupFilter' })}
             />
           )}
 
-          <GroupSelect />
+          {groupFilter && <GroupSelect />}
 
           <NavbarDivider />
         </>)}
