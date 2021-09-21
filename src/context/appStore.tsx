@@ -28,7 +28,6 @@ const initialState: AppStoreState = {
   showAbout: false,
   showLog: false,
   showLogo: true,
-  snow: false,
   ...getSavedState()
 };
 

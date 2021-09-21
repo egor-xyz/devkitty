@@ -1,4 +1,4 @@
-import { FC, useMemo } from 'react';
+import { FC, useCallback, useMemo } from 'react';
 import clsx from 'clsx';
 import { darkMode } from 'electron-util';
 
@@ -9,11 +9,11 @@ import themeAuto from 'assets/img/theme-auto.png';
 
 import css from './DarkMode.module.scss';
 
-export const DarkMode:FC = () => {
+export const DarkMode: FC = () => {
   const { darkMode: _darkMode, darkModeOS } = useAppStore();
   const dispatch = useAppStoreDispatch();
 
-  const setOSTheme = () => {
+  const setOSTheme = useCallback(() => {
     if (darkModeOS) return;
     dispatch({
       payload: {
@@ -22,9 +22,9 @@ export const DarkMode:FC = () => {
       },
       type: 'setDarkModeOS'
     });
-  };
+  }, [darkModeOS]);
 
-  const setTheme = (dark: boolean) => {
+  const setTheme = useCallback((dark: boolean) => {
     if (!darkModeOS && dark === _darkMode) return;
     dispatch({
       payload: {
@@ -33,7 +33,7 @@ export const DarkMode:FC = () => {
       },
       type: 'setDarkModeOS'
     });
-  };
+  }, [darkModeOS, _darkMode]);
 
   return useMemo(() => (<div className={css.root}>
     <div

@@ -2,7 +2,7 @@ import { Collapse, Spinner } from '@blueprintjs/core';
 import clsx from 'clsx';
 import { AnimateSharedLayout } from 'framer-motion';
 import { groupBy, isEmpty, orderBy, some, sortBy } from 'lodash';
-import { Dispatch, FC, useMemo } from 'react';
+import { Dispatch, FC, useCallback, useMemo } from 'react';
 
 import { msg, ProjectCard } from 'components';
 import { AppStoreActions, AppStoreState, useAppStore, useAppStoreDispatch } from 'context';
@@ -13,13 +13,9 @@ import { checkoutBranch, fetchFolder, pullFolder, scanFolders } from 'utils';
 import { EmptyState, GroupTitle } from './components';
 import css from './ProjectsPage.module.scss';
 
-const FireworksCanvas = require('fireworks-canvas');
-let stopFire: any;
-
 export const ProjectsPage: FC = () => {
   const state = useAppStore();
   const dispatch = useAppStoreDispatch();
-
   const { name } = useModalsStore();
 
   const {
@@ -29,18 +25,17 @@ export const ProjectsPage: FC = () => {
     projects,
     projectsSettings,
     projectsSrc,
-    snow,
     collapsedGroups,
     groups,
     loading,
     projectsWithError
   } = state;
 
-  const updateGitProject = async (repo?: string) => {
+  const updateGitProject = useCallback(async (repo?: string) => {
     await scanFolders({ dispatch, repoName: repo, state });
-  };
+  }, [state]);
 
-  const checkoutGitBranch = async (project: Project, branch: string): Promise<void> => {
+  const checkoutGitBranch = useCallback(async (project: Project, branch: string): Promise<void> => {
     dispatch({ payload: { active: true, name: project.repo }, type: 'setLoading' });
     const done = await checkoutBranch(project, branch);
     if (!done) {
@@ -62,14 +57,14 @@ export const ProjectsPage: FC = () => {
     });
 
     dispatch({ payload: { name: project.repo }, type: 'setLoading' });
-  };
+  }, []);
 
-  const fetchGitFolder = async (project: Project, dispatch: Dispatch<AppStoreActions>): Promise<void> => {
+  const fetchGitFolder = useCallback(async (project: Project, dispatch: Dispatch<AppStoreActions>): Promise<void> => {
     await fetchFolder(project, dispatch);
     updateGitProject(project.repo);
-  };
+  }, []);
 
-  const pullGitFolder = async (project: Project, dispatch: Dispatch<AppStoreActions>, state: AppStoreState): Promise<void> => {
+  const pullGitFolder = useCallback(async (project: Project, dispatch: Dispatch<AppStoreActions>, state: AppStoreState): Promise<void> => {
     if (!state.online) {
       msg.show({
         icon: 'globe-network',
@@ -95,76 +90,53 @@ export const ProjectsPage: FC = () => {
       intent: 'primary',
       message: `${project.repo} pulled successful`,
     });
-  };
+  }, []);
 
-  const fire = () => {
-    if (stopFire) {
-      stopFire();
-      return;
-    }
-
-    if (!snow) return;
-
-    const container = document.getElementsByClassName(css.fire)[0];
-    const options = {
-      explosionChance: 0.08,    // max # of rockets to spawn
-      explosionMaxHeight: 0.9,  // milliseconds to check if new rockets should spawn
-      explosionMinHeight: 0.2,  // number of particles to spawn when rocket explodes (+0-10)
-      maxRockets: 3,            // percentage. min height at which rockets can explode
-      numParticles: 100,        // percentage. max height before a particle is exploded
-      rocketSpawnInterval: 150  // chance in each tick the rocket will explode
-    };
-    const fireworks = new FireworksCanvas(container, options);
-    stopFire = fireworks.start();
-  };
-
-  const resetAndRefresh = () => {
+  const resetAndRefresh = useCallback(() => {
     if (selectedGroupId !== '0') {
       dispatch({ payload: '0', type: 'setGroupId' });
     }
 
     setTimeout(() => { scanFolders({ dispatch, state }) });
-  };
-
-  // render
-
-  let sortedProjects = [...projects];
-
-  if (selectedGroupId !== '0') {
-    sortedProjects = sortedProjects.filter(({ repo }) => {
-      const { groupId = 0 } = projectsSettings[repo] ?? {};
-      return groupId === selectedGroupId;
-    });
-  }
-
-  if (groupFilter) {
-    const sortedRepos = orderBy(Object.values(projectsSettings), ['groupId']).map(({ repo }) => repo);
-    sortedProjects = sortBy(sortedProjects, i => {
-      return sortedRepos.indexOf(i.repo) === -1 ? sortedProjects.length : sortedRepos.indexOf(i.repo);
-    });
-  }
-
-  let sortedGroupsProjects = groupFilter
-    ? Object.values(groupBy(sortedProjects, ({ repo }) => projectsSettings[repo]?.groupId
-      ? projectsSettings[repo]?.groupId
-      : 0
-    ))
-    : sortedProjects.length ? [[...sortedProjects]] : []
-    ;
-
-  // move other to the end
-  if (sortedGroupsProjects.length) sortedGroupsProjects = [...sortedGroupsProjects.slice(1), sortedGroupsProjects[0]];
-
-  sortedGroupsProjects = sortedGroupsProjects.map(g => orderBy(g, ['repo']));
-
-  !!projectsWithError.length && console.log(projectsWithError);
+  }, [state]);
 
   return useMemo(() => {
+    let sortedProjects = [...projects];
+
+    if (selectedGroupId !== '0') {
+      sortedProjects = sortedProjects.filter(({ repo }) => {
+        const { groupId = 0 } = projectsSettings[repo] ?? {};
+        return groupId === selectedGroupId;
+      });
+    }
+
+    if (groupFilter) {
+      const sortedRepos = orderBy(Object.values(projectsSettings), ['groupId']).map(({ repo }) => repo);
+      sortedProjects = sortBy(sortedProjects, i => {
+        return sortedRepos.indexOf(i.repo) === -1 ? sortedProjects.length : sortedRepos.indexOf(i.repo);
+      });
+    }
+
+    let sortedGroupsProjects = groupFilter
+      ? Object.values(groupBy(sortedProjects, ({ repo }) => projectsSettings[repo]?.groupId
+        ? projectsSettings[repo]?.groupId
+        : 0
+      ))
+      : sortedProjects.length
+        ? [[...sortedProjects]]
+        : []
+      ;
+
+    if (sortedGroupsProjects.length) {
+      sortedGroupsProjects = [...sortedGroupsProjects.slice(1), sortedGroupsProjects[0]];
+    }
+
+    sortedGroupsProjects = sortedGroupsProjects.map(g => orderBy(g, ['repo']));
+
+    !!projectsWithError.length && console.log(projectsWithError);
+
     return (
-      <div
-        className={clsx(css.root, { [css.noFooter]: !bottomBar })}
-        onClick={fire}
-      >
+      <div className={clsx(css.root, { [css.noFooter]: !bottomBar })}>
         {!isEmpty(loading) && !sortedProjects.length && (
           <div className={css.loader}>
             <Spinner intent={'primary'} />
@@ -227,9 +199,9 @@ export const ProjectsPage: FC = () => {
         <div className={css.fire} />
       </div>
     );
-  }, [ // eslint-disable-line
+  }, [
     bottomBar,
-    collapsedGroups,
+    collapsedGroups.size,
     groupFilter,
     groups,
     loading,
@@ -237,9 +209,7 @@ export const ProjectsPage: FC = () => {
     projects,
     projectsSettings,
     projectsSrc,
+    projectsWithError,
     selectedGroupId,
-    snow,
-    sortedGroupsProjects,
-    projectsWithError
   ]);
 };

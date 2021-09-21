@@ -7,7 +7,7 @@ import { useAppStore, useAppStoreDispatch } from 'context';
 import css from '../../Settings.module.scss';
 
 export const AppearancePanel: FC = () => {
-  const { showLogo, snow, bottomBar } = useAppStore();
+  const { showLogo, bottomBar } = useAppStore();
   const dispatch = useAppStoreDispatch();
   return useMemo(() => (
     <div className={css.root}>
@@ -31,12 +31,6 @@ export const AppearancePanel: FC = () => {
         large={true}
         onChange={() => dispatch({ payload: 'bottomBar', type: 'toggle' })}
       />
-      <Switch
-        checked={snow}
-        label='Snow mode'
-        large={true}
-        onChange={() => dispatch({ payload: 'snow', type: 'toggle' })}
-      />
     </div>
-  ), [showLogo, snow, bottomBar]); // eslint-disable-line
+  ), [showLogo, bottomBar]);
 };

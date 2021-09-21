@@ -10,7 +10,6 @@ export * from './ProjectCardActions';
 export * from './ContextMenu';
 export * from './DarkMode';
 export * from './GroupSelect';
-export * from './Birthday';
 export * from './Stash';
 export * from './UnStash';
 export * from './OAuthCallback';

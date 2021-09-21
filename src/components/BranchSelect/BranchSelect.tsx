@@ -1,4 +1,4 @@
-import { FC, useState } from 'react';
+import { FC, useMemo, useState } from 'react';
 import { Button } from '@blueprintjs/core';
 import { Select } from '@blueprintjs/select';
 import { api } from 'electron-util';
@@ -64,22 +64,25 @@ export const BranchSelect: FC<Props> = ({
 }) => {
   const state = useAppStore();
   const dispatch = useAppStoreDispatch();
-
   const { openModal } = useModalsStore();
-  const { loading } = state;
+
   const [query, setQuery] = useState('');
   const [clipBoard, setClipBoard] = useState(false);
   const [del, setDel] = useState(false);
+
+  const { loading } = state;
   const { repo, branches } = project;
 
-  const filteredBranches: Branches = branches
-    .filter(branch => !query || branch.name.includes(query))
-    .slice(0, BRANCHES_LIMIT)
-  ;
+  const filteredBranches: Branches = useMemo(() =>
+    branches
+      .filter(branch => !query || branch.name.includes(query))
+      .slice(0, BRANCHES_LIMIT), [branches, query]);
 
-  const LIMIT = filteredBranches.length < BRANCHES_LIMIT ? filteredBranches.length - 1 : BRANCHES_LIMIT - 1;
+  const LIMIT = filteredBranches.length < BRANCHES_LIMIT
+    ? filteredBranches.length - 1
+    : BRANCHES_LIMIT - 1;
 
-  const branchesObj = getBranchesObj(branches);
+  const branchesObj = useMemo(() => getBranchesObj(branches), [branches]);
 
   return (
     <Root
