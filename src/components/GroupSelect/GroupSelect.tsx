@@ -135,7 +135,7 @@ export const GroupSelect: FC<Props> = ({ className }) => {
         >
           <Button
             active={group.id !== '0'}
-            className={css.button}
+            className={clsx(groupId !== '0' || css.button)}
             icon={'filter'}
             minimal={true}
             title={`${group.name} (CMD + G)`}
