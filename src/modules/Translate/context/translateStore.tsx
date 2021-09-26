@@ -9,6 +9,7 @@ const initialState: TranslateStoreState = {
   clientEmail: '',
   isActive: false,
   privateKey: '',
+  projectId: '',
   ...(getSync(TRANSLATE) ?? {}) as Partial<TranslateStoreState>
 };
 
@@ -18,10 +19,10 @@ export type TranslateStore = TranslateStoreState & {
 
 export const translateStore = createContext({} as TranslateStore);
 
-export const TranslatetoreProvider:FC = ({ children }) => {
+export const TranslatetoreProvider: FC = ({ children }) => {
   const [state, setContextState] = useState<TranslateStoreState>(initialState);
 
-  const setState = (values: Partial<TranslateStoreState>):void => {
+  const setState = (values: Partial<TranslateStoreState>): void => {
     const newState = { ...state, ...values };
     set(TRANSLATE, newState as any);
     setContextState(newState);
