@@ -1,4 +1,4 @@
-export interface GoogleApiCreds {
+export interface GoogleApiCredentials {
   auth_provider_x509_cert_url: string;
   auth_uri: string;
   client_email: string;

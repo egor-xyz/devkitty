@@ -5,15 +5,16 @@ import { useTranslateStore } from 'modules/Translate/context';
 import { msg } from 'utils/Msg';
 import { TRANSLATE_PRIVATE_KEY } from 'modules/Translate/utils';
 import { setPassword } from 'utils';
-import { GoogleApiCreds } from 'modules/Translate/types';
+import { GoogleApiCredentials } from 'modules/Translate/types';
 
 import css from './TranslateSettingsPanel.module.scss';
 
 export const TranslateSettingsPanel: FC = () => {
-  const { isActive, setState, clientEmail, privateKey } = useTranslateStore();
+  const { isActive, setState, clientEmail, privateKey, projectId: _projectId } = useTranslateStore();
 
   const [email, setEmail] = useState(clientEmail);
   const [key, setKey] = useState(privateKey);
+  const [projectId, setProjectId] = useState(_projectId);
   const [touched, setTouched] = useState(false);
 
   const [fileName, setFileName] = useState<string>();
@@ -35,7 +36,8 @@ export const TranslateSettingsPanel: FC = () => {
     // Update settings
     setState({
       clientEmail: email,
-      privateKey: TRANSLATE_PRIVATE_KEY
+      privateKey: TRANSLATE_PRIVATE_KEY,
+      projectId
     });
 
     setTouched(false);
@@ -50,24 +52,25 @@ export const TranslateSettingsPanel: FC = () => {
     setFileName(undefined);
   };
 
-  const checkCredentials = (creds: GoogleApiCreds) => {
-    if (!creds.client_email || !creds.private_key) {
+  const checkCredentials = (credentials: GoogleApiCredentials) => {
+    if (!credentials.client_email || !credentials.private_key || !credentials.project_id) {
       setFileName(undefined);
       return;
     }
-    setEmail(creds.client_email);
-    setKey(creds.private_key);
+    setEmail(credentials.client_email);
+    setKey(credentials.private_key);
+    setProjectId(credentials.project_id);
     setTouched(true);
   };
 
   const onFileChange = (files: File[]) => {
     const file = files[0];
-    if(!file) return;
+    if (!file) return;
 
     const fileReader = new FileReader();
     fileReader.onloadend = () => {
       if (!fileReader.result) return;
-      try{
+      try {
         const credentials = JSON.parse(fileReader.result as string);
         checkCredentials(credentials);
         setFileName(files[0].name);

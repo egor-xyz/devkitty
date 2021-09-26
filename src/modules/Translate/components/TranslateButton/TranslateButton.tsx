@@ -1,22 +1,26 @@
-import { FC, useMemo } from 'react';
+import { FC, useCallback } from 'react';
 import { Button, NavbarDivider } from '@blueprintjs/core';
 
 import { translateClipboard, useTranslateStore } from 'modules/Translate';
 import { useModalsStore } from 'modals/context';
 
 export const TranslateButton: FC = () => {
-  const { isActive, privateKey, clientEmail } = useTranslateStore();
+  const { isActive, privateKey, clientEmail, projectId } = useTranslateStore();
   const { openModal } = useModalsStore();
-  return useMemo(() => {
-    if (!isActive) return null;
-    return (<>
-      <NavbarDivider />
-      <Button
-        icon={'translate'}
-        minimal={true}
-        title='Translate'
-        onClick={() => translateClipboard(clientEmail, privateKey, openModal)}
-      />
-    </>);
-  }, [isActive, privateKey, clientEmail]); // eslint-disable-line
+
+  const translate = useCallback(() => {
+    translateClipboard(projectId, clientEmail, privateKey, openModal);
+  }, [projectId, clientEmail, privateKey, openModal]);
+
+  if (!isActive) return null;
+
+  return (<>
+    <NavbarDivider />
+    <Button
+      icon={'translate'}
+      minimal={true}
+      title='Translate'
+      onClick={translate}
+    />
+  </>);
 };
