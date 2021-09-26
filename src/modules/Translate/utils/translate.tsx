@@ -10,15 +10,19 @@ import css from './translate.module.scss';
 const { Translate } = remote.require('@google-cloud/translate').v2;
 
 let busy = false;
+let prevText = '';
+let prevResult: string | undefined;
 export const translateClipboard = async (
+  projectId: string,
   client_email: string,
   privateKeyName: string,
   openModal: ModalsStore['openModal']
 ) => {
-  if(busy) return;
+  if (busy) return;
   busy = true;
 
   const text = clipboard.readText();
+
   if (!text?.trim().length) {
     msg.show({
       icon: 'translate',
@@ -28,6 +32,19 @@ export const translateClipboard = async (
     busy = false;
     return;
   }
+
+  if (text === prevText && prevResult) {
+    msg.show({
+      icon: 'translate',
+      message: (<div className={css.translated}>
+        <Linkify>{prevResult}</Linkify>
+      </div>),
+    });
+    busy = false;
+    return;
+  }
+  prevText = text;
+  prevResult = undefined;
 
   try {
     const private_key = await getPassword(privateKeyName);
@@ -41,7 +58,7 @@ export const translateClipboard = async (
       return;
     }
 
-    const translate = new Translate({ credentials: { client_email, private_key } });
+    const translate = new Translate({ credentials: { client_email, private_key }, projectId });
     const [translations] = await translate.translate(text, 'en');
 
     msg.show({
