@@ -148,10 +148,8 @@ app.on('activate', function () {
   }
 });
 
-ipcMain.on('quitAndInstall', function () {
-  require('electron-updater').autoUpdater.quitAndInstall();
-});
-
 app.on('open-url', function (e, url) {
   win.webContents.send('open-url', url);
 });
+
+require('./scripts/events');

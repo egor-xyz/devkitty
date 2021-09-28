@@ -1,4 +1,4 @@
-const { app, powerMonitor } = require('electron');
+const { app, powerMonitor, ipcMain } = require('electron');
 const { autoUpdater } = require('electron-updater');
 
 const appVersion = app.getVersion();
@@ -67,6 +67,10 @@ function startAutoUpdate(mainWindow) {
   setTimer(mainWindow);
 
   onPowerMonitor(mainWindow);
+
+  ipcMain.on('quitAndInstall', function () {
+    autoUpdater.quitAndInstall();
+  });
 }
 
 module.exports = { startAutoUpdate };
