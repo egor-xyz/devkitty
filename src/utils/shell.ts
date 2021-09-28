@@ -1,5 +1,6 @@
 import open from 'open';
-import { api, is } from 'electron-util';
+import { is } from 'electron-util';
+import { shell } from 'electron';
 
 import { Project } from 'models';
 
@@ -10,12 +11,12 @@ export const openTerminal = (name: string, project: Project): void => {
 };
 
 export const openInFinder = (project: Project): void => {
-  api.remote.shell.openPath(project.path);
+  shell.openPath(project.path);
 };
 
 export const openExternalURL = (url?: string): void => {
   if (!url) return;
-  api.remote.shell.openExternal(url);
+  shell.openExternal(url);
 };
 
 export const openInIDE = async (project: Project, IDE?: string): Promise<void> => {
