@@ -1,7 +1,5 @@
-import { remote } from 'electron';
+import { ipcRenderer } from 'electron';
 import { pathExists } from 'fs-extra';
-
-const appPath = remote.require('app-path');
 
 export interface IFoundEditor<T> {
   readonly editor: T
@@ -125,29 +123,29 @@ const editors: IDarwinExternalEditor[] = [
   },
 ];
 
-async function findApplication(
-  editor: IDarwinExternalEditor
-): Promise<string | null> {
-  for (const identifier of editor.bundleIdentifiers) {
-    try {
-      const installPath = await appPath(identifier);
+async function findApplication(editor: IDarwinExternalEditor): Promise<string | null> {
+  try {
+    for (const identifier of editor.bundleIdentifiers) {
+      const path: Promise<string> = new Promise(resolve =>
+        ipcRenderer.invoke('getAppPath', identifier).then((path: string) => resolve(path))
+      );
+      const installPath = await path;
       const exists = await pathExists(installPath);
       if (exists) {
         return installPath;
       }
-    } catch { /**/ }
+    }
+    return null;
+  } catch {
+    return null;
   }
-
-  return null;
 }
 
 /**
  * Lookup known external editors using the bundle ID that each uses
  * to register itself on a user's machine when installing.
  */
-export async function getAvailableEditors(): Promise<
-ReadonlyArray<IFoundEditor<string>>
-> {
+export async function getAvailableEditors(): Promise<ReadonlyArray<IFoundEditor<string>>> {
   const results: Array<IFoundEditor<string>> = [];
 
   for (const editor of editors) {
@@ -188,9 +186,7 @@ const shells: IDarwinExternalEditor[] = [
   },
 ];
 
-export async function getAvailableShells(): Promise<
-ReadonlyArray<IFoundEditor<string>>
-> {
+export async function getAvailableShells(): Promise<ReadonlyArray<IFoundEditor<string>>> {
   const results: Array<IFoundEditor<string>> = [];
 
   for (const shell of shells) {
