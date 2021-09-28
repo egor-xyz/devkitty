@@ -127,7 +127,7 @@ async function findApplication(editor: IDarwinExternalEditor): Promise<string | 
   try {
     for (const identifier of editor.bundleIdentifiers) {
       const path: Promise<string> = new Promise(resolve =>
-        ipcRenderer.invoke('getAppPath', identifier).then((path) => resolve(path))
+        ipcRenderer.invoke('getAppPath', identifier).then((path: string) => resolve(path))
       );
       const installPath = await path;
       const exists = await pathExists(installPath);

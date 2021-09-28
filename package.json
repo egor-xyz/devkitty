@@ -37,7 +37,7 @@
   },
   "dependencies": {
     "@google-cloud/translate": "^6.3.0",
-    "app-path": "^4.0.0",
+    "app-path": "^3.3.0",
     "axios": "^0.21.4",
     "electron-is-dev": "^2.0.0",
     "electron-log": "^4.4.1",
