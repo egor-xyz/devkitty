@@ -1,3 +1,5 @@
+const { settings } = require('cluster');
+
 const { ipcMain, app, powerMonitor, dialog } = require('electron');
 
 const run = (win) => {
@@ -41,8 +43,8 @@ const run = (win) => {
     }
   });
 
-  ipcMain.handle('showOpenFolderDialog', async () => {
-    const { filePaths } = await dialog.showOpenDialog({ properties: ['openDirectory'] });
+  ipcMain.handle('showOpenDialog', async (settings) => {
+    const { filePaths } = await dialog.showOpenDialog(settings);
     if (!filePaths.length) return;
     return filePaths[0];
   });

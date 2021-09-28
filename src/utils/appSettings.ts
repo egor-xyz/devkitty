@@ -1,5 +1,5 @@
 import { copyFile, readFileSync } from 'fs-extra';
-import electron, { ipcRenderer } from 'electron';
+import { ipcRenderer } from 'electron';
 import { file, getSync, setSync, unsetSync } from 'electron-settings';
 
 import { AppStoreState } from 'context/types';
@@ -38,18 +38,18 @@ export const exportAllSettings = async (): Promise<void> => {
 };
 
 export const importAllSettings = async (): Promise<void> => {
-  const { filePaths } = await electron.remote.dialog.showOpenDialog(
-    electron.remote.getCurrentWindow(),
-    {
+  const filePathPromise = new Promise<string | undefined>(resolve => {
+    ipcRenderer.invoke('showOpenDialog', {
       filters: [{ extensions: ['json'], name: '*' }],
       properties: ['openFile']
-    }
-  );
-  if (!filePaths.length || !filePaths[0]) return;
+    }).then((res: any) => resolve(res));
+  });
+  const filePath = await filePathPromise;
+  if (!filePath) return;
 
   let settings;
   try {
-    settings = JSON.parse(readFileSync(filePaths[0], 'utf-8'));
+    settings = JSON.parse(readFileSync(filePath, 'utf-8'));
   } catch {
     return;
   }
@@ -57,7 +57,7 @@ export const importAllSettings = async (): Promise<void> => {
 
   // tmp fix for versions before 1.1.0
   if (settings.appStore) {
-    copyFile(filePaths[0], file());
+    copyFile(filePath, file());
   } else {
     setSync(APP_STORE_KEY, settings);
   }
