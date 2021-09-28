@@ -1,9 +1,9 @@
-import { FC, useEffect, useMemo } from 'react';
+import { FC, useEffect } from 'react';
 import clsx from 'clsx';
 import { Router } from 'react-router-dom';
-import { remote } from 'electron';
-import { api, darkMode, is } from 'electron-util';
+import { darkMode, is } from 'electron-util';
 import { createHashHistory } from 'history';
+import { ipcRenderer } from 'electron';
 
 import { AllProviders, AutoFetch, BottomBar, Header, IpcSubscriber } from 'components';
 import { Modals } from 'modals';
@@ -13,10 +13,6 @@ import { Routes } from 'pages';
 
 import css from './App.module.scss';
 
-// Init info
-visitor.event(remote.process.platform, 'version', remote.app.getVersion()).send();
-
-// Page views
 const history = createHashHistory();
 history.location.hash && visitor.pageview(history.location.pathname).send();
 history.listen(() => {
@@ -26,8 +22,6 @@ history.listen(() => {
 export const App: FC = () => {
   const { darkMode: _darkMode, darkModeOS, bottomBar } = useAppStore();
   const dispatch = useAppStoreDispatch();
-
-  const platform = useMemo(() => api.remote.process.platform, []);
 
   useEffect(() => {
     if (!is.macos) return;
@@ -45,7 +39,10 @@ export const App: FC = () => {
   }, [_darkMode]);
 
   useEffect(() => {
-    document.body.classList.add(platform);
+    ipcRenderer.invoke('getAppData').then(({ platform, version }) => {
+      document.body.classList.add(platform);
+      visitor.event(platform, 'version', version).send();
+    });
 
     internetStatus(dispatch);
 

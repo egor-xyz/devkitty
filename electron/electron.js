@@ -4,12 +4,13 @@
 // GET user environment PATH. Disabled slowdown app
 // require('fix-path')();
 
-const logs = require('electron-log');
-logs.catchErrors();
+const log = require('electron-log');
+log.catchErrors();
+log.transports.file.level = 'info';
 
 const path = require('path');
 
-const { BrowserWindow, app, Menu, ipcMain } = require('electron');
+const { BrowserWindow, app, Menu, ipcMain, autoUpdater } = require('electron');
 const { is } = require('electron-util');
 const isDev = require('electron-is-dev');
 
@@ -122,6 +123,8 @@ function createMainWindow() {
     require('./scripts/updater').startAutoUpdate(win);
   }
 
+  require('./scripts/ipcMainHelpers').run(win);
+
   Menu.setApplicationMenu(Menu.buildFromTemplate(require('./scripts/menu').getAppMenu(win, app)));
 }
 
@@ -146,10 +149,6 @@ app.on('activate', function () {
   if (win === null) {
     createMainWindow();
   }
-});
-
-ipcMain.on('quitAndInstall', function () {
-  require('electron-updater').autoUpdater.quitAndInstall();
 });
 
 app.on('open-url', function (e, url) {
