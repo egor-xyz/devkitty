@@ -1,4 +1,4 @@
-const { ipcMain, app, powerMonitor } = require('electron');
+const { ipcMain, app, powerMonitor, dialog } = require('electron');
 
 const run = (win) => {
   ipcMain.handle('getAppData', () => ({
@@ -20,6 +20,12 @@ const run = (win) => {
     const translate = new Translate(settings);
     const [translations] = await translate.translate(text, lang);
     return translations;
+  });
+
+  ipcMain.handle('showOpenFolderDialog', async () => {
+    const { filePaths } = await dialog.showOpenDialog({ properties: ['openDirectory'] });
+    if (!filePaths.length) return;
+    return filePaths[0];
   });
 
   powerMonitor.on('resume', () => {
