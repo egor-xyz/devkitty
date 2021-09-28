@@ -1,7 +1,6 @@
 import { copyFile, readFileSync } from 'fs-extra';
-import electron from 'electron';
+import electron, { ipcRenderer } from 'electron';
 import { file, getSync, setSync, unsetSync } from 'electron-settings';
-import { api } from 'electron-util';
 
 import { AppStoreState } from 'context/types';
 import { defGroups, defGroupsIds, Group } from 'models';
@@ -30,15 +29,11 @@ export const setAppStoreSettings = (value: Partial<AppStoreState>): void => {
 };
 
 export const exportAllSettings = async (): Promise<void> => {
-  const { filePath } = await electron.remote.dialog.showSaveDialog(
-    electron.remote.getCurrentWindow(),
-    {
-      defaultPath: `devkitty.settings.${api.remote.app.getVersion()}.json`,
-      properties: ['showOverwriteConfirmation']
-    }
-  );
-  if (!filePath) return;
-
+  const filePathPromise = new Promise<any>(resolve => {
+    ipcRenderer.invoke('showSettingsSaveDialog').then((res: any) => resolve(res));
+  });
+  const { filePath, canceled } = await filePathPromise;
+  if (canceled) return;
   copyFile(file(), filePath);
 };
 

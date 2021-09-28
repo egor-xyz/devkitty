@@ -47,6 +47,11 @@ const run = (win) => {
     return filePaths[0];
   });
 
+  ipcMain.handle('showSettingsSaveDialog', async () => await dialog.showSaveDialog({
+    defaultPath: `devkitty.settings.${app.getVersion()}.json`,
+    properties: ['showOverwriteConfirmation']
+  }));
+
   powerMonitor.on('resume', () => {
     win.webContents.send('onPowerMonitor', 'resume');
   });
