@@ -123,7 +123,7 @@ function createMainWindow() {
     require('./scripts/updater').startAutoUpdate(win);
   }
 
-  require('./scripts/events').run(win);
+  require('./scripts/ipcMainHelpers').run(win);
 
   Menu.setApplicationMenu(Menu.buildFromTemplate(require('./scripts/menu').getAppMenu(win, app)));
 }
