@@ -1,4 +1,4 @@
-const { app, powerMonitor } = require('electron');
+const { app, powerMonitor, ipcMain } = require('electron');
 const { autoUpdater } = require('electron-updater');
 
 const appVersion = app.getVersion();
@@ -36,6 +36,9 @@ function startAutoUpdate(mainWindow) {
   if (ready || require('electron-is-dev')) return;
   ready = true;
 
+  const log = require('electron-log');
+  autoUpdater.logger = log;
+
   autoUpdater.on('error', (ev, err) => {
     mainWindow.webContents.send('updater', { msg: `Error: ${err}` });
   });
@@ -67,6 +70,10 @@ function startAutoUpdate(mainWindow) {
   setTimer(mainWindow);
 
   onPowerMonitor(mainWindow);
+
+  ipcMain.on('quitAndInstall', function () {
+    autoUpdater.quitAndInstall();
+  });
 }
 
 module.exports = { startAutoUpdate };
