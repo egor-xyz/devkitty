@@ -1,5 +1,3 @@
-const { settings } = require('cluster');
-
 const { ipcMain, app, powerMonitor, dialog } = require('electron');
 
 const run = (win) => {
@@ -53,6 +51,27 @@ const run = (win) => {
     defaultPath: `devkitty.settings.${app.getVersion()}.json`,
     properties: ['showOverwriteConfirmation']
   }));
+
+  ipcMain.handle('requestServer', async (_, { method, url, data = null, config = {} }) => {
+    const axios = require('axios');
+    try {
+      const res = await axios.request({
+        ...{ data, method, url },
+        ...config,
+      });
+      return {
+        data: res.data,
+        status: res.status,
+        success: true,
+      };
+    } catch (error) {
+      return {
+        data: error.response?.data,
+        status: error.status,
+        success: false
+      };
+    }
+  });
 
   powerMonitor.on('resume', () => {
     win.webContents.send('onPowerMonitor', 'resume');
