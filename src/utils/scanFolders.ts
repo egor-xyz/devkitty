@@ -4,7 +4,7 @@ import { BranchSummary, StatusResult } from 'simple-git/promise';
 import { find, findIndex } from 'lodash';
 import orderBy from 'lodash/orderBy';
 import gitUrlParse from 'git-url-parse';
-import { api } from 'electron-util';
+import { ipcRenderer } from 'electron';
 
 import { AppStoreActions, AppStoreState } from 'context';
 import { Project, ProjectWithError } from 'models';
@@ -126,7 +126,7 @@ export const scanFolders: ScanFolders = async ({ state, dispatch, repoName, useL
           repo,
           status
         };
-      } catch (e) {
+      } catch (e: any) {
         errors.push({
           message: e.message,
           path,
@@ -143,7 +143,9 @@ export const scanFolders: ScanFolders = async ({ state, dispatch, repoName, useL
     dispatch({ payload: errors, type: 'setProjectsWithError' });
   }
 
-  if (!repoName) api.remote.app.setBadgeCount(updates);
+  if (!repoName) {
+    ipcRenderer.invoke('setBadgeCount', updates);
+  }
 
   let filteredProjects = res.filter(project => !!project) as Project[];
   const projectsWithUrl = orderBy(filteredProjects.filter(p => p.git), ['name']);

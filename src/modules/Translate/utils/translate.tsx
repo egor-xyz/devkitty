@@ -1,4 +1,4 @@
-import { clipboard, remote } from 'electron';
+import { clipboard, ipcRenderer } from 'electron';
 import Linkify from 'react-linkify';
 
 import { msg } from 'utils/Msg';
@@ -7,11 +7,10 @@ import { getPassword } from 'utils';
 
 import css from './translate.module.scss';
 
-const { Translate } = remote.require('@google-cloud/translate').v2;
-
 let busy = false;
 let prevText = '';
 let prevResult: string | undefined;
+
 export const translateClipboard = async (
   projectId: string,
   client_email: string,
@@ -58,16 +57,19 @@ export const translateClipboard = async (
       return;
     }
 
-    const translate = new Translate({ credentials: { client_email, private_key }, projectId });
-    const [translations] = await translate.translate(text, 'en');
-
-    msg.show({
-      icon: 'translate',
-      message: (<div className={css.translated}>
-        <Linkify>{translations}</Linkify>
-      </div>),
+    ipcRenderer.invoke('translate', {
+      lang: 'en',
+      settings: { credentials: { client_email, private_key }, projectId },
+      text: text,
+    }).then((translations: string) => {
+      msg.show({
+        icon: 'translate',
+        message: (<div className={css.translated}>
+          <Linkify>{translations}</Linkify>
+        </div>),
+      });
+      busy = false;
     });
-    busy = false;
   } catch (error) {
     openModal({ data: error, name: 'console' });
     busy = false;
