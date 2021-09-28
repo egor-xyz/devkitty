@@ -22,6 +22,22 @@ const run = (win) => {
     return translations;
   });
 
+  ipcMain.handle('keytar', async (_, { action, service, account, password }) => {
+    const keytar = require('keytar');
+    switch (action) {
+      case 'getPassword':
+        return await keytar.getPassword(service, account);
+      case 'setPassword':
+        return await keytar.setPassword(service, account, password);
+      case 'deletePassword':
+        return await keytar.deletePassword(service, account);
+      case 'findCredentials':
+        return await keytar.findCredentials(service);
+      default:
+        return;
+    }
+  });
+
   ipcMain.handle('showOpenFolderDialog', async () => {
     const { filePaths } = await dialog.showOpenDialog({ properties: ['openDirectory'] });
     if (!filePaths.length) return;
