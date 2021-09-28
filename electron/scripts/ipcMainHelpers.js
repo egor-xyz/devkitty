@@ -22,6 +22,8 @@ const run = (win) => {
     return translations;
   });
 
+  ipcMain.handle('setBadgeCount', async (_, value) => app.setBadgeCount(value));
+
   ipcMain.handle('keytar', async (_, { action, service, account, password }) => {
     const keytar = require('keytar');
     switch (action) {
