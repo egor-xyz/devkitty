@@ -2,7 +2,7 @@ import { Collapse, Spinner } from '@blueprintjs/core';
 import clsx from 'clsx';
 import { AnimateSharedLayout } from 'framer-motion';
 import { groupBy, isEmpty, orderBy, some, sortBy } from 'lodash';
-import { Dispatch, FC, useCallback, useMemo } from 'react';
+import { Dispatch, FC, useMemo } from 'react';
 
 import { msg, ProjectCard } from 'components';
 import { AppStoreActions, AppStoreState, useAppStore, useAppStoreDispatch } from 'context';
@@ -31,11 +31,11 @@ export const ProjectsPage: FC = () => {
     projectsWithError
   } = state;
 
-  const updateGitProject = useCallback(async (repo?: string) => {
+  const updateGitProject = async (repo?: string) => {
     await scanFolders({ dispatch, repoName: repo, state });
-  }, [state]);
+  };
 
-  const checkoutGitBranch = useCallback(async (project: Project, branch: string): Promise<void> => {
+  const checkoutGitBranch = async (project: Project, branch: string): Promise<void> => {
     dispatch({ payload: { active: true, name: project.repo }, type: 'setLoading' });
     const done = await checkoutBranch(project, branch);
     if (!done) {
@@ -57,14 +57,14 @@ export const ProjectsPage: FC = () => {
     });
 
     dispatch({ payload: { name: project.repo }, type: 'setLoading' });
-  }, []);
+  };
 
-  const fetchGitFolder = useCallback(async (project: Project, dispatch: Dispatch<AppStoreActions>): Promise<void> => {
+  const fetchGitFolder = async (project: Project, dispatch: Dispatch<AppStoreActions>): Promise<void> => {
     await fetchFolder(project, dispatch);
     updateGitProject(project.repo);
-  }, []);
+  };
 
-  const pullGitFolder = useCallback(async (project: Project, dispatch: Dispatch<AppStoreActions>, state: AppStoreState): Promise<void> => {
+  const pullGitFolder = async (project: Project, dispatch: Dispatch<AppStoreActions>, state: AppStoreState): Promise<void> => {
     if (!state.online) {
       msg.show({
         icon: 'globe-network',
@@ -90,15 +90,15 @@ export const ProjectsPage: FC = () => {
       intent: 'primary',
       message: `${project.repo} pulled successful`,
     });
-  }, []);
+  };
 
-  const resetAndRefresh = useCallback(() => {
+  const resetAndRefresh = () => {
     if (selectedGroupId !== '0') {
       dispatch({ payload: '0', type: 'setGroupId' });
     }
 
     setTimeout(() => { scanFolders({ dispatch, state }) });
-  }, [state]);
+  };
 
   return useMemo(() => {
     let sortedProjects = [...projects];
