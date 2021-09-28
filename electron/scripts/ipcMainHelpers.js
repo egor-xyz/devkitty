@@ -6,6 +6,15 @@ const run = (win) => {
     version: app.getVersion()
   }));
 
+  ipcMain.handle('getAppPath', async (_, identifier) => {
+    try {
+      const appPath = require('app-path');
+      return await appPath(identifier);
+    } catch (e) {
+      return;
+    }
+  });
+
   ipcMain.handle('translate', async (_, { settings, text, lang }) => {
     const { Translate } = require('@google-cloud/translate').v2;
     const translate = new Translate(settings);
