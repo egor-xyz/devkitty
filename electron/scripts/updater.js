@@ -36,6 +36,9 @@ function startAutoUpdate(mainWindow) {
   if (ready || require('electron-is-dev')) return;
   ready = true;
 
+  const log = require('electron-log');
+  autoUpdater.logger = log;
+
   autoUpdater.on('error', (ev, err) => {
     mainWindow.webContents.send('updater', { msg: `Error: ${err}` });
   });
