@@ -23,6 +23,7 @@ const run = (win) => {
   });
 
   ipcMain.handle('setBadgeCount', async (_, value) => app.setBadgeCount(value));
+  ipcMain.handle('dockSetBadge', async (_, value) => app.dock.setBadge(value));
 
   ipcMain.handle('keytar', async (_, { action, service, account, password }) => {
     const keytar = require('keytar');
