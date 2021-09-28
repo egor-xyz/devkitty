@@ -3,7 +3,6 @@ import { find, findIndex } from 'lodash';
 import { Button, ButtonGroup, Card, ProgressBar, Tag } from '@blueprintjs/core';
 import moment from 'moment';
 import clsx from 'clsx';
-import { remote } from 'electron';
 
 import { JenkinsBuild, JenkinsJob } from 'modules/Jenkins/models';
 import { getJenkinsBuild, getQueue } from 'modules/Jenkins/api';
@@ -104,13 +103,10 @@ export const JenkinsRunningJob: FC<Props> = ({ runningBuild, job }) => {
       return;
     }
 
-    if(build?.building && !res.building) {
-      new remote.Notification({
-        body: res.fullDisplayName ?? '',
-        closeButtonText: 'Hide',
-        subtitle: res.result ?? '',
-        title: 'Jenkins'
-      }).show();
+    if (build?.building && !res.building) {
+      new Notification('Jenkins', {
+        body: (res.fullDisplayName ?? '') + ' ' + res.result ?? ''
+      });
     }
 
     setBuild({ ...res });
@@ -164,9 +160,8 @@ export const JenkinsRunningJob: FC<Props> = ({ runningBuild, job }) => {
   if (build?.building) {
     buildStatus = (est ?? 0) > 0
       ? `BUILDING ${moment(est).format('mm:ss')}`
-      : 'BUILDING'
-    ;
-    percent.current =  (Date.now() - build?.timestamp!) / build?.estimatedDuration!;
+      : 'BUILDING';
+    percent.current = (Date.now() - build?.timestamp!) / build?.estimatedDuration!;
   }
 
   let buildIntent = build?.building

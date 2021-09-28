@@ -13,7 +13,6 @@ export * from './googleAnalitics';
 export * from './internetStatus';
 export * from './supportedHosters';
 export * from './getIdeName';
-export * from './autoUpdater';
 export * from './getRepoData';
 export * from './appSettings';
 export * from './Msg';

@@ -1,7 +1,6 @@
 import { copyFile, readFileSync } from 'fs-extra';
-import electron from 'electron';
+import { ipcRenderer } from 'electron';
 import { file, getSync, setSync, unsetSync } from 'electron-settings';
-import { api } from 'electron-util';
 
 import { AppStoreState } from 'context/types';
 import { defGroups, defGroupsIds, Group } from 'models';
@@ -30,31 +29,27 @@ export const setAppStoreSettings = (value: Partial<AppStoreState>): void => {
 };
 
 export const exportAllSettings = async (): Promise<void> => {
-  const { filePath } = await electron.remote.dialog.showSaveDialog(
-    electron.remote.getCurrentWindow(),
-    {
-      defaultPath: `devkitty.settings.${api.remote.app.getVersion()}.json`,
-      properties: ['showOverwriteConfirmation']
-    }
-  );
-  if (!filePath) return;
-
+  const filePathPromise = new Promise<any>(resolve => {
+    ipcRenderer.invoke('showSettingsSaveDialog').then((res: any) => resolve(res));
+  });
+  const { filePath, canceled } = await filePathPromise;
+  if (canceled) return;
   copyFile(file(), filePath);
 };
 
 export const importAllSettings = async (): Promise<void> => {
-  const { filePaths } = await electron.remote.dialog.showOpenDialog(
-    electron.remote.getCurrentWindow(),
-    {
+  const filePathPromise = new Promise<string | undefined>(resolve => {
+    ipcRenderer.invoke('showOpenDialog', {
       filters: [{ extensions: ['json'], name: '*' }],
       properties: ['openFile']
-    }
-  );
-  if (!filePaths.length || !filePaths[0]) return;
+    }).then((res: any) => resolve(res));
+  });
+  const filePath = await filePathPromise;
+  if (!filePath) return;
 
   let settings;
   try {
-    settings = JSON.parse(readFileSync(filePaths[0], 'utf-8'));
+    settings = JSON.parse(readFileSync(filePath, 'utf-8'));
   } catch {
     return;
   }
@@ -62,7 +57,7 @@ export const importAllSettings = async (): Promise<void> => {
 
   // tmp fix for versions before 1.1.0
   if (settings.appStore) {
-    copyFile(filePaths[0], file());
+    copyFile(filePath, file());
   } else {
     setSync(APP_STORE_KEY, settings);
   }

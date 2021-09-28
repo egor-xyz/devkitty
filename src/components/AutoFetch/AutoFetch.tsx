@@ -1,5 +1,5 @@
+import { ipcRenderer } from 'electron';
 import { FC, memo, useEffect, useRef } from 'react';
-import { api } from 'electron-util';
 
 import { useAppStore, useAppStoreDispatch } from 'context';
 import { scanFolders } from 'utils';
@@ -50,11 +50,19 @@ export const AutoFetch: FC = memo(() => {
     if (onPowerMonitorSubscribed.current) return;
     onPowerMonitorSubscribed.current = true;
 
-    api.remote.powerMonitor.on('resume', autoFetchProjects);
-    api.remote.powerMonitor.on('suspend', unsubscribeAutoFetch);
-
     window.addEventListener('online', autoFetchProjects);
     window.addEventListener('offline', unsubscribeAutoFetch);
+
+    ipcRenderer.on('onPowerMonitor', (_, status: string) => {
+      switch (status) {
+        case 'resume':
+          autoFetchProjects();
+          return;
+        case 'suspend':
+          unsubscribeAutoFetch();
+          return;
+      }
+    });
   };
 
   useEffect(() => {
