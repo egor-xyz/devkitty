@@ -129,7 +129,7 @@ function createMainWindow() {
 }
 
 app.on('ready', function () {
-  createSplashScreen();
+  // createSplashScreen();
   createMainWindow();
   // require('./scripts/tray').createTray(win, createWindow);
 });
