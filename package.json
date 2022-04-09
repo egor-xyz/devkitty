@@ -90,7 +90,7 @@
     "git-url-parse": "^11.6.0",
     "jquery-param": "^1.1.8",
     "lodash": "^4.17.21",
-    "moment": "^2.29.1",
+    "moment": "^2.29.2",
     "node-sass": "^6.0.1",
     "node-version": "^2.0.0",
     "normalize.css": "^8.0.1",
