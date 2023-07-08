@@ -10,6 +10,10 @@ import { Root, Row } from './SettingsIntegrations.styles';
 export const SettingsIntegrations = () => {
   const { editors, shells, selectedEditor, selectedShell, set } = useAppSettings();
 
+  if (!editors[0] || !shells[0]) {
+    return null;
+  }
+
   return (
     <Root>
       <h2>Integrations</h2>
@@ -30,7 +34,7 @@ export const SettingsIntegrations = () => {
           items={editors}
           onItemSelect={(selectedEditor) => set({ selectedEditor })}
         >
-          <Button rightIcon="caret-down">{selectedEditor.editor}</Button>
+          <Button rightIcon="caret-down">{selectedEditor?.editor}</Button>
         </Select>
       </Row>
 
@@ -41,7 +45,7 @@ export const SettingsIntegrations = () => {
           filterable={false}
           itemRenderer={(shell, { index, handleClick }) => (
             <MenuItem
-              disabled={shell.shell === selectedShell.shell}
+              disabled={shell.shell === selectedShell?.shell}
               key={index}
               text={shell.shell}
               onClick={handleClick}

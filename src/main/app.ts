@@ -19,8 +19,6 @@ log.initialize({ preload: true });
 
 app.name = 'Devkitty';
 
-updateAppSettings();
-
 // Handle creating/removing shortcuts on Windows when installing/uninstalling.
 if (require('electron-squirrel-startup')) {
   app.quit();
@@ -53,6 +51,8 @@ const createWindow = (): void => {
   // and load the index.html of the app.
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
+  updateAppSettings(mainWindow);
+
   isDev && mainWindow.webContents.openDevTools();
 
   // CSP interceptor
@@ -61,16 +61,10 @@ const createWindow = (): void => {
   //     responseHeaders: {
   //       ...details.responseHeaders,
   //       'Content-Security-Policy': [
-  //         "script-src 'self' https://frontegg.com https://*.frontegg.com 'unsafe-eval' 'unsafe-inline'"
+  //         "script-src 'self' https://example.com https://*.example.com 'unsafe-eval' 'unsafe-inline'"
   //       ]
   //     }
   //   });
-  // });
-
-  // mainWindow.webContents.on('did-finish-load', () => {
-  // nativeTheme.on('updated', () => {
-  //   mainWindow.webContents.send('theme-changed', nativeTheme.themeSource);
-  // });
   // });
 };
 
