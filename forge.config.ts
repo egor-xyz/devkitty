@@ -20,9 +20,9 @@ const forgeConfig: ForgeConfig = {
     icon: './icons/icon',
     name: 'Devkitty',
     osxNotarize: {
-      appleApiIssuer: process.env.APPLE_API_ISSUER || '',
-      appleApiKey: process.env.APPLE_API_KEY || '',
-      appleApiKeyId: process.env.APPLE_API_KEY_ID || '',
+      appleId: process.env.APPLE_ID || '',
+      appleIdPassword: process.env.APPLE_ID_PASSWORD || '',
+      teamId: process.env.APPLE_TEAM_ID || '',
       tool: 'notarytool'
     },
     osxSign: {},

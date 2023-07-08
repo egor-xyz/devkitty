@@ -1,4 +1,4 @@
-# DevKitty 2.0 <a href="#"><img align="right" src="assets/logo.png" height="70px" />
+# Devkitty 2.0 <a href="#"><img align="right" src="assets/logo.png" height="70px" />
 
 Swiss army knife for developers.\
 Easily manage multiple Git repositories and Jenkins jobs in one screen.
@@ -25,7 +25,7 @@ Devkitty is [MIT licensed](./LICENSE).
 
 Based on [Electron Forge Skeleton](https://www.electronforge.io/)
 
-# Develop
+# Developing
 
 - Hot reload for main process - type `rs` and enter
 - [Make docs](./docs/make.md)
