@@ -25,3 +25,9 @@ export const useAppSettings = create<AppSettings & Actions>((set) => ({
   const state = await window.bridge.settings.get('appSettings');
   useAppSettings.setState(state);
 })();
+
+(async () => {
+  window.bridge.settings.onAppSettings((_, value) => {
+    useAppSettings.setState(value);
+  });
+})();

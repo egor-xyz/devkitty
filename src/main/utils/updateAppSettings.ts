@@ -1,3 +1,5 @@
+import { type BrowserWindow } from 'electron';
+
 import { isEqual } from 'lodash';
 
 import { getAvailableEditors } from '../libs/editors/darwin';
@@ -26,7 +28,9 @@ const updateShells = async () => {
   }
 };
 
-export const updateAppSettings = async () => {
-  updateEditors();
-  updateShells();
+export const updateAppSettings = async (mainWindow: BrowserWindow) => {
+  await updateEditors();
+  await updateShells();
+
+  mainWindow.webContents.send('settings:updated', settings.get('appSettings'));
 };

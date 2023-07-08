@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
 import { ThemeSource } from 'types';
+import { AppSettings } from 'types/appSettings';
 import { FoundEditor } from 'types/foundEditor';
 import { FoundShell } from 'types/foundShell';
 import { GitStatus, Project } from 'types/project';
@@ -31,6 +32,8 @@ const bridge = {
   },
   settings: {
     get: (key: keyof Settings) => ipcRenderer.invoke('settings:get', key),
+    onAppSettings: (callback: (event: IpcRendererEvent, value: AppSettings) => void) =>
+      ipcRenderer.on('settings:updated', callback),
     set: <K extends keyof Settings>(key: K, value: Partial<Settings[K]>) =>
       ipcRenderer.invoke('settings:set', key, value)
   }
