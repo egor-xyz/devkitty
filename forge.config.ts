@@ -2,12 +2,15 @@ import type { ForgeConfig } from '@electron-forge/shared-types';
 import { WebpackPlugin } from '@electron-forge/plugin-webpack';
 import { MakerZIP } from '@electron-forge/maker-zip';
 import { PublisherGithub } from '@electron-forge/publisher-github';
+import { config } from 'dotenv';
 
 import { mainConfig } from './webpack.main.config';
 import { rendererConfig } from './webpack.renderer.config';
 import { version } from './package.json';
 
-const config: ForgeConfig = {
+config();
+
+const forgeConfig: ForgeConfig = {
   makers: [new MakerZIP({}, ['darwin'])],
   packagerConfig: {
     appBundleId: 'com.egor-xyz.devkitty',
@@ -16,10 +19,12 @@ const config: ForgeConfig = {
     executableName: 'devkitty',
     icon: './icons/icon',
     name: 'Devkitty',
-    // osxNotarize: {
-    //   appleId: '',
-    //   appleIdPassword: '',
-    // },
+    osxNotarize: {
+      appleApiIssuer: process.env.APPLE_API_ISSUER || '',
+      appleApiKey: process.env.APPLE_API_KEY || '',
+      appleApiKeyId: process.env.APPLE_API_KEY_ID || '',
+      tool: 'notarytool'
+    },
     osxSign: {},
     osxUniversal: {
       mergeASARs: true
@@ -59,4 +64,4 @@ const config: ForgeConfig = {
   rebuildConfig: {}
 };
 
-export default config;
+export default forgeConfig;

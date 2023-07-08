@@ -93,3 +93,5 @@ dist/
 # devkitty
 devkitty.settings.json
 .vite
+AuthKey_*
+
