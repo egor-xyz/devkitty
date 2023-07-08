@@ -8,6 +8,9 @@ import './ipcs';
 import { settings } from './settings';
 import { updateAppSettings } from './utils/updateAppSettings';
 
+log.info('--------------------------------------------------');
+log.info('App starting...');
+
 updater({
   logger: log,
   updateInterval: '5 minutes'
