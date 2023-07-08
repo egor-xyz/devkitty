@@ -3,6 +3,7 @@ import { app, BrowserWindow, nativeTheme } from 'electron';
 import log from 'electron-log';
 
 import './ipcs';
+
 import { settings } from './settings';
 import { updateAppSettings } from './utils/updateAppSettings';
 
@@ -18,11 +19,6 @@ const isDev = process.env.NODE_ENV === 'development';
 log.initialize({ preload: true });
 
 app.name = 'Devkitty';
-
-// Handle creating/removing shortcuts on Windows when installing/uninstalling.
-if (require('electron-squirrel-startup')) {
-  app.quit();
-}
 
 const createWindow = (): void => {
   // restore window position and size
