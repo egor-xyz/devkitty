@@ -1,0 +1,1 @@
+export { RemoveAlert } from './RemoveAlert';

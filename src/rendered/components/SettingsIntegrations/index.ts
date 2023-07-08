@@ -1,0 +1,1 @@
+export { SettingsIntegrations } from './SettingsIntegrations';
