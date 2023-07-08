@@ -57,6 +57,7 @@
     "@types/uuid": "^9.0.2",
     "@vercel/webpack-asset-relocator-loader": "1.7.3",
     "css-loader": "^6.8.1",
+    "dotenv": "^16.3.1",
     "electron": "^25.2.0",
     "electron-squirrel-startup": "^1.0.0",
     "eslint": "^8.43.0",
