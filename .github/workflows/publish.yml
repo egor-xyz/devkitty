@@ -4,11 +4,6 @@ name: Publish
 
 on:
   workflow_dispatch:
-    inputs:
-      tag:
-        description: 'Tag'
-        required: true
-        default: 'v2.0.0'
 
 concurrency:
   group: ${{ github.event.repository.name }}-release
