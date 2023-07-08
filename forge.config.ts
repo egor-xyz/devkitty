@@ -1,25 +1,33 @@
 import type { ForgeConfig } from '@electron-forge/shared-types';
 import { WebpackPlugin } from '@electron-forge/plugin-webpack';
+import { MakerZIP } from '@electron-forge/maker-zip';
+import { PublisherGithub } from '@electron-forge/publisher-github';
 
 import { mainConfig } from './webpack.main.config';
 import { rendererConfig } from './webpack.renderer.config';
+import { version } from './package.json';
 
 const config: ForgeConfig = {
-  makers: [
-    {
-      config: {
-        name: 'Devkitty'
-      },
-      name: '@electron-forge/maker-zip',
-      platforms: ['darwin']
-    },
-    {
-      config: {},
-      name: '@electron-forge/maker-dmg'
-    }
-  ],
+  makers: [new MakerZIP({}, ['darwin'])],
   packagerConfig: {
-    icon: './icons/icon'
+    appBundleId: 'com.egor-xyz.devkitty',
+    appCategoryType: 'public.app-category.developer-tools',
+    appVersion: version,
+    executableName: 'devkitty',
+    icon: './icons/icon',
+    name: 'Devkitty',
+    // osxNotarize: {
+    //   appleId: '',
+    //   appleIdPassword: '',
+    // },
+    osxSign: {},
+    osxUniversal: {
+      mergeASARs: true
+    },
+    win32metadata: {
+      CompanyName: 'Devkitty',
+      OriginalFilename: 'Devkitty'
+    }
   },
   plugins: [
     new WebpackPlugin({
@@ -36,6 +44,15 @@ const config: ForgeConfig = {
             }
           }
         ]
+      }
+    })
+  ],
+
+  publishers: [
+    new PublisherGithub({
+      repository: {
+        name: 'devkitty',
+        owner: 'egor-xyz'
       }
     })
   ],
