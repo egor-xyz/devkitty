@@ -10,6 +10,8 @@ import { version } from './package.json';
 
 config();
 
+const isDev = process.env.NODE_ENV === 'development';
+
 const forgeConfig: ForgeConfig = {
   makers: [new MakerZIP({}, ['darwin'])],
   packagerConfig: {
@@ -62,5 +64,10 @@ const forgeConfig: ForgeConfig = {
   ],
   rebuildConfig: {}
 };
+
+if (isDev) {
+  delete forgeConfig.packagerConfig?.osxNotarize;
+  delete forgeConfig.packagerConfig?.osxSign;
+}
 
 export default forgeConfig;

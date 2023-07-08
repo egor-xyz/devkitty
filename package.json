@@ -9,7 +9,7 @@
     "watch": "node scripts/electronForgeStartWatch.js",
     "package": "electron-forge package",
     "make": "electron-forge make",
-    "make:zip": "electron-forge make --targets @electron-forge/maker-zip",
+    "make:dev": "NODE_ENV=development electron-forge make",
     "publish": "export $(grep GITHUB_TOKEN .env); electron-forge publish",
     "eslint": "eslint --ext .ts,.tsx . --fix",
     "debug": "electron-forge start --vscode"
