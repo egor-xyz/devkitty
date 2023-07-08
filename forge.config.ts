@@ -52,7 +52,6 @@ const forgeConfig: ForgeConfig = {
       }
     })
   ],
-
   publishers: [
     new PublisherGithub({
       repository: {
