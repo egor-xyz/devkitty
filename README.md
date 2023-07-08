@@ -8,16 +8,13 @@ Easily manage multiple Git repositories and Jenkins jobs in one screen.
 ## Features
 
 - Manage multiple Git projects
-- Manage Jenkins Jobs
-- Quick checkout between branches with stash or create new branches
+- Quick checkout between branches with stash
 - Auto fetch projects
-- Create and view pull requests
 - Quickly copy branch names
 - Easily sync projects with their remote
-- Open on GitHub, Bitbucket, GitLab...
-- Integration with your favorite IDE or code editor
-- Open in iTerm
-- Reveal in Finder
+- Integration with your favorite code editor and shell
+- [coming soon] Github Pull Requests Quick View
+- [coming soon] Github Actions Quick View
 
 ## License
 
