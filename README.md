@@ -1,12 +1,4 @@
-# devkitty <a href="#"><img align="right" src="build-assets/icon.png" height="70px"/></a>
-
-[![Devkitty New Release](https://github.com/egor-xyz/devkitty/actions/workflows/devkittyCI.yml/badge.svg)](https://github.com/egor-xyz/devkitty/actions/workflows/devkittyCI.yml)
-[![GitHub license](https://img.shields.io/badge/license-MIT-blue.svg)](https://github.com/egor-xyz/devkitty/blob/main/LICENSE)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](https://github.com/egor-xyz/devkitty/pulls)
-
-[![devkitty](./assets/GitHub-App-Demo.png)](https://devkitty.app)
-
-<https://devkitty.app/>
+# DevKitty 2.0 <a href="#"><img align="right" src="assets/logo.png" height="70px" />
 
 Swiss army knife for developers.\
 Easily manage multiple Git repositories and Jenkins jobs in one screen.
@@ -30,3 +22,10 @@ Easily manage multiple Git repositories and Jenkins jobs in one screen.
 ## License
 
 Devkitty is [MIT licensed](./LICENSE).
+
+Based on [Electron Forge Skeleton](https://www.electronforge.io/)
+
+# Develop
+
+- Hot reload for main process - type `rs` and enter
+- [Make docs](./docs/make.md)

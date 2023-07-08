@@ -1,15 +1,18 @@
 module.exports = {
-  extends: [
-    'react-app',
-    '@egor.xyz'
-  ],
-  globals: {
-    JSX: true,
+  env: {
+    browser: true,
+    es6: true,
+    node: true
   },
+  extends: [
+    'eslint:recommended',
+    'plugin:import/electron',
+    'react-app',
+    '@egor.xyz',
+    'prettier'
+  ],
   rules: {
-    '@typescript-eslint/no-unused-vars': 'error',
-    'jsx-a11y/anchor-has-content': 'off',
-    'react/jsx-no-target-blank': 'off',
-    'react-hooks/exhaustive-deps': 'off'
+    'import/no-unresolved': 'off',
+    'react/react-in-jsx-scope': 'off'
   }
 };

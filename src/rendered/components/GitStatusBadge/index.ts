@@ -1,0 +1,1 @@
+export { GitStatusBadge } from './GitStatusBadge';

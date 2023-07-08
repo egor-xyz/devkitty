@@ -1,0 +1,11 @@
+{
+  "editor.codeActionsOnSave": {
+    "source.fixAll": true,
+    "source.fixAll.eslint": true,
+    "source.fixAll.stylelint": true
+  },
+  "i18n-ally.keystyle": "nested",
+  "i18n-ally.localesPaths": ["src/locales"],
+  "stylelint.enable": true,
+  "stylelint.validate": ["css", "javascript", "scss", "typescript"]
+}

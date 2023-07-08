@@ -1,0 +1,1 @@
+export { GroupRenamer } from './GroupRenamer';

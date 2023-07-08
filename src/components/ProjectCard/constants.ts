@@ -1,1 +1,0 @@
-export const BRANCHES_LIMIT = 5;
