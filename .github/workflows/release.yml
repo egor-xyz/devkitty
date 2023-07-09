@@ -26,7 +26,7 @@ env:
   CI: ${{ github.event.inputs.dry_run == false }}
 
 jobs:
-  publish:
+  release:
     runs-on: macos-latest
     steps:
       - uses: actions/checkout@v3
@@ -51,7 +51,24 @@ jobs:
           check-latest: true
           node-version-file: .nvmrc
 
-      - run: npm ci --audit false
+      - name: Cache dependencies
+        id: cache
+        uses: actions/cache@v3
+        with:
+          path: |
+            ./node_modules
+          key: ${{ runner.os }}-nodemodules-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.cache.outputs.cache-hit != 'true'
+        run: npm ci --audit false
+
+      - name: Bumb version
+        id: bump_version
+        run: |
+          npm version ${{ github.event.inputs.bump }}
+          git push --follow-tags
+          echo ::set-output name=new_tag::$(git describe --tags --abbrev=0)
 
       - name: Make
         run: npm run make
@@ -60,18 +77,17 @@ jobs:
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
-      - name: Bump version and push tag
-        id: tag_version
+      - name: Generate changelog
+        id: changelog
         uses: mathieudutour/github-tag-action@v6.1
         with:
-          default_bump: ${{ github.event.inputs.bump }}
+          custom_tag: ${{ steps.bump_version.outputs.new_tag }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create a GitHub release
-        if: ${{ github.event.inputs.dry_run == false }}
         uses: ncipollo/release-action@v1
         with:
-          tag: ${{ steps.tag_version.outputs.new_tag }}
-          name: Release ${{ steps.tag_version.outputs.new_tag }}
-          body: ${{ steps.tag_version.outputs.changelog }}
+          tag: ${{ steps.bump_version.outputs.new_tag }}
+          name: Release ${{ steps.bump_version.outputs.new_tag }}
+          body: ${{ steps.changelog.outputs.changelog }}
           artifacts: 'out/**/*.zip'
