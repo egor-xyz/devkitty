@@ -27,7 +27,13 @@ const forgeConfig: ForgeConfig = {
       teamId: process.env.APPLE_TEAM_ID || '',
       tool: 'notarytool'
     },
-    osxSign: isDev ? undefined : {},
+    osxSign: isDev ? undefined : {
+      optionsForFile: () => {
+        return {
+          entitlements: "./plist/entitlements.plist",
+        };
+      },
+    },
     osxUniversal: {
       mergeASARs: true
     },
