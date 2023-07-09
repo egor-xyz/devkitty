@@ -83,7 +83,7 @@ jobs:
       - name: Push changes and tags
         if: github.event.inputs.dry_run == false
         run: |
-          git push --follow-tags
+          git push
 
       - name: Create a GitHub release
         uses: ncipollo/release-action@v1
