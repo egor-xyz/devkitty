@@ -50,6 +50,7 @@ const createWindow = (): void => {
   });
 
   mainWindow.on('close', () => {
+    if (!isDev && mainWindow.webContents.isDevToolsOpened()) return;
     settings.set('windowBounds', mainWindow.getBounds());
   });
 
