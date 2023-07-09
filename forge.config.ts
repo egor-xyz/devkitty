@@ -15,7 +15,7 @@ const isDev = process.env.IS_DEV === 'true';
 const forgeConfig: ForgeConfig = {
   makers: [new MakerZIP({}, ['darwin'])],
   packagerConfig: {
-    appBundleId: 'app.devkitty',
+    appBundleId: 'com.egor-xyz.devkitty',
     appCategoryType: 'public.app-category.developer-tools',
     appCopyright: 'Copyright © 2023 Devkitty',
     appVersion: version,
