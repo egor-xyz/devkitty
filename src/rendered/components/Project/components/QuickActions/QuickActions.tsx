@@ -1,12 +1,12 @@
-import { Button, ButtonGroup, Classes, IconName, MaybeElement } from '@blueprintjs/core';
+import { Button, ButtonGroup, Classes } from '@blueprintjs/core';
 import { FC, useState } from 'react';
 
-import { useAppSettings } from 'rendered/hooks/useAppSettings';
+// import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { GitStatus, Project } from 'types/project';
 import { useModal } from 'rendered/hooks/useModal';
 
-import VSCode from '../../assets/vscode.svg';
-import Warp from '../../assets/Warp.svg';
+// import VSCode from '../../assets/vscode.svg';
+// import Warp from '../../assets/Warp.svg';
 
 type Props = {
   gitStatus: GitStatus;
@@ -16,7 +16,7 @@ type Props = {
 
 export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
   const [copyIcon, setCopyIcon] = useState<'clipboard' | 'saved'>('clipboard');
-  const { selectedEditor, selectedShell } = useAppSettings();
+  // const { selectedEditor, selectedShell } = useAppSettings();
   const { openModal } = useModal();
 
   const copyToClipboard = () => {
@@ -26,21 +26,21 @@ export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
     navigator.clipboard.writeText(gitStatus?.branchSummary?.current);
   };
 
-  const openInEditor = () => {
-    window.bridge.launch.editor(project.filePath, selectedEditor);
-  };
+  // const openInEditor = () => {
+  //   window.bridge.launch.editor(project.filePath, selectedEditor);
+  // };
 
-  const openInShell = () => {
-    window.bridge.launch.shell(project.filePath, selectedShell);
-  };
+  // const openInShell = () => {
+  //   window.bridge.launch.shell(project.filePath, selectedShell);
+  // };
 
   const openMerge = () => {
     openModal({ name: 'git:merge', props: { gitStatus, id: project.id, name: project.name } });
   };
 
-  const shellIcon: IconName | MaybeElement = selectedShell.shell === 'Warp' ? <Warp height={15} /> : 'console';
-  const editorIcon: IconName | MaybeElement =
-    selectedEditor?.editor === 'Visual Studio Code' ? <VSCode height={15} /> : 'code';
+  // const shellIcon: IconName | MaybeElement = selectedShell?.shell === 'Warp' ? <Warp height={15} /> : 'console';
+  // const editorIcon: IconName | MaybeElement =
+  //   selectedEditor?.editor === 'Visual Studio Code' ? <VSCode height={15} /> : 'code';
 
   return (
     <ButtonGroup className={!gitStatus && Classes.SKELETON}>
@@ -50,7 +50,7 @@ export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
         onClick={copyToClipboard}
       />
 
-      <Button
+      {/* <Button
         icon={shellIcon}
         title={`Open in ${selectedShell?.shell}`}
         onClick={openInShell}
@@ -60,7 +60,7 @@ export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
         icon={editorIcon}
         title={`Open in ${selectedEditor?.editor}`}
         onClick={openInEditor}
-      />
+      /> */}
 
       <Button
         icon={'git-merge'}
