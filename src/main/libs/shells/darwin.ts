@@ -1,5 +1,6 @@
 import { spawn, ChildProcess } from 'child_process';
 
+import log from 'electron-log';
 import appPath from 'app-path';
 
 import { FoundShell } from 'types/foundShell';
@@ -56,6 +57,8 @@ async function getShellPath(shell: Shell): Promise<string | null> {
     return await appPath(bundleId);
   } catch (e) {
     // `appPath` will raise an error if it cannot find the program.
+    log.info(`Unable to locate shell: ${shell} installation`);
+    log.info(e);
     return null;
   }
 }

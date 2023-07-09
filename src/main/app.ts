@@ -8,6 +8,8 @@ import './ipcs';
 import { settings } from './settings';
 import { updateAppSettings } from './utils/updateAppSettings';
 
+log.initialize({ preload: true, spyRendererConsole: true });
+
 log.info('--------------------------------------------------');
 log.info('App starting...');
 
@@ -24,8 +26,6 @@ declare const MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY: string;
 
 // Initialize app & settings
 const isDev = process.env.NODE_ENV === 'development';
-
-log.initialize({ preload: true });
 
 app.name = 'Devkitty';
 
