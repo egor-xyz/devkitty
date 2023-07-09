@@ -92,4 +92,4 @@ jobs:
           name: Release v${{ steps.version.outputs.new_tag }}
           body: ${{ steps.changelog.outputs.changelog }}
           artifacts: 'out/**/*.zip'
-          draft: ${{ github.event.inputs.dry_run }}
+          draft: true
