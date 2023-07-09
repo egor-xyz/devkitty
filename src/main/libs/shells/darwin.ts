@@ -58,7 +58,6 @@ async function getShellPath(shell: Shell): Promise<string | null> {
   } catch (e) {
     // `appPath` will raise an error if it cannot find the program.
     log.info(`Unable to locate shell: ${shell} installation`);
-    log.info(e);
     return null;
   }
 }
