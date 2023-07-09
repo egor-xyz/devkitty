@@ -81,7 +81,7 @@ jobs:
           dry_run: 'true'
 
       - name: Push changes and tags
-        if: github.event.inputs.dry_run == false
+        if: github.event.inputs.dry_run != 'true'
         run: |
           git push
 
