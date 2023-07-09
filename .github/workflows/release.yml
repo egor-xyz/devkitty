@@ -55,10 +55,11 @@ jobs:
         run: npm ci --audit false
 
       - name: Bumb version
+        id: version
         run: |
           npm version ${{ github.event.inputs.bump }}
           git push --follow-tags
-          echo "new_tag=$(git describe --tags --abbrev=0)" >> $NEW_TAG
+          echo "new_tag=$(git describe --tags --abbrev=0 | sed 's/v//')" >> $GITHUB_OUTPUT
 
       - name: Make
         run: |
@@ -75,15 +76,14 @@ jobs:
         id: changelog
         uses: mathieudutour/github-tag-action@v6.1
         with:
-          # remove v prefix from $NEW_TAG
-          custom_tag: ${NEW_TAG:1}
+          custom_tag: ${{ steps.version.outputs.new_tag }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           dry_run: true
 
       - name: Create a GitHub release
         uses: ncipollo/release-action@v1
         with:
-          tag: ${NEW_TAG}
-          name: Release ${NEW_TAG}
+          tag: v${{ steps.version.outputs.new_tag }}
+          name: Release v${{ steps.version.outputs.new_tag }}
           body: ${{ steps.changelog.outputs.changelog }}
           artifacts: 'out/**/*.zip'
