@@ -10,24 +10,24 @@ import { version } from './package.json';
 
 config();
 
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = !process.env.CI;
 
 const forgeConfig: ForgeConfig = {
   makers: [new MakerZIP({}, ['darwin'])],
   packagerConfig: {
-    appBundleId: 'com.egor-xyz.devkitty',
+    appBundleId: 'app.devkitty',
     appCategoryType: 'public.app-category.developer-tools',
     appVersion: version,
     executableName: 'devkitty',
     icon: './icons/icon',
     name: 'Devkitty',
-    osxNotarize: {
+    osxNotarize: isDev ? undefined :  {
       appleId: process.env.APPLE_ID || '',
       appleIdPassword: process.env.APPLE_ID_PASSWORD || '',
       teamId: process.env.APPLE_TEAM_ID || '',
       tool: 'notarytool'
     },
-    osxSign: {},
+    osxSign: isDev ? undefined : {},
     osxUniversal: {
       mergeASARs: true
     },

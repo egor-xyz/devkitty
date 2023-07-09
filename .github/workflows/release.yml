@@ -1,13 +1,29 @@
-# yaml-language-server: $schema=https://json.schemastore.org/github-workflow.json
-
-name: Publish
+name: Release
 
 on:
   workflow_dispatch:
+    inputs:
+      bump:
+        type: choice
+        description: 'Bump version'
+        required: true
+        default: patch
+        options:
+          - patch
+          - minor
+          - major
+      dry_run:
+        type: boolean
+        description: 'Dry run'
+        required: true
+        default: false
 
 concurrency:
   group: ${{ github.event.repository.name }}-release
   cancel-in-progress: true
+
+env:
+  CI: ${{ github.event.inputs.dry_run == false }}
 
 jobs:
   publish:
@@ -35,7 +51,7 @@ jobs:
           check-latest: true
           node-version-file: .nvmrc
 
-      - run: npm ci
+      - run: npm ci --audit false
 
       - name: Make
         run: npm run make
@@ -48,10 +64,11 @@ jobs:
         id: tag_version
         uses: mathieudutour/github-tag-action@v6.1
         with:
-          default_bump: minor
+          default_bump: ${{ github.event.inputs.bump }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Create a GitHub release
+        if: ${{ github.event.inputs.dry_run == false }}
         uses: ncipollo/release-action@v1
         with:
           tag: ${{ steps.tag_version.outputs.new_tag }}
