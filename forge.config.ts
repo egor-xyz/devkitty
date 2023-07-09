@@ -10,6 +10,8 @@ import { version } from './package.json';
 
 config();
 
+const isDev = process.env.IS_DEV === 'true';
+
 const forgeConfig: ForgeConfig = {
   makers: [new MakerZIP({}, ['darwin'])],
   packagerConfig: {
@@ -19,13 +21,13 @@ const forgeConfig: ForgeConfig = {
     executableName: 'devkitty',
     icon: './icons/icon',
     name: 'Devkitty',
-    osxNotarize: process.env.IS_DEV ? undefined :  {
+    osxNotarize: isDev ? undefined :  {
       appleId: process.env.APPLE_ID || '',
       appleIdPassword: process.env.APPLE_ID_PASSWORD || '',
       teamId: process.env.APPLE_TEAM_ID || '',
       tool: 'notarytool'
     },
-    osxSign: process.env.IS_DEV ? undefined : {},
+    osxSign: isDev ? undefined : {},
     osxUniversal: {
       mergeASARs: true
     },
