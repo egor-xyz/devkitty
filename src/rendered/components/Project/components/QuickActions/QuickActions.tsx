@@ -52,7 +52,7 @@ export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
 
       <Button
         icon={shellIcon}
-        title={`Open in ${selectedShell.shell}`}
+        title={`Open in ${selectedShell?.shell}`}
         onClick={openInShell}
       />
 
