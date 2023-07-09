@@ -78,7 +78,7 @@ jobs:
         with:
           custom_tag: ${{ steps.version.outputs.new_tag }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          dry_run: true
+          dry_run: 'true'
 
       - name: Push changes and tags
         if: ${{ github.event.inputs.dry_run }} == false
