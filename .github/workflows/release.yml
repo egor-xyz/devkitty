@@ -58,7 +58,6 @@ jobs:
         id: version
         run: |
           npm version ${{ github.event.inputs.bump }}
-          git push --follow-tags
           echo "new_tag=$(git describe --tags --abbrev=0 | sed 's/v//')" >> $GITHUB_OUTPUT
 
       - name: Make
@@ -80,6 +79,11 @@ jobs:
           custom_tag: ${{ steps.version.outputs.new_tag }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
           dry_run: true
+
+      - name: Push changes and tags
+        if: ${{ github.event.inputs.dry_run }} == false
+        run: |
+          git push
 
       - name: Create a GitHub release
         uses: ncipollo/release-action@v1
