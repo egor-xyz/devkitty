@@ -1,12 +1,13 @@
 {
   "name": "devkitty",
   "productName": "Devkitty",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "Swift army knife for developers",
   "main": ".webpack/main",
   "scripts": {
     "start": "ELECTRON_DISABLE_SECURITY_WARNINGS=true electron-forge start",
     "package": "NODE_ENV=production electron-forge package --platform=darwin --arch=x64,arm64",
+    "package:arm": "NODE_ENV=production electron-forge package --platform=darwin --arch=arm64",
     "make": "electron-forge make --arch=x64,arm64",
     "make:dev": "electron-forge make --arch=arm64",
     "make:arm": "electron-forge make --arch=arm64",

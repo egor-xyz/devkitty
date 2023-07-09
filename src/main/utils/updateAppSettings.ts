@@ -1,5 +1,6 @@
 import { type BrowserWindow } from 'electron';
 
+import log from 'electron-log';
 import { isEqual } from 'lodash';
 
 import { getAvailableEditors } from '../libs/editors/darwin';
@@ -8,6 +9,7 @@ import { getAvailableShells } from '../libs/shells/darwin';
 
 const updateEditors = async () => {
   const editors = await getAvailableEditors();
+  log.info('Available editors', editors);
   settings.set('appSettings.editors', editors);
   if (
     !settings.get('appSettings.selectedEditor') ||
@@ -19,6 +21,7 @@ const updateEditors = async () => {
 
 const updateShells = async () => {
   const shells = await getAvailableShells();
+  log.info('Available shells', shells);
   settings.set('appSettings.shells', shells);
   if (
     !settings.get('appSettings.selectedShell') ||
