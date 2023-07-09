@@ -78,6 +78,7 @@ jobs:
           # remove v prefix from $NEW_TAG
           custom_tag: ${NEW_TAG:1}
           github_token: ${{ secrets.GITHUB_TOKEN }}
+          dry_run: true
 
       - name: Create a GitHub release
         uses: ncipollo/release-action@v1
