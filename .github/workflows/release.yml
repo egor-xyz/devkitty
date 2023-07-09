@@ -38,12 +38,6 @@ jobs:
           git config user.name github-actions
           git config user.email github-actions@github.com
 
-      - name: Add MacOS certs
-        run: chmod +x add-osx-cert.sh && ./add-osx-cert.sh
-        env:
-          CERTIFICATE_OSX_APPLICATION: ${{ secrets.CERTIFICATE_OSX_APPLICATION }}
-          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
-
       - uses: actions/setup-node@v3
         with:
           always-auth: true
@@ -57,7 +51,7 @@ jobs:
         with:
           path: |
             ./node_modules
-          key: ${{ runner.os }}-nodemodules-${{ env.cache-name }}-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-nodemodules-devkitty-${{ hashFiles('**/package-lock.json') }}
 
       - name: Install dependencies
         if: steps.cache.outputs.cache-hit != 'true'
@@ -71,11 +65,15 @@ jobs:
           echo ::set-output name=new_tag::$(git describe --tags --abbrev=0)
 
       - name: Make
-        run: npm run make
+        run: |
+          chmod +x add-osx-cert.sh && ./add-osx-cert.sh
+          npm run make
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+          CERTIFICATE_OSX_APPLICATION: ${{ secrets.CERTIFICATE_OSX_APPLICATION }}
+          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
 
       - name: Generate changelog
         id: changelog
