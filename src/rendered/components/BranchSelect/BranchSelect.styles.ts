@@ -20,6 +20,7 @@ export const SelectButton = styled(Button)`
     margin-left: 2px;
     overflow: hidden;
     text-overflow: ellipsis;
+    white-space: nowrap;
   }
 `;
 
