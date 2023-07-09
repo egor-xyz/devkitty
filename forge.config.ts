@@ -17,9 +17,19 @@ const forgeConfig: ForgeConfig = {
   packagerConfig: {
     appBundleId: 'app.devkitty',
     appCategoryType: 'public.app-category.developer-tools',
+    appCopyright: 'Copyright © 2023 Devkitty',
     appVersion: version,
+    asar: false,
+    darwinDarkModeSupport: true,
     executableName: 'devkitty',
+    extendInfo: './extend.plist',
     icon: './icons/icon',
+    ignore: [
+      new RegExp('/node_modules/electron($|/)'),
+      new RegExp('/node_modules/electron-packager($|/)'),
+      new RegExp('/\\.git($|/)'),
+      new RegExp('/node_modules/\\.bin($|/)')
+    ],
     name: 'Devkitty',
     osxNotarize: isDev
       ? undefined
@@ -32,18 +42,14 @@ const forgeConfig: ForgeConfig = {
     osxSign: isDev
       ? undefined
       : {
-          optionsForFile: () => ({
-            entitlements: './script/entitlements.mac.plist',
+          identityValidation: !isDev,
+          optionsForFile: (path: string) => ({
+            entitlements: './entitlements.mac.plist',
             hardenedRuntime: true
-          })
+          }),
+          type: 'distribution'
         },
-    osxUniversal: {
-      mergeASARs: true
-    },
-    win32metadata: {
-      CompanyName: 'Devkitty',
-      OriginalFilename: 'Devkitty'
-    }
+    overwrite: true
   },
   plugins: [
     new WebpackPlugin({

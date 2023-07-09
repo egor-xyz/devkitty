@@ -1,5 +1,6 @@
 import { app, BrowserWindow, nativeTheme } from 'electron';
 
+import appPath from 'app-path';
 import log from 'electron-log';
 import updater from 'update-electron-app';
 
@@ -12,6 +13,17 @@ log.initialize({ preload: true, spyRendererConsole: true });
 
 log.info('--------------------------------------------------');
 log.info('App starting...');
+
+log.info('--------------------------------------------------');
+try {
+  log.info('App paths:');
+  log.info(appPath.sync('Visual Studio Code'));
+  log.info(appPath.sync('Safari'));
+  log.info(appPath.sync('iTerm'));
+} catch (error) {
+  log.info('Unable to locate app installation', error);
+}
+log.info('--------------------------------------------------');
 
 updater({
   logger: log,
