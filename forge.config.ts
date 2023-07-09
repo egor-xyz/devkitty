@@ -21,19 +21,22 @@ const forgeConfig: ForgeConfig = {
     executableName: 'devkitty',
     icon: './icons/icon',
     name: 'Devkitty',
-    osxNotarize: isDev ? undefined :  {
-      appleId: process.env.APPLE_ID || '',
-      appleIdPassword: process.env.APPLE_ID_PASSWORD || '',
-      teamId: process.env.APPLE_TEAM_ID || '',
-      tool: 'notarytool'
-    },
-    osxSign: isDev ? undefined : {
-      optionsForFile: () => {
-        return {
-          entitlements: "./plist/entitlements.plist",
-        };
-      },
-    },
+    osxNotarize: isDev
+      ? undefined
+      : {
+          appleId: process.env.APPLE_ID || '',
+          appleIdPassword: process.env.APPLE_ID_PASSWORD || '',
+          teamId: process.env.APPLE_TEAM_ID || '',
+          tool: 'notarytool'
+        },
+    osxSign: isDev
+      ? undefined
+      : {
+          optionsForFile: () => ({
+            entitlements: './script/entitlements.mac.plist',
+            hardenedRuntime: true
+          })
+        },
     osxUniversal: {
       mergeASARs: true
     },

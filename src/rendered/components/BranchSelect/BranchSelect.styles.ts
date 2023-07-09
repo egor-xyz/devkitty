@@ -1,4 +1,4 @@
-import { Button, Classes, Colors, MenuItem } from '@blueprintjs/core';
+import { Button, Classes, MenuItem } from '@blueprintjs/core';
 import styled, { createGlobalStyle } from 'styled-components';
 
 // Styles for the popover (portal)
