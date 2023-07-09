@@ -2,7 +2,7 @@ import { Tabs } from '@blueprintjs/core';
 
 import { Root } from './Settings.styles';
 import { SettingsAppearance } from '../SettingsAppearance';
-// import { SettingsIntegrations } from '../SettingsIntegrations';
+import { SettingsIntegrations } from '../SettingsIntegrations';
 import { SettingsGroups } from '../SettingsGroups';
 
 export const Settings = () => (
@@ -18,12 +18,12 @@ export const Settings = () => (
         title="Appearance"
       />
 
-      {/* <Tabs.Tab
+      <Tabs.Tab
         icon="data-lineage"
         id="integrations"
         panel={<SettingsIntegrations />}
         title="Integrations"
-      /> */}
+      />
 
       <Tabs.Tab
         icon="group-objects"
