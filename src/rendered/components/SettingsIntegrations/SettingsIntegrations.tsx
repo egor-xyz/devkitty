@@ -25,7 +25,7 @@ export const SettingsIntegrations = () => {
           filterable={false}
           itemRenderer={(editor, { index, handleClick }) => (
             <MenuItem
-              disabled={editor.editor === selectedEditor.editor}
+              disabled={editor.editor === selectedEditor?.editor}
               key={index}
               text={editor.editor}
               onClick={handleClick}
@@ -54,7 +54,7 @@ export const SettingsIntegrations = () => {
           items={shells}
           onItemSelect={(selectedShell) => set({ selectedShell })}
         >
-          <Button rightIcon="caret-down">{selectedShell.shell}</Button>
+          <Button rightIcon="caret-down">{selectedShell?.shell}</Button>
         </Select>
       </Row>
     </Root>
