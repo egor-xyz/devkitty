@@ -19,13 +19,13 @@ const forgeConfig: ForgeConfig = {
     executableName: 'devkitty',
     icon: './icons/icon',
     name: 'Devkitty',
-    osxNotarize: !process.env.APP_SIGN ? undefined :  {
+    osxNotarize: process.env.IS_DEV ? undefined :  {
       appleId: process.env.APPLE_ID || '',
       appleIdPassword: process.env.APPLE_ID_PASSWORD || '',
       teamId: process.env.APPLE_TEAM_ID || '',
       tool: 'notarytool'
     },
-    osxSign: !process.env.APP_SIGN ? undefined : {},
+    osxSign: process.env.IS_DEV ? undefined : {},
     osxUniversal: {
       mergeASARs: true
     },
