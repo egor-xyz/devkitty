@@ -1,4 +1,4 @@
-import { Button, ButtonGroup, Classes } from '@blueprintjs/core';
+import { Button, ButtonGroup, Classes, IconName, MaybeElement } from '@blueprintjs/core';
 import { FC, useState } from 'react';
 
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
