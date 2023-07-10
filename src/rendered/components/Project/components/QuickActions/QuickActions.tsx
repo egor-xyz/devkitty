@@ -42,7 +42,7 @@ export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
   const editorIcon: IconName | MaybeElement =
     selectedEditor?.editor === 'Visual Studio Code' ? <VSCode height={15} /> : 'code';
 
-  const showIntegrations = selectedEditor && selectedShell;
+  const showIntegrations = Boolean(selectedEditor && selectedShell);
 
   return (
     <ButtonGroup className={!gitStatus && Classes.SKELETON}>
