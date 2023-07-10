@@ -5,7 +5,7 @@ import { isEqual } from 'lodash';
 
 import { getAvailableEditors } from '../libs/editors/darwin';
 import { settings } from '../settings';
-import { getAvailableShells } from '../libs/shells/darwin';
+import { getAvailableShells } from '../libs/integrations/shellsLaunch';
 
 const updateEditors = async () => {
   const editors = await getAvailableEditors();

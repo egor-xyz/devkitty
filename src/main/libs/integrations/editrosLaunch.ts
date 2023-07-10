@@ -1,7 +1,7 @@
 import { spawn, SpawnOptions } from 'child_process';
 
 import { FoundEditor, ExternalEditorError } from '../../../types/foundEditor';
-import { pathExists } from '../path-exists';
+import { pathExists } from './path-exists';
 
 const darwin = true;
 
