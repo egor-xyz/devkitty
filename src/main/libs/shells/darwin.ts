@@ -1,10 +1,8 @@
 import { spawn, ChildProcess } from 'child_process';
 
-import log from 'electron-log';
 import appPath from 'app-path';
 
-import { FoundShell } from 'types/foundShell';
-
+import { FoundShell as IFoundShell } from '../../../types/foundShell';
 import { assertNever } from '../fatal-error';
 import { parseEnumValue } from '../enum';
 
@@ -57,12 +55,11 @@ async function getShellPath(shell: Shell): Promise<string | null> {
     return await appPath(bundleId);
   } catch (e) {
     // `appPath` will raise an error if it cannot find the program.
-    log.info(`Unable to locate shell: ${shell} installation`);
     return null;
   }
 }
 
-export async function getAvailableShells(): Promise<ReadonlyArray<FoundShell<Shell>>> {
+export async function getAvailableShells(): Promise<ReadonlyArray<IFoundShell<Shell>>> {
   const [
     terminalPath,
     hyperPath,
@@ -85,7 +82,7 @@ export async function getAvailableShells(): Promise<ReadonlyArray<FoundShell<She
     getShellPath(Shell.Warp)
   ]);
 
-  const shells: Array<FoundShell<Shell>> = [];
+  const shells: Array<IFoundShell<Shell>> = [];
   if (terminalPath) {
     shells.push({ path: terminalPath, shell: Shell.Terminal });
   }
@@ -130,7 +127,7 @@ export async function getAvailableShells(): Promise<ReadonlyArray<FoundShell<She
   return shells;
 }
 
-export function launchExternalShell(foundShell: FoundShell<Shell>, path: string): ChildProcess {
+export function launch(foundShell: IFoundShell<Shell>, path: string): ChildProcess {
   if (foundShell.shell === Shell.Kitty) {
     // kitty does not handle arguments as expected when using `open` with
     // an existing session but closed window (it reverts to the previous

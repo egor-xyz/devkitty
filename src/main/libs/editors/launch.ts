@@ -1,7 +1,9 @@
 import { spawn, SpawnOptions } from 'child_process';
 
+import { FoundEditor, ExternalEditorError } from '../../../types/foundEditor';
 import { pathExists } from '../path-exists';
-import { ExternalEditorError, FoundEditor } from '../../../types/foundEditor';
+
+const darwin = true;
 
 /**
  * Open a given file or folder in the desired external editor.
@@ -13,7 +15,7 @@ export async function launchExternalEditor(fullPath: string, editor: FoundEditor
   const editorPath = editor.path;
   const exists = await pathExists(editorPath);
   if (!exists) {
-    const label = 'Settings';
+    const label = darwin ? 'Settings' : 'Options';
     throw new ExternalEditorError(
       `Could not find executable for '${editor.editor}' at path '${editor.path}'.  Please open ${label} and select an available editor.`,
       { openPreferences: true }
@@ -29,9 +31,11 @@ export async function launchExternalEditor(fullPath: string, editor: FoundEditor
 
   if (editor.usesShell) {
     spawn(`"${editorPath}"`, [`"${fullPath}"`], { ...opts, shell: true });
-  } else {
+  } else if (darwin) {
     // In macOS we can use `open`, which will open the right executable file
     // for us, we only need the path to the editor .app folder.
     spawn('open', ['-a', editorPath, fullPath], opts);
+  } else {
+    spawn(editorPath, [fullPath], opts);
   }
 }
