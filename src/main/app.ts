@@ -1,13 +1,11 @@
 import { app, BrowserWindow, nativeTheme } from 'electron';
 
-import appPath from 'app-path';
 import log from 'electron-log';
 import updateElectronApp from 'update-electron-app';
 
 import './ipcs';
 
 import { settings } from './settings';
-import { updateAppSettings } from './utils/updateAppSettings';
 import { updateEditorsAndShells } from './libs/integrations/integrations';
 
 log.initialize({ preload: true, spyRendererConsole: false });
