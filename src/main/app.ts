@@ -1,5 +1,6 @@
 import { app, BrowserWindow, nativeTheme } from 'electron';
 
+import { getInstalledApps } from 'get-installed-apps';
 import appPath from 'app-path';
 import log from 'electron-log';
 import updateElectronApp from 'update-electron-app';
@@ -13,7 +14,9 @@ log.initialize({ preload: true, spyRendererConsole: false });
 
 log.info('--------------------------------------------------');
 log.info('App starting...');
-
+getInstalledApps().then((apps: any) => {
+  log.info(apps);
+});
 log.info('--------------------------------------------------');
 try {
   log.info('Test integrations');
