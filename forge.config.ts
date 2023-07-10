@@ -17,33 +17,37 @@ const forgeConfig: ForgeConfig = {
   packagerConfig: {
     appBundleId: 'app.devkitty',
     appCategoryType: 'public.app-category.developer-tools',
+    appCopyright: 'Copyright © 2023 Devkitty',
     appVersion: version,
-    executableName: 'devkitty',
+    executableName: 'Devkitty',
+    extendInfo: './extend.plist',
     icon: './icons/icon',
+    ignore: [
+      new RegExp('/node_modules/electron($|/)'),
+      new RegExp('/node_modules/electron-packager($|/)'),
+      new RegExp('/\\.git($|/)'),
+      new RegExp('/node_modules/\\.bin($|/)')
+    ],
     name: 'Devkitty',
-    osxNotarize: isDev
-      ? undefined
-      : {
+    osxNotarize: !isDev
+      ? {
+          // appleApiIssuer: process.env.APPLE_API_ISSUER || '',
+          // appleApiKey: process.env.APPLE_API_KEY || '',
+          // appleApiKeyId: process.env.APPLE_API_KEY_ID || '',
           appleId: process.env.APPLE_ID || '',
           appleIdPassword: process.env.APPLE_ID_PASSWORD || '',
           teamId: process.env.APPLE_TEAM_ID || '',
           tool: 'notarytool'
-        },
-    osxSign: isDev
-      ? undefined
-      : {
-          optionsForFile: () => ({
-            entitlements: './script/entitlements.mac.plist',
-            hardenedRuntime: true
+        }
+      : undefined,
+    osxSign: !isDev
+      ? {
+          optionsForFile: (path: string) => ({
+            entitlements: './entitlements.mac.plist'
           })
-        },
-    osxUniversal: {
-      mergeASARs: true
-    },
-    win32metadata: {
-      CompanyName: 'Devkitty',
-      OriginalFilename: 'Devkitty'
-    }
+        }
+      : undefined,
+    overwrite: true
   },
   plugins: [
     new WebpackPlugin({

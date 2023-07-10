@@ -1,19 +1,30 @@
 import { app, BrowserWindow, nativeTheme } from 'electron';
 
+import appPath from 'app-path';
 import log from 'electron-log';
-import updater from 'update-electron-app';
+import updateElectronApp from 'update-electron-app';
 
 import './ipcs';
 
 import { settings } from './settings';
 import { updateAppSettings } from './utils/updateAppSettings';
 
-log.initialize({ preload: true, spyRendererConsole: true });
+log.initialize({ preload: true, spyRendererConsole: false });
 
 log.info('--------------------------------------------------');
 log.info('App starting...');
 
-updater({
+log.info('--------------------------------------------------');
+try {
+  log.info('Test integrations');
+  log.info(appPath.sync('Safari'));
+} catch (error) {
+  log.info('Unable to locate app installation');
+  log.info(error);
+}
+log.info('--------------------------------------------------');
+
+updateElectronApp({
   logger: log,
   updateInterval: '5 minutes'
 });
@@ -42,6 +53,7 @@ const createWindow = (): void => {
     titleBarStyle: 'hidden',
     trafficLightPosition: { x: 15, y: 17 },
     webPreferences: {
+      nodeIntegration: true,
       preload: MAIN_WINDOW_PRELOAD_WEBPACK_ENTRY
     },
     width,

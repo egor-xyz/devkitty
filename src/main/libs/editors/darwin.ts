@@ -1,8 +1,8 @@
 import appPath from 'app-path';
 import log from 'electron-log';
 
+import { FoundEditor as IFoundEditor } from '../../../types/foundEditor';
 import { pathExists } from '../path-exists';
-import { FoundEditor } from '../../../types/foundEditor';
 
 /** Represents an external editor on macOS */
 interface IDarwinExternalEditor {
@@ -182,9 +182,9 @@ async function findApplication(editor: IDarwinExternalEditor): Promise<string | 
         return installPath;
       }
 
-      log.info(`App installation for ${editor.name} not found at '${installPath}'`);
+      // log.debug(`App installation for ${editor.name} not found at '${installPath}'`);
     } catch (error) {
-      log.info(`Unable to locate ${editor.name} installation`, error);
+      log.debug(`Unable to locate ${editor.name} installation`, error);
     }
   }
 
@@ -195,8 +195,8 @@ async function findApplication(editor: IDarwinExternalEditor): Promise<string | 
  * Lookup known external editors using the bundle ID that each uses
  * to register itself on a user's machine when installing.
  */
-export async function getAvailableEditors(): Promise<ReadonlyArray<FoundEditor>> {
-  const results: Array<FoundEditor> = [];
+export async function getAvailableEditors(): Promise<ReadonlyArray<IFoundEditor>> {
+  const results: Array<IFoundEditor> = [];
 
   for (const editor of editors) {
     const path = await findApplication(editor);
