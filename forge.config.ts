@@ -20,7 +20,7 @@ const forgeConfig: ForgeConfig = {
     appCopyright: 'Copyright © 2023 Devkitty',
     appVersion: version,
     executableName: 'Devkitty',
-    extendInfo: './extend.plist',
+    // extendInfo: './extend.plist',
     icon: './icons/icon',
     name: 'Devkitty',
     osxNotarize: !isDev
