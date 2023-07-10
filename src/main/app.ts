@@ -1,5 +1,6 @@
 import { app, BrowserWindow, nativeTheme } from 'electron';
 
+// @ts-ignore
 import { getInstalledApps } from 'get-installed-apps';
 import appPath from 'app-path';
 import log from 'electron-log';
