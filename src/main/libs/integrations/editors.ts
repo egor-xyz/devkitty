@@ -1,26 +1,9 @@
-import appPath from 'app-path';
-import log from 'electron-log';
+type Editor = {
+  bundleIdentifiers: string[];
+  name: string;
+};
 
-import { FoundEditor as IFoundEditor } from '../../../types/foundEditor';
-import { pathExists } from '../path-exists';
-
-/** Represents an external editor on macOS */
-interface IDarwinExternalEditor {
-  /**
-   * List of bundle identifiers that are used by the app in its multiple
-   * versions.
-   **/
-  readonly bundleIdentifiers: string[];
-
-  /** Name of the editor. It will be used both as identifier and user-facing. */
-  readonly name: string;
-}
-
-/**
- * This list contains all the external editors supported on macOS. Add a new
- * entry here to add support for your favorite editor.
- **/
-const editors: IDarwinExternalEditor[] = [
+const editors: Editor[] = [
   {
     bundleIdentifiers: ['com.github.atom'],
     name: 'Atom'
@@ -168,43 +151,4 @@ const editors: IDarwinExternalEditor[] = [
   }
 ];
 
-async function findApplication(editor: IDarwinExternalEditor): Promise<string | null> {
-  for (const identifier of editor.bundleIdentifiers) {
-    try {
-      // app-path not finding the app isn't an error, it just means the
-      // bundle isn't registered on the machine.
-      // https://github.com/sindresorhus/app-path/blob/0e776d4e132676976b4a64e09b5e5a4c6e99fcba/index.js#L7-L13
-      const installPath = await appPath(identifier).catch((e) =>
-        e.message === "Couldn't find the app" ? Promise.resolve(null) : Promise.reject(e)
-      );
-
-      if (installPath && (await pathExists(installPath))) {
-        return installPath;
-      }
-
-      // log.debug(`App installation for ${editor.name} not found at '${installPath}'`);
-    } catch (error) {
-      log.debug(`Unable to locate ${editor.name} installation`, error);
-    }
-  }
-
-  return null;
-}
-
-/**
- * Lookup known external editors using the bundle ID that each uses
- * to register itself on a user's machine when installing.
- */
-export async function getAvailableEditors(): Promise<ReadonlyArray<IFoundEditor>> {
-  const results: Array<IFoundEditor> = [];
-
-  for (const editor of editors) {
-    const path = await findApplication(editor);
-
-    if (path) {
-      results.push({ editor: editor.name, path });
-    }
-  }
-
-  return results;
-}
+export const editorIds = editors.map((editor) => editor.bundleIdentifiers).flat();
