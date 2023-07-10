@@ -1,32 +1,14 @@
 import { app, BrowserWindow, nativeTheme } from 'electron';
 
-// @ts-ignore
-import { getInstalledApps } from 'get-installed-apps';
-import appPath from 'app-path';
 import log from 'electron-log';
 import updateElectronApp from 'update-electron-app';
 
 import './ipcs';
 
 import { settings } from './settings';
-import { updateAppSettings } from './utils/updateAppSettings';
+import { updateEditorsAndShells } from './libs/integrations/integrations';
 
 log.initialize({ preload: true, spyRendererConsole: false });
-
-log.info('--------------------------------------------------');
-log.info('App starting...');
-getInstalledApps().then((apps: any) => {
-  log.info(apps);
-});
-log.info('--------------------------------------------------');
-try {
-  log.info('Test integrations');
-  log.info(appPath.sync('Safari'));
-} catch (error) {
-  log.info('Unable to locate app installation');
-  log.info(error);
-}
-log.info('--------------------------------------------------');
 
 updateElectronApp({
   logger: log,
@@ -73,7 +55,7 @@ const createWindow = (): void => {
   // and load the index.html of the app.
   mainWindow.loadURL(MAIN_WINDOW_WEBPACK_ENTRY);
 
-  updateAppSettings(mainWindow);
+  updateEditorsAndShells(mainWindow);
 
   isDev && mainWindow.webContents.openDevTools();
 

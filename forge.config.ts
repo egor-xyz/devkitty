@@ -20,20 +20,11 @@ const forgeConfig: ForgeConfig = {
     appCopyright: 'Copyright © 2023 Devkitty',
     appVersion: version,
     executableName: 'Devkitty',
-    extendInfo: './extend.plist',
+    // extendInfo: './extend.plist',
     icon: './icons/icon',
-    ignore: [
-      new RegExp('/node_modules/electron($|/)'),
-      new RegExp('/node_modules/electron-packager($|/)'),
-      new RegExp('/\\.git($|/)'),
-      new RegExp('/node_modules/\\.bin($|/)')
-    ],
     name: 'Devkitty',
     osxNotarize: !isDev
       ? {
-          // appleApiIssuer: process.env.APPLE_API_ISSUER || '',
-          // appleApiKey: process.env.APPLE_API_KEY || '',
-          // appleApiKeyId: process.env.APPLE_API_KEY_ID || '',
           appleId: process.env.APPLE_ID || '',
           appleIdPassword: process.env.APPLE_ID_PASSWORD || '',
           teamId: process.env.APPLE_TEAM_ID || '',

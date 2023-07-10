@@ -1,10 +1,7 @@
 import { spawn, ChildProcess } from 'child_process';
 
-import appPath from 'app-path';
-
 import { FoundShell as IFoundShell } from '../../../types/foundShell';
-import { assertNever } from '../fatal-error';
-import { parseEnumValue } from '../enum';
+import { assertNever } from './fatal-error';
 
 export enum Shell {
   Alacritty = 'Alacritty',
@@ -16,12 +13,6 @@ export enum Shell {
   Warp = 'Warp',
   WezTerm = 'WezTerm',
   iTerm2 = 'iTerm2'
-}
-
-export const Default = Shell.Terminal;
-
-export function parse(label: string): Shell {
-  return parseEnumValue(Shell, label) ?? Default;
 }
 
 function getBundleID(shell: Shell): string {
@@ -47,84 +38,6 @@ function getBundleID(shell: Shell): string {
     default:
       return assertNever(shell, `Unknown shell: ${shell}`);
   }
-}
-
-async function getShellPath(shell: Shell): Promise<string | null> {
-  const bundleId = getBundleID(shell);
-  try {
-    return await appPath(bundleId);
-  } catch (e) {
-    // `appPath` will raise an error if it cannot find the program.
-    return null;
-  }
-}
-
-export async function getAvailableShells(): Promise<ReadonlyArray<IFoundShell<Shell>>> {
-  const [
-    terminalPath,
-    hyperPath,
-    iTermPath,
-    powerShellCorePath,
-    kittyPath,
-    alacrittyPath,
-    tabbyPath,
-    wezTermPath,
-    warpPath
-  ] = await Promise.all([
-    getShellPath(Shell.Terminal),
-    getShellPath(Shell.Hyper),
-    getShellPath(Shell.iTerm2),
-    getShellPath(Shell.PowerShellCore),
-    getShellPath(Shell.Kitty),
-    getShellPath(Shell.Alacritty),
-    getShellPath(Shell.Tabby),
-    getShellPath(Shell.WezTerm),
-    getShellPath(Shell.Warp)
-  ]);
-
-  const shells: Array<IFoundShell<Shell>> = [];
-  if (terminalPath) {
-    shells.push({ path: terminalPath, shell: Shell.Terminal });
-  }
-
-  if (hyperPath) {
-    shells.push({ path: hyperPath, shell: Shell.Hyper });
-  }
-
-  if (iTermPath) {
-    shells.push({ path: iTermPath, shell: Shell.iTerm2 });
-  }
-
-  if (powerShellCorePath) {
-    shells.push({ path: powerShellCorePath, shell: Shell.PowerShellCore });
-  }
-
-  if (kittyPath) {
-    const kittyExecutable = `${kittyPath}/Contents/MacOS/kitty`;
-    shells.push({ path: kittyExecutable, shell: Shell.Kitty });
-  }
-
-  if (alacrittyPath) {
-    const alacrittyExecutable = `${alacrittyPath}/Contents/MacOS/alacritty`;
-    shells.push({ path: alacrittyExecutable, shell: Shell.Alacritty });
-  }
-
-  if (tabbyPath) {
-    const tabbyExecutable = `${tabbyPath}/Contents/MacOS/Tabby`;
-    shells.push({ path: tabbyExecutable, shell: Shell.Tabby });
-  }
-
-  if (wezTermPath) {
-    const wezTermExecutable = `${wezTermPath}/Contents/MacOS/wezterm`;
-    shells.push({ path: wezTermExecutable, shell: Shell.WezTerm });
-  }
-
-  if (warpPath) {
-    const warpExecutable = `${warpPath}/Contents/MacOS/stable`;
-    shells.push({ path: warpExecutable, shell: Shell.Warp });
-  }
-
-  return shells;
 }
 
 export function launch(foundShell: IFoundShell<Shell>, path: string): ChildProcess {
