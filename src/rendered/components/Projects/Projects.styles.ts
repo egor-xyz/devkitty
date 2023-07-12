@@ -39,21 +39,3 @@ export const Flag = styled(Ukrain)`
   height: 50px;
   pointer-events: none;
 `;
-
-export const TextLogo = styled.div`
-  position: absolute;
-  z-index: -1;
-  bottom: 15px;
-  left: 15px;
-  padding: 8px 10px;
-  border-radius: 11px;
-  background: #1c2127;
-  box-shadow: 12px 12px 24px #181c21, -12px -12px 24px #20262d;
-  color: ${Colors.DARK_GRAY3};
-  font-size: 20px;
-  user-select: none;
-
-  @media (prefers-color-scheme: light) {
-    display: none;
-  }
-`;

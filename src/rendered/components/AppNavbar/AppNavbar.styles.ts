@@ -1,5 +1,5 @@
 import { Colors, Navbar } from '@blueprintjs/core';
-import styled, { keyframes } from 'styled-components';
+import styled from 'styled-components';
 
 import Devkitty from 'rendered/assets/devKitty.svg';
 
@@ -8,7 +8,6 @@ export const StyledNavbar = styled(Navbar)`
   background-color: ${Colors.LIGHT_GRAY4} !important;
   user-select: none;
   box-shadow: none !important;
-  /* box-shadow: rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px !important; */
   overflow: hidden;
 
   @media (prefers-color-scheme: dark) {
@@ -23,27 +22,14 @@ export const LeftGroup = styled(Navbar.Group)`
   overflow: hidden;
 `;
 
-const textclip = keyframes`
-  to {
-    background-position: 200% center;
-  }
-`;
-
-export const Title = styled(Navbar.Heading)`
+export const Title = styled.div`
   margin-left: 5px;
-  text-transform: uppercase;
-  background-image: linear-gradient(-225deg, #fa0161 0%, #ffd900 29%, #ff1361 67%, #fff800 100%);
-  background-size: auto auto;
-  background-clip: border-box;
-  background-size: 200% auto;
-  color: #fff;
-  background-clip: text;
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
-  animation: ${textclip} 10s linear infinite reverse;
+  font-size: 20px;
+  user-select: none;
 
   @media (prefers-color-scheme: dark) {
     margin-left: -42px;
+    color: ${Colors.DARK_GRAY3};
   }
 `;
 
