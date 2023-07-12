@@ -6,7 +6,7 @@ import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { useDarkMode } from 'rendered/hooks/useDarkMode';
 import { useProjects } from 'rendered/hooks/useProjects';
 
-import { Heading, LeftGroup, Logo, RightGroup, StyledNavbar, TextDivider } from './AppNavbar.styles';
+import { LeftGroup, Logo, RightGroup, StyledNavbar, Shadow, ShadowContainer, Title } from './AppNavbar.styles';
 
 export const AppNavbar = () => {
   const { pathname } = useLocation();
@@ -20,24 +20,23 @@ export const AppNavbar = () => {
 
   const toogleProjectActionCollapsed = () => set({ projectActionCollapsed: !projectActionCollapsed });
 
-  const projectName = pathname === '/' ? 'projects' : pathname.slice(1);
+  const title = pathname === '/' ? 'projects' : pathname.slice(1);
 
   return (
     <StyledNavbar>
       <LeftGroup>
+        {/* <Navbar.Divider /> */}
         <Button
           minimal
           icon="plus"
           onClick={addProject}
         />
 
-        <TextDivider />
+        <ShadowContainer>
+          <Shadow />
+        </ShadowContainer>
 
-        <div>
-          <Heading>
-            {projectName} <span>&#10148;</span>
-          </Heading>
-        </div>
+        <Title>Devkitty</Title>
       </LeftGroup>
 
       <RightGroup align="right">
