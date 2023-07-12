@@ -7,7 +7,7 @@ import { Group } from 'types';
 import { GroupCollapse } from '../GroupCollapse';
 import { Project } from '../Project';
 import { GroupsSelector } from '../ProjectsActions';
-import { Flag, ProjectsWrapper, Root, TextLogo } from './Projects.styles';
+import { Flag, ProjectsWrapper, Root } from './Projects.styles';
 
 const others: Group = { fullName: 'Ungrouped', icon: 'folder-open', id: 'ungrouped', name: 'Ungrouped' };
 
@@ -43,12 +43,7 @@ export const Projects = () => {
     <Root>
       <GroupsSelector />
 
-      {projects.length < 10 && !selectedGroups.length && (
-        <>
-          <TextLogo>Devkitty</TextLogo>
-          <Flag />
-        </>
-      )}
+      <Flag />
 
       <ProjectsWrapper>
         {!selectedGroups.length &&

@@ -20,12 +20,9 @@ export const AppNavbar = () => {
 
   const toogleProjectActionCollapsed = () => set({ projectActionCollapsed: !projectActionCollapsed });
 
-  const title = pathname === '/' ? 'projects' : pathname.slice(1);
-
   return (
     <StyledNavbar>
       <LeftGroup>
-        {/* <Navbar.Divider /> */}
         <Button
           minimal
           icon="plus"
