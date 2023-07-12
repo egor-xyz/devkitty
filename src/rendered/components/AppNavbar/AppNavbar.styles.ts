@@ -7,9 +7,13 @@ export const StyledNavbar = styled(Navbar)`
   -webkit-app-region: drag;
   background-color: ${Colors.LIGHT_GRAY4} !important;
   user-select: none;
+  box-shadow: none !important;
+  /* box-shadow: rgba(0, 0, 0, 0.15) 1.95px 1.95px 2.6px !important; */
+  overflow: hidden;
 
   @media (prefers-color-scheme: dark) {
     background-color: ${Colors.DARK_GRAY1} !important;
+    border-bottom: 1px solid ${Colors.DARK_GRAY2};
   }
 `;
 
@@ -19,27 +23,14 @@ export const LeftGroup = styled(Navbar.Group)`
   overflow: hidden;
 `;
 
-export const TextDivider = styled.div`
-  margin: 0 15px 0 18px;
-  transform: rotate(45deg);
-
-  @media (prefers-color-scheme: dark) {
-    margin: 0 15px 0 18px;
-    height: 200%;
-    transform: rotate(45deg);
-    border-left: 1px solid ${Colors.DARK_GRAY5};
-    box-shadow: rgba(240, 46, 170, 0.4) 5px 5px, rgba(240, 46, 170, 0.3) 10px 10px, rgba(240, 46, 170, 0.2) 15px 15px,
-      rgba(240, 46, 170, 0.1) 20px 20px, rgba(240, 46, 170, 0.05) 25px 25px;
-  }
-`;
-
 const textclip = keyframes`
   to {
     background-position: 200% center;
   }
 `;
 
-export const Heading = styled(Navbar.Heading)`
+export const Title = styled(Navbar.Heading)`
+  margin-left: 5px;
   text-transform: uppercase;
   background-image: linear-gradient(-225deg, #fa0161 0%, #ffd900 29%, #ff1361 67%, #fff800 100%);
   background-size: auto auto;
@@ -50,6 +41,34 @@ export const Heading = styled(Navbar.Heading)`
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   animation: ${textclip} 10s linear infinite reverse;
+
+  @media (prefers-color-scheme: dark) {
+    margin-left: -42px;
+  }
+`;
+
+export const ShadowContainer = styled.div`
+  overflow: hidden;
+  position: relative;
+  height: 50px;
+  width: 100px;
+  pointer-events: none;
+  margin-left: -25px;
+  z-index: -1;
+
+  @media (prefers-color-scheme: light) {
+    display: none;
+  }
+`;
+
+export const Shadow = styled.div`
+  width: 0;
+  height: 48px;
+  background-color: transparent;
+  border-left: 49px solid transparent;
+  border-bottom: 100px solid ${Colors.DARK_GRAY1};
+  filter: drop-shadow(0px 7px 14px rgba(0, 0, 0, 0.9));
+  transform: rotate(180deg);
 `;
 
 export const RightGroup = styled(Navbar.Group)`
