@@ -29,7 +29,6 @@ export const updateEditorsAndShells = async (mainWindow: BrowserWindow) => {
     }));
 
   log.info('Available editors', editors);
-
   settings.set('appSettings.editors', editors);
 
   if (
@@ -46,8 +45,13 @@ export const updateEditorsAndShells = async (mainWindow: BrowserWindow) => {
       shell: appName
     }));
 
-  log.info('Available shells', shells);
+  // add default macOS terminal
+  shells.push({
+    path: '/Applications/Utilities/Terminal.app',
+    shell: 'Terminal'
+  });
 
+  log.info('Available shells', shells);
   settings.set('appSettings.shells', shells);
 
   if (

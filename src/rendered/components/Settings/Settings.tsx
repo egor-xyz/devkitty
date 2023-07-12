@@ -10,7 +10,7 @@ import { SettingsGroups } from '../SettingsGroups';
 export const Settings = () => {
   const { editors, shells, selectedEditor, selectedShell } = useAppSettings();
 
-  const showIntegrations = Boolean(editors.length && shells.length && selectedEditor && selectedShell);
+  const showIntegrations = Boolean(editors.length && selectedEditor) || Boolean(shells.length && selectedShell);
 
   return (
     <Root>

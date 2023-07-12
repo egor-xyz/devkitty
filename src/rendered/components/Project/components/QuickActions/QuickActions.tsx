@@ -42,8 +42,6 @@ export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
   const editorIcon: IconName | MaybeElement =
     selectedEditor?.editor === 'Visual Studio Code' ? <VSCode height={15} /> : 'code';
 
-  const showIntegrations = Boolean(selectedEditor && selectedShell);
-
   return (
     <ButtonGroup className={!gitStatus && Classes.SKELETON}>
       <Button
@@ -52,20 +50,20 @@ export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
         onClick={copyToClipboard}
       />
 
-      {showIntegrations && (
-        <>
-          <Button
-            icon={shellIcon}
-            title={`Open in ${selectedShell?.shell}`}
-            onClick={openInShell}
-          />
+      {selectedShell && (
+        <Button
+          icon={shellIcon}
+          title={`Open in ${selectedShell?.shell}`}
+          onClick={openInShell}
+        />
+      )}
 
-          <Button
-            icon={editorIcon}
-            title={`Open in ${selectedEditor?.editor}`}
-            onClick={openInEditor}
-          />
-        </>
+      {selectedEditor && (
+        <Button
+          icon={editorIcon}
+          title={`Open in ${selectedEditor?.editor}`}
+          onClick={openInEditor}
+        />
       )}
 
       <Button
