@@ -2,6 +2,7 @@ import { Route, Routes } from 'react-router-dom';
 
 import { Settings } from './components/Settings';
 import { Projects } from './components/Projects/Projects';
+import { GitHub } from './components/GitHub';
 // add route names here
 export const Routing = () => (
   <Routes>
@@ -13,6 +14,11 @@ export const Routing = () => (
     <Route
       element={<Settings />}
       path="settings"
+    />
+
+    <Route
+      element={<GitHub />}
+      path="github"
     />
 
     <Route

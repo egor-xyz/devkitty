@@ -1,6 +1,8 @@
 import { Button, ButtonGroup, Classes, Icon, Navbar } from '@blueprintjs/core';
 import clsx from 'clsx';
 import { NavLink, useLocation } from 'react-router-dom';
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
+import { faGithubAlt } from '@fortawesome/fontawesome-free-brands';
 
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { useDarkMode } from 'rendered/hooks/useDarkMode';
@@ -62,6 +64,13 @@ export const AppNavbar = () => {
           to="/"
         >
           <Icon icon="home" />
+        </NavLink>
+
+        <NavLink
+          className={({ isActive }) => clsx(Classes.BUTTON, Classes.MINIMAL, isActive && Classes.ACTIVE)}
+          to="/github"
+        >
+          <FontAwesomeIcon icon={faGithubAlt} />
         </NavLink>
 
         <Navbar.Divider />

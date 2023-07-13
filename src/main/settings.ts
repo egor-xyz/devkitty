@@ -14,6 +14,10 @@ export const settings = new Store<Settings>({
   cwd: isDev ? path.resolve('..', app.getAppPath()) : app.getPath('userData'),
   defaults: {
     appSettings: {
+      auth: {
+        saved: false,
+        type: 'PAT'
+      },
       editors: [],
       fetchInterval: 10000,
       projectActionCollapsed: true,
