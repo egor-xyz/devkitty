@@ -3,7 +3,7 @@
 Swiss army knife for developers.\
 Easily manage multiple Git repositories and Jenkins jobs in one screen.
 
-**Git** (GitHub, GitLab, Bitbucket) | **Jenkins** | **Google Translate API**
+**Git**, **GitHub**
 
 ## Features
 
