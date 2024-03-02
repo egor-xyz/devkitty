@@ -15,6 +15,7 @@ const isDev = process.env.IS_DEV === 'true';
 const forgeConfig: ForgeConfig = {
   makers: [new MakerZIP({}, ['darwin'])],
   packagerConfig: {
+    asar: true,
     appBundleId: 'app.devkitty',
     appCategoryType: 'public.app-category.developer-tools',
     appCopyright: 'Copyright © 2024 Devkitty',
@@ -64,7 +65,7 @@ const forgeConfig: ForgeConfig = {
     // at package time, before code signing the application
     new FusesPlugin({
       version: FuseVersion.V1,
-      [FuseV1Options.RunAsNode]: true,
+      [FuseV1Options.RunAsNode]: false,
       [FuseV1Options.EnableCookieEncryption]: true,
       [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
       [FuseV1Options.EnableNodeCliInspectArguments]: false,
