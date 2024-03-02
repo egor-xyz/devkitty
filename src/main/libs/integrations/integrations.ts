@@ -2,7 +2,6 @@ import { BrowserWindow } from 'electron';
 
 // @ts-ignore
 import { getMacInstalledApps } from 'get-installed-apps';
-import log from 'electron-log';
 import { isEqual } from 'lodash';
 
 import { FoundShell } from 'types/foundShell';
@@ -28,7 +27,7 @@ export const updateEditorsAndShells = async (mainWindow: BrowserWindow) => {
       path: `/Applications/${kMDItemFSName}`
     }));
 
-  log.info('Available editors', editors);
+  // log.info('Available editors', editors);
   settings.set('appSettings.editors', editors);
 
   if (
@@ -51,7 +50,7 @@ export const updateEditorsAndShells = async (mainWindow: BrowserWindow) => {
     shell: 'Terminal'
   });
 
-  log.info('Available shells', shells);
+  // log.info('Available shells', shells);
   settings.set('appSettings.shells', shells);
 
   if (

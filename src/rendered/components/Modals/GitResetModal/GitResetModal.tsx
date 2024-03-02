@@ -34,7 +34,7 @@ export const GitResetModal: FC<ModalProps & GitResetModalProps> = ({
     setLoading(true);
     const res = await window.bridge.git.reset(id, target, forcePush);
     if (!res.success) {
-      appToaster.show({
+      (await appToaster).show({
         icon: 'info-sign',
         intent: 'warning',
         message: `${name} reset ${res.message}`,

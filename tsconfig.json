@@ -1,20 +1,16 @@
 {
   "compilerOptions": {
-    "target": "ES6",
-    "allowJs": true,
+    "target": "ESNext",
     "module": "commonjs",
+    "allowJs": true,
     "skipLibCheck": true,
     "esModuleInterop": true,
     "noImplicitAny": true,
     "sourceMap": true,
-    "baseUrl": ".",
+    "baseUrl": "./src",
     "outDir": "dist",
     "moduleResolution": "node",
     "resolveJsonModule": true,
-    "jsx": "react-jsx",
-    "paths": {
-      "*": ["node_modules/*", "src/*"]
-    }
-  },
-  "include": ["src/**/*"]
+    "jsx": "react-jsx"
+  }
 }

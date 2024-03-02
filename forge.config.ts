@@ -1,11 +1,11 @@
 import type { ForgeConfig } from '@electron-forge/shared-types';
-import { WebpackPlugin } from '@electron-forge/plugin-webpack';
 import { MakerZIP } from '@electron-forge/maker-zip';
 import { PublisherGithub } from '@electron-forge/publisher-github';
+import { VitePlugin } from '@electron-forge/plugin-vite';
+import { FusesPlugin } from '@electron-forge/plugin-fuses';
+import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import { config } from 'dotenv';
 
-import { mainConfig } from './webpack.main.config';
-import { rendererConfig } from './webpack.renderer.config';
 import { version } from './package.json';
 
 config();
@@ -15,12 +15,12 @@ const isDev = process.env.IS_DEV === 'true';
 const forgeConfig: ForgeConfig = {
   makers: [new MakerZIP({}, ['darwin'])],
   packagerConfig: {
+    asar: true,
     appBundleId: 'app.devkitty',
     appCategoryType: 'public.app-category.developer-tools',
-    appCopyright: 'Copyright © 2023 Devkitty',
+    appCopyright: 'Copyright © 2024 Devkitty',
     appVersion: version,
     executableName: 'Devkitty',
-    // extendInfo: './extend.plist',
     icon: './icons/icon',
     name: 'Devkitty',
     osxNotarize: !isDev
@@ -40,21 +40,37 @@ const forgeConfig: ForgeConfig = {
     overwrite: true
   },
   plugins: [
-    new WebpackPlugin({
-      mainConfig,
-      renderer: {
-        config: rendererConfig,
-        entryPoints: [
-          {
-            html: './src/rendered/index.html',
-            js: './src/rendered/index.tsx',
-            name: 'main_window',
-            preload: {
-              js: './src/main/ipcs/preload.ts'
-            }
-          }
-        ]
-      }
+    new VitePlugin({
+      // `build` can specify multiple entry builds, which can be Main process, Preload scripts, Worker process, etc.
+      // If you are familiar with Vite configuration, it will look really familiar.
+      build: [
+        {
+          config: 'vite.main.config.ts',
+          // `entry` is just an alias for `build.lib.entry` in the corresponding file of `config`.
+          entry: 'src/main/app.ts'
+        },
+        {
+          config: 'vite.preload.config.ts',
+          entry: 'src/main/ipcs/preload.ts'
+        }
+      ],
+      renderer: [
+        {
+          config: 'vite.renderer.config.ts',
+          name: 'main_window'
+        }
+      ]
+    }),
+    // Fuses are used to enable/disable various Electron functionality
+    // at package time, before code signing the application
+    new FusesPlugin({
+      version: FuseVersion.V1,
+      [FuseV1Options.RunAsNode]: false,
+      [FuseV1Options.EnableCookieEncryption]: true,
+      [FuseV1Options.EnableNodeOptionsEnvironmentVariable]: false,
+      [FuseV1Options.EnableNodeCliInspectArguments]: false,
+      [FuseV1Options.EnableEmbeddedAsarIntegrityValidation]: true,
+      [FuseV1Options.OnlyLoadAppFromAsar]: true
     })
   ],
   publishers: [

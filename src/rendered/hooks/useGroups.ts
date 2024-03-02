@@ -27,7 +27,7 @@ export const useGroups = create<State & Actions>()((set, get) => ({
   groupAliases: [],
   groups,
   groupsWithAliases: [],
-  removeGroupAlias: (id) => {
+  removeGroupAlias: async (id) => {
     const { groupAliases } = get();
 
     const newGroupAliases = groupAliases.filter((groupAlias) => groupAlias.id !== id);
@@ -42,7 +42,7 @@ export const useGroups = create<State & Actions>()((set, get) => ({
     });
     set({ groupsWithAliases: newGroupsWithAliases });
 
-    appToaster.show({
+    (await appToaster).show({
       icon: 'tick-circle',
       intent: 'success',
       message: `Group alias for group "${id}" removed`
@@ -57,7 +57,7 @@ export const useGroups = create<State & Actions>()((set, get) => ({
     window.bridge.settings.set('selectedGroups', selectedGroups);
   },
   selectedGroups: [],
-  setGroupAlias: (group) => {
+  setGroupAlias: async (group) => {
     const { groupAliases } = get();
 
     const index = groupAliases.findIndex((groupAlias) => groupAlias.id === group.id);
@@ -77,7 +77,7 @@ export const useGroups = create<State & Actions>()((set, get) => ({
     });
     set({ groupsWithAliases: newGroupsWithAliases });
 
-    appToaster.show({
+    (await appToaster).show({
       icon: 'tick-circle',
       intent: 'success',
       message: `Group alias for "${group.id}" set to "${group.fullName}"`
