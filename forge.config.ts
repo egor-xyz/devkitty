@@ -27,9 +27,7 @@ const forgeConfig: ForgeConfig = {
       ? {
           appleId: process.env.APPLE_ID || '',
           appleIdPassword: process.env.APPLE_ID_PASSWORD || '',
-          teamId: process.env.APPLE_TEAM_ID || '',
-          // @ts-ignore
-          tool: 'notarytool'
+          teamId: process.env.APPLE_TEAM_ID || ''
         }
       : undefined,
     osxSign: !isDev
