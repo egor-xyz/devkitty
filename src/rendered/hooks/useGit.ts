@@ -44,7 +44,7 @@ export const useGit = () => {
     const res = await window.bridge.git.pull(id);
 
     if (!res.success) {
-      appToaster.show({
+      (await appToaster).show({
         icon: 'info-sign',
         intent: 'warning',
         message: `${name} pull ${res.message}`,
@@ -70,7 +70,7 @@ export const useGit = () => {
         const project = useProjects.getState().projects.find((p) => p.id === id);
         window.bridge.launch.editor(project.filePath, useAppSettings.getState().selectedEditor);
 
-        appToaster.show({
+        (await appToaster).show({
           icon: 'info-sign',
           intent: 'warning',
           message: `${res.message}. Conflicts in ${res.merges.length} file(s).`,
@@ -80,7 +80,7 @@ export const useGit = () => {
         return;
       }
 
-      appToaster.show({
+      (await appToaster).show({
         icon: 'info-sign',
         intent: res.success ? 'success' : 'warning',
         message: res.message,

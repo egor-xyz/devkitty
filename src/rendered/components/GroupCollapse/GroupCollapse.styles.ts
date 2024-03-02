@@ -29,8 +29,8 @@ export const GroupTitle = styled.div`
   }
 `;
 
-export const GroupBody = styled.div<{ collapsed: boolean; length: number }>(
-  ({ collapsed, length }) => css`
+export const GroupBody = styled.div<{ $collapsed: boolean; $length: number }>(
+  ({ $collapsed: collapsed, $length: length }) => css`
     display: flex;
     flex-direction: column;
     width: 100%;

@@ -36,14 +36,14 @@ export const GroupsSelector = () => {
   };
 
   return (
-    <Root collapsed={projectActionCollapsed}>
+    <Root $collapsed={projectActionCollapsed}>
       <GroupsControl>
         <Title>Groups</Title>
 
         <OldSchoolWrapper>
           {groupsWithAliases.map(({ name, id, icon }) => (
             <OldSchoolButton
-              active={selectedGroups.includes(id)}
+              $active={selectedGroups.includes(id)}
               key={id}
               onClick={() => select(id)}
             >
@@ -56,7 +56,7 @@ export const GroupsSelector = () => {
           ))}
 
           <OldSchoolButton
-            active={allSelected}
+            $active={allSelected}
             onClick={toggleAll}
           >
             <StyledIcon

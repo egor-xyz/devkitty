@@ -35,7 +35,7 @@ export const CheckoutBranch: FC<Props> = ({ gitStatus, id, getStatus, name }) =>
 
     res.success
       ? setTmpCurrent(cleanBranch)
-      : appToaster.show({
+      : (await appToaster).show({
           icon: 'info-sign',
           intent: 'warning',
           message: `${name} checkout ${res.message}`,

@@ -17,7 +17,7 @@ const forgeConfig: ForgeConfig = {
   packagerConfig: {
     appBundleId: 'app.devkitty',
     appCategoryType: 'public.app-category.developer-tools',
-    appCopyright: 'Copyright © 2023 Devkitty',
+    appCopyright: 'Copyright © 2024 Devkitty',
     appVersion: version,
     executableName: 'Devkitty',
     icon: './icons/icon',
