@@ -1,7 +1,7 @@
 import { app, BrowserWindow, nativeTheme } from 'electron';
 
 import log from 'electron-log';
-import updateElectronApp from 'update-electron-app';
+import { updateElectronApp } from 'update-electron-app';
 
 import './ipcs';
 

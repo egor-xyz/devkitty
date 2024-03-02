@@ -1,8 +1,8 @@
 {
   "editor.codeActionsOnSave": {
-    "source.fixAll": true,
-    "source.fixAll.eslint": true,
-    "source.fixAll.stylelint": true
+    "source.fixAll": "explicit",
+    "source.fixAll.eslint": "explicit",
+    "source.fixAll.stylelint": "explicit"
   },
   "i18n-ally.keystyle": "nested",
   "i18n-ally.localesPaths": ["src/locales"],
