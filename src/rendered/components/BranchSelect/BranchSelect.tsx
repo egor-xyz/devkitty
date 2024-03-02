@@ -66,7 +66,6 @@ export const BranchSelect: FC<Props> = ({ gitStatus, onSelect, loading, currentB
           small
           fill={fill}
           loading={loading}
-          placeholder="Select a film"
           rightIcon="double-caret-vertical"
           text={currentBranch}
         />
