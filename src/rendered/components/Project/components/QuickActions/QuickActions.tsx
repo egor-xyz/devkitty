@@ -5,8 +5,8 @@ import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { GitStatus, Project } from 'types/project';
 import { useModal } from 'rendered/hooks/useModal';
 
-import VSCode from '../../assets/vscode.svg';
-import Warp from '../../assets/Warp.svg';
+import VSCode from '../../assets/VSCode.svg?react';
+import Warp from '../../assets/Warp.svg?react';
 
 type Props = {
   gitStatus: GitStatus;

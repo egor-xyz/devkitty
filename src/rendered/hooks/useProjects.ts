@@ -27,7 +27,7 @@ export const useProjects = create<State & Actions>((set, get) => ({
   addProject: async () => {
     const res = await window.bridge.projects.add();
     if (!res.success && !res.canceled) {
-      appToaster.show({ icon: 'error', intent: 'danger', message: res.message ?? 'Something went wrong' });
+      (await appToaster).show({ icon: 'error', intent: 'danger', message: res.message ?? 'Something went wrong' });
       return;
     }
     const projects = await window.bridge.settings.get('projects');

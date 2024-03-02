@@ -57,7 +57,7 @@ export const Projects = () => {
         {Boolean(selectedGroups.length) &&
           sortedProjects.map((group) => (
             <GroupCollapse
-              collapsed={collapsedGroups.includes(group.id)}
+              collapsed={Boolean(collapsedGroups.includes(group.id))}
               group={group}
               key={group.id}
               projects={group.projects}

@@ -5,8 +5,8 @@ import metalDark from './assets/metal-dark.jpg';
 import metal from './assets/metal.jpg';
 import metalActive from './assets/metal-active.jpg';
 
-export const Root = styled.div<{ collapsed: boolean }>(
-  ({ collapsed }) => css`
+export const Root = styled.div<{ $collapsed: boolean }>(
+  ({ $collapsed: collapsed }) => css`
     display: flex;
     flex-direction: column;
     height: 90px;
@@ -51,8 +51,8 @@ export const OldSchoolWrapper = styled.div`
   background-image: url(${metal});
 `;
 
-export const OldSchoolButton = styled.div<{ active?: boolean }>(
-  ({ active }) => css`
+export const OldSchoolButton = styled.div<{ $active?: boolean }>(
+  ({ $active: active }) => css`
     display: block;
     width: 70px;
     height: 20px;

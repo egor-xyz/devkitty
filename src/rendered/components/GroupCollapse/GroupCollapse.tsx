@@ -33,8 +33,8 @@ export const GroupCollapse: FC<Props> = ({ group, collapsed, onClick, projects }
       </div>
     </GroupTitle>
     <GroupBody
-      collapsed={collapsed}
-      length={projects.length}
+      $collapsed={collapsed}
+      $length={projects.length}
     >
       {!collapsed &&
         projects.map((project) => (
