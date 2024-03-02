@@ -1,7 +1,7 @@
 import { Colors, Navbar } from '@blueprintjs/core';
 import styled from 'styled-components';
 
-import Devkitty from 'rendered/assets/devKitty.svg';
+import Devkitty from 'rendered/assets/devkitty.svg?react';
 
 export const StyledNavbar = styled(Navbar)`
   -webkit-app-region: drag;
