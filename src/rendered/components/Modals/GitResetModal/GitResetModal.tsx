@@ -63,7 +63,6 @@ export const GitResetModal: FC<ModalProps & GitResetModalProps> = (props) => {
   };
 
   const resetRemote = async () => {
-    console.log('resetRemote');
     const res = await window.bridge.gitAPI.reset(id, origin, target);
     if (!res.success) {
       (await appToaster).show({
@@ -82,6 +81,8 @@ export const GitResetModal: FC<ModalProps & GitResetModalProps> = (props) => {
       message: res.message,
       timeout: 0
     });
+
+    window.open(`https://github.com/${gitStatus.organization}/${name}/actions`, '_blank');
 
     onClose();
   };

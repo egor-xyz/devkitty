@@ -1,4 +1,4 @@
-import { app, BrowserWindow, nativeTheme } from 'electron';
+import { app, BrowserWindow, nativeTheme, shell } from 'electron';
 import path from 'path';
 
 import log from 'electron-log';
@@ -46,6 +46,12 @@ const createWindow = (): void => {
   mainWindow.on('close', () => {
     if (!isDev && mainWindow.webContents.isDevToolsOpened()) return;
     settings.set('windowBounds', mainWindow.getBounds());
+  });
+
+  // all external links should open in default browser
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: 'deny' };
   });
 
   // and load the index.html of the app.
