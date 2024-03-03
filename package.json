@@ -6,12 +6,9 @@
   "main": ".vite/build/app.js",
   "scripts": {
     "start": "ELECTRON_DISABLE_SECURITY_WARNINGS=true electron-forge start",
-    "package": "NODE_ENV=production electron-forge package --platform=darwin --arch=x64,arm64",
-    "package:arm": "NODE_ENV=production electron-forge package --platform=darwin --arch=arm64",
+    "package:arm": "electron-forge package --arch=arm64",
     "make": "electron-forge make --arch=x64,arm64",
-    "make:dev": "electron-forge make --arch=arm64",
     "make:arm": "electron-forge make --arch=arm64",
-    "make:intel": "electron-forge make --arch=x64",
     "publish": "electron-forge publish --arch=x64,arm64 --platform=darwin",
     "eslint": "eslint --ext .ts,.tsx . --fix",
     "debug": "electron-forge start --vscode"
@@ -66,6 +63,7 @@
     "ts-node": "^10.9.2",
     "typescript": "^5.3.3",
     "vite": "^5.1.4",
+    "vite-plugin-checker": "^0.6.4",
     "vite-plugin-svgr": "^4.2.0",
     "vite-tsconfig-paths": "^4.3.1"
   }

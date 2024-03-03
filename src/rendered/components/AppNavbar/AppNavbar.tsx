@@ -18,7 +18,7 @@ export const AppNavbar = () => {
     window.location.reload();
   };
 
-  const toogleProjectActionCollapsed = () => set({ projectActionCollapsed: !projectActionCollapsed });
+  const toggleProjectActionCollapsed = () => set({ projectActionCollapsed: !projectActionCollapsed });
 
   return (
     <StyledNavbar>
@@ -42,7 +42,7 @@ export const AppNavbar = () => {
             <Button
               minimal
               icon={projectActionCollapsed ? 'chevron-down' : 'chevron-up'}
-              onClick={toogleProjectActionCollapsed}
+              onClick={toggleProjectActionCollapsed}
             />
 
             <Navbar.Divider />

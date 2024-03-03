@@ -2,6 +2,7 @@ import type { ConfigEnv, UserConfig } from 'vite';
 import { defineConfig } from 'vite';
 import viteTsconfigPaths from 'vite-tsconfig-paths';
 import svgr from 'vite-plugin-svgr';
+import { checker } from 'vite-plugin-checker';
 
 import { pluginExposeRenderer } from './vite.base.config';
 
@@ -18,7 +19,17 @@ export default defineConfig((env) => {
     },
     clearScreen: false,
     mode,
-    plugins: [viteTsconfigPaths(), svgr(), pluginExposeRenderer(name)],
+    plugins: [
+      viteTsconfigPaths(),
+      svgr(),
+      pluginExposeRenderer(name),
+      checker({
+        eslint: {
+          lintCommand: 'eslint "./src/**/*.{ts,tsx}"'
+        },
+        typescript: true
+      })
+    ],
     resolve: {
       preserveSymlinks: true
     },
