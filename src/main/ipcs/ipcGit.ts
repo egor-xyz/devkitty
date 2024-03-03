@@ -1,6 +1,5 @@
 import { ipcMain, safeStorage } from 'electron';
 
-import log from 'electron-log';
 import { simpleGit, CleanOptions, ResetMode } from 'simple-git';
 import axios from 'axios';
 
@@ -118,12 +117,10 @@ ipcMain.handle('git:api:reset', async (_, id: string, origin: string, target: st
   try {
     if (protectedBranches.includes(origin)) throw new Error(`Branch ${origin} is forbidden to reset`);
 
-    const appSettings = settings.get('appSettings');
-    log.info('appSettings', appSettings);
-    if (!appSettings.gitHubToken) throw new Error('GitHub token not found');
+    const { gitHubToken } = settings.get('appSettings');
+    if (!gitHubToken) throw new Error('GitHub token not found');
 
-    const token = safeStorage.decryptString(Buffer.from(appSettings.gitHubToken));
-    log.info('token', token);
+    const token = safeStorage.decryptString(Buffer.from(gitHubToken));
     if (!token) throw new Error('GitHub token not found');
 
     const git = await getGit(id);
