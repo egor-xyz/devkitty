@@ -1,12 +1,10 @@
-import { ipcMain } from 'electron';
+import { ipcMain, safeStorage } from 'electron';
 
-import log from 'electron-log';
 import { simpleGit, CleanOptions, ResetMode } from 'simple-git';
 import axios from 'axios';
 
 import { GitStatus } from 'types/project';
 
-import { execAsync } from '../libs/childProcess';
 import { settings } from '../settings';
 
 const getGit = async (id: string) => {
@@ -119,21 +117,22 @@ ipcMain.handle('git:api:reset', async (_, id: string, origin: string, target: st
   try {
     if (protectedBranches.includes(origin)) throw new Error(`Branch ${origin} is forbidden to reset`);
 
+    const { gitHubToken } = settings.get('appSettings');
+    if (!gitHubToken) throw new Error('GitHub token not found');
+
+    const token = safeStorage.decryptString(Buffer.from(gitHubToken));
+    if (!token) throw new Error('GitHub token not found');
+
     const git = await getGit(id);
 
-    const accessToken = await execAsync('gh auth token');
-    if (!accessToken) throw new Error('Access token not found. Please login to GitHub using gh auth login');
-
     const headers = {
-      Authorization: `token ${accessToken}`,
+      Authorization: `token ${token}`,
       'Content-Type': 'application/json'
     };
 
     const repo = await git.remote(['get-url', 'origin']);
     if (!repo) throw new Error('Repo not found');
     const [repository] = repo.split(':')[1].split('.git');
-
-    log.info('url', `https://api.github.com/repos/${repository}/git/refs/heads/${target}`);
 
     const targetData = await axios.get(`https://api.github.com/repos/${repository}/git/refs/heads/${target}`, {
       headers
@@ -142,15 +141,11 @@ ipcMain.handle('git:api:reset', async (_, id: string, origin: string, target: st
     const sha: string | undefined = targetData.data?.object?.sha;
     if (!sha) throw new Error('Target branch not found');
 
-    log.info(targetData, 'sha');
-
-    const resetData = await axios.patch(
+    await axios.patch(
       `https://api.github.com/repos/${repository}/git/refs/heads/${origin}`,
       { force: true, sha },
       { headers }
     );
-
-    log.info(resetData, 'resetData');
 
     return { message: `Branch ${origin} was reset to ${target}`, success: true };
   } catch (e) {
