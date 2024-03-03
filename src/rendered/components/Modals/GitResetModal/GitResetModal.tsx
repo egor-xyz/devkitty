@@ -68,8 +68,7 @@ export const GitResetModal: FC<ModalProps & GitResetModalProps> = (props) => {
       (await appToaster).show({
         icon: 'info-sign',
         intent: 'warning',
-        message: `Remote reset ${res.message}`,
-        timeout: 0
+        message: `Remote reset ${res.message}`
       });
       setLoading(false);
       return;
@@ -78,8 +77,7 @@ export const GitResetModal: FC<ModalProps & GitResetModalProps> = (props) => {
     (await appToaster).show({
       icon: 'info-sign',
       intent: 'success',
-      message: res.message,
-      timeout: 0
+      message: res.message
     });
 
     window.open(`https://github.com/${gitStatus.organization}/${name}/actions`, '_blank');
