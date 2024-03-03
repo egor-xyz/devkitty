@@ -1,19 +1,49 @@
-import { Divider, MenuItem, Button } from '@blueprintjs/core';
+import { Divider, MenuItem, Button, InputGroup } from '@blueprintjs/core';
 import { Select } from '@blueprintjs/select';
+import { useState } from 'react';
 
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { FoundEditor } from 'types/foundEditor';
 import { FoundShell } from 'types/foundShell';
+import { appToaster } from 'rendered/utils/appToaster';
 
-import { Root, Row } from './SettingsIntegrations.styles';
+import { Root, Row, TokenWrapper } from './SettingsIntegrations.styles';
 
 export const SettingsIntegrations = () => {
-  const { editors, shells, selectedEditor, selectedShell, set } = useAppSettings();
+  const { editors, shells, selectedEditor, selectedShell, set, gitHubToken } = useAppSettings();
+  const [token, setToken] = useState(gitHubToken);
+
+  const saveToken = async () => {
+    await set({ gitHubToken: token }, true);
+
+    (await appToaster).show({
+      icon: 'tick',
+      intent: 'success',
+      message: 'GitHub Token saved'
+    });
+  };
 
   return (
     <Root>
       <h2>Integrations</h2>
       <Divider />
+
+      <h3>GitHub Token</h3>
+      <TokenWrapper>
+        <InputGroup
+          inputMode="text"
+          placeholder="GitHub Token"
+          type="password"
+          value={token}
+          onChange={({ target: { value } }) => setToken(value)}
+        />
+        <Button
+          small
+          intent="warning"
+          text={'Set GitHub Token'}
+          onClick={saveToken}
+        />
+      </TokenWrapper>
 
       {editors.length !== 0 && Boolean(selectedEditor) && (
         <>
