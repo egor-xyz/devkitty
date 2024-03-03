@@ -1,6 +1,5 @@
 import styled from 'styled-components';
 import { Colors } from '@blueprintjs/core';
-
 import Ukrain from 'rendered/assets/ukrain.svg?react';
 
 export const Root = styled.div`
