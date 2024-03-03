@@ -25,6 +25,7 @@
   "dependencies": {
     "@blueprintjs/core": "^5.10.0",
     "@blueprintjs/select": "^5.1.2",
+    "axios": "^1.6.7",
     "clsx": "^2.1.0",
     "electron-log": "5.1.1",
     "electron-store": "^8.1.0",

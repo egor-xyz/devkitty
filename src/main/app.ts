@@ -31,6 +31,7 @@ const createWindow = (): void => {
     height,
     minHeight: 600,
     minWidth: 800,
+    show: isDev ? false : true,
     titleBarStyle: 'hidden',
     trafficLightPosition: { x: 15, y: 17 },
     webPreferences: {
@@ -56,7 +57,12 @@ const createWindow = (): void => {
 
   updateEditorsAndShells(mainWindow);
 
-  isDev && mainWindow.webContents.openDevTools();
+  if (isDev) {
+    setTimeout(() => {
+      mainWindow.showInactive();
+      mainWindow.webContents.openDevTools();
+    }, 500);
+  }
 
   // CSP interceptor
   // mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {

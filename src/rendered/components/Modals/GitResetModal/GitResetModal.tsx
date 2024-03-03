@@ -1,4 +1,4 @@
-import { Button, Classes, Dialog, DialogFooter, Switch } from '@blueprintjs/core';
+import { Button, Classes, Dialog, DialogFooter, Intent, Switch } from '@blueprintjs/core';
 import { FC, useState } from 'react';
 
 import { appToaster } from 'rendered/utils/appToaster';
@@ -76,8 +76,14 @@ export const GitResetModal: FC<ModalProps & GitResetModalProps> = (props) => {
       return;
     }
 
-    console.log(res, 'resetRemote');
-    // onClose();
+    (await appToaster).show({
+      icon: 'info-sign',
+      intent: 'success',
+      message: res.message,
+      timeout: 0
+    });
+
+    onClose();
   };
 
   const resetBranch = async () => {
@@ -102,9 +108,9 @@ export const GitResetModal: FC<ModalProps & GitResetModalProps> = (props) => {
     onClose();
   };
 
-  const actionText = remoteMode
-    ? `Reset remote origin/${origin} branch to origin/${target}`
-    : `Reset branch to ${target}`;
+  const actionText = remoteMode ? `Reset remote ${origin} branch to ${target}` : `Reset branch to ${target}`;
+
+  const actionIntent: Intent = remoteMode ? 'danger' : forcePush ? 'warning' : 'primary';
 
   return (
     <Dialog
@@ -160,7 +166,7 @@ export const GitResetModal: FC<ModalProps & GitResetModalProps> = (props) => {
         actions={
           <Button
             icon="reset"
-            intent={forcePush ? 'warning' : 'primary'}
+            intent={actionIntent}
             loading={loading}
             text={actionText}
             onClick={resetBranch}
