@@ -1,6 +1,5 @@
 import styled from 'styled-components';
 import { Colors } from '@blueprintjs/core';
-import Ukrain from 'rendered/assets/ukrain.svg?react';
 
 export const Root = styled.div`
   display: flex;
@@ -27,14 +26,4 @@ export const ProjectsWrapper = styled.div`
     width: 0;
     height: 0;
   }
-`;
-
-export const Flag = styled(Ukrain)`
-  position: absolute;
-  z-index: -1;
-  right: 15px;
-  bottom: 15px;
-  width: auto;
-  height: 50px;
-  pointer-events: none;
 `;

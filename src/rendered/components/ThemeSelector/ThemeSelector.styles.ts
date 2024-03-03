@@ -8,8 +8,8 @@ export const Root = styled.div`
   margin: 0 auto 20px;
 `;
 
-export const ThemeButton = styled.div<{ active?: boolean }>(
-  ({ active }) => css`
+export const ThemeButton = styled.div<{ $active?: boolean }>(
+  ({ $active: active }) => css`
     text-align: center;
     cursor: pointer;
     display: flex;

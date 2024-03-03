@@ -10,6 +10,7 @@ import { GlobalStyles, SelectButton, StyledMenuItem } from './BranchSelect.style
 type Props = {
   className?: string;
   currentBranch?: string;
+  disabled?: boolean;
   fill?: boolean;
   gitStatus: GitStatus;
   loading?: boolean;
@@ -19,7 +20,15 @@ type Props = {
 // TODO: fix this
 const LIMIT = 5;
 
-export const BranchSelect: FC<Props> = ({ gitStatus, onSelect, loading, currentBranch, fill = false, className }) => {
+export const BranchSelect: FC<Props> = ({
+  gitStatus,
+  onSelect,
+  loading,
+  currentBranch,
+  fill = false,
+  className,
+  disabled
+}) => {
   const [query, setQuery] = useState('');
 
   const { branchSummary } = gitStatus ?? {};
@@ -34,6 +43,7 @@ export const BranchSelect: FC<Props> = ({ gitStatus, onSelect, loading, currentB
       <GlobalStyles />
       <Select<string>
         className={className}
+        disabled={disabled}
         inputProps={{ placeholder: 'Search...' }}
         itemRenderer={(name, { index, modifiers: { active }, handleClick }) => (
           <StyledMenuItem
@@ -64,6 +74,7 @@ export const BranchSelect: FC<Props> = ({ gitStatus, onSelect, loading, currentB
       >
         <SelectButton
           small
+          disabled={disabled}
           fill={fill}
           loading={loading}
           rightIcon="double-caret-vertical"
