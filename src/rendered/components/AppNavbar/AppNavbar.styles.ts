@@ -22,9 +22,11 @@ export const LeftGroup = styled(Navbar.Group)`
 `;
 
 export const Title = styled.div`
+  -webkit-app-region: drag;
   margin-left: 5px;
   font-size: 20px;
   user-select: none;
+  pointer-events: none;
 
   @media (prefers-color-scheme: dark) {
     margin-left: -42px;
