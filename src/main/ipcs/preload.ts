@@ -37,8 +37,8 @@ const bridge = {
     get: (key: keyof Settings) => ipcRenderer.invoke('settings:get', key),
     onAppSettings: (callback: (event: IpcRendererEvent, value: AppSettings) => void) =>
       ipcRenderer.on('settings:updated', callback),
-    set: <K extends keyof Settings>(key: K, value: Partial<Settings[K]>) =>
-      ipcRenderer.invoke('settings:set', key, value)
+    set: <K extends keyof Settings>(key: K, value: Partial<Settings[K]>, safe?: boolean) =>
+      ipcRenderer.invoke('settings:set', key, value, safe)
   }
 };
 

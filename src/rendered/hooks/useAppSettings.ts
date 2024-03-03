@@ -3,16 +3,16 @@ import { create } from 'zustand';
 import { AppSettings } from 'types/appSettings';
 
 type Actions = {
-  set: (settings: Partial<AppSettings>) => void;
+  set: (settings: Partial<AppSettings>, safe?: boolean) => void;
 };
 
 export const useAppSettings = create<AppSettings & Actions>((set) => ({
   editors: [],
   fetchInterval: 10000,
   projectActionCollapsed: true,
-  set: (newState) => {
+  set: (newState, safe) => {
     set(() => {
-      window.bridge.settings.set('appSettings', newState);
+      window.bridge.settings.set('appSettings', newState, safe);
       return newState;
     });
   },
