@@ -13,14 +13,9 @@ export type GitMergeModalProps = {
   name: string;
 };
 
-export const GitMergeModal: FC<ModalProps & GitMergeModalProps> = ({
-  id,
-  name,
-  gitStatus,
-  isOpen,
-  onClose,
-  darkMode
-}) => {
+export const GitMergeModal: FC<ModalProps & GitMergeModalProps> = (props) => {
+  const { id, name, gitStatus, isOpen, onClose, darkMode } = props;
+
   const savedTarget: string = localStorage.getItem(`git:mergeTo-${id}`);
   const all = gitStatus?.branchSummary.all;
   const defTarget = savedTarget && all.includes(savedTarget) ? savedTarget : all[0];

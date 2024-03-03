@@ -11,7 +11,7 @@ export const ThemeSelector = () => {
   return (
     <Root>
       <ThemeButton
-        active={themeSource === 'system'}
+        $active={themeSource === 'system'}
         onClick={() => setTheme('system')}
       >
         <img src={themeAuto} />
@@ -19,7 +19,7 @@ export const ThemeSelector = () => {
       </ThemeButton>
 
       <ThemeButton
-        active={themeSource === 'dark'}
+        $active={themeSource === 'dark'}
         onClick={() => setTheme('dark')}
       >
         <img src={themeDark} />
@@ -27,7 +27,7 @@ export const ThemeSelector = () => {
       </ThemeButton>
 
       <ThemeButton
-        active={themeSource === 'light'}
+        $active={themeSource === 'light'}
         onClick={() => setTheme('light')}
       >
         <img src={themeLight} />

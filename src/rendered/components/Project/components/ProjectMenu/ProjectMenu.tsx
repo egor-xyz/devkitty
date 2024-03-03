@@ -41,7 +41,7 @@ export const ProjectMenu: FC<Props> = ({ getStatus, name, id, gitStatus, removeP
       <MenuItem
         icon="reset"
         intent="warning"
-        text="Reset to ..."
+        text="Reset branch"
         onClick={() => openModal({ name: 'git:reset', props: { gitStatus, id, name } })}
       />
 

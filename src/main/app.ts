@@ -1,4 +1,4 @@
-import { app, BrowserWindow, nativeTheme } from 'electron';
+import { app, BrowserWindow, nativeTheme, shell } from 'electron';
 import path from 'path';
 
 import log from 'electron-log';
@@ -23,7 +23,7 @@ app.name = 'Devkitty';
 
 const createWindow = (): void => {
   // restore window position and size
-  const { height = 600, width = isDev ? 1326 : 800, x, y } = settings.get('windowBounds') || {};
+  const { height = 600, width = isDev ? 1426 : 800, x, y } = settings.get('windowBounds') || {};
 
   // Create the browser window.
   const mainWindow = new BrowserWindow({
@@ -31,6 +31,7 @@ const createWindow = (): void => {
     height,
     minHeight: 600,
     minWidth: 800,
+    show: isDev ? false : true,
     titleBarStyle: 'hidden',
     trafficLightPosition: { x: 15, y: 17 },
     webPreferences: {
@@ -47,6 +48,12 @@ const createWindow = (): void => {
     settings.set('windowBounds', mainWindow.getBounds());
   });
 
+  // all external links should open in default browser
+  mainWindow.webContents.setWindowOpenHandler(({ url }) => {
+    shell.openExternal(url);
+    return { action: 'deny' };
+  });
+
   // and load the index.html of the app.
   if (MAIN_WINDOW_VITE_DEV_SERVER_URL) {
     mainWindow.loadURL(MAIN_WINDOW_VITE_DEV_SERVER_URL);
@@ -56,7 +63,12 @@ const createWindow = (): void => {
 
   updateEditorsAndShells(mainWindow);
 
-  isDev && mainWindow.webContents.openDevTools();
+  if (isDev) {
+    setTimeout(() => {
+      mainWindow.showInactive();
+      mainWindow.webContents.openDevTools();
+    }, 500);
+  }
 
   // CSP interceptor
   // mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {

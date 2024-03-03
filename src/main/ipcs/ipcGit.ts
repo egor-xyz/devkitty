@@ -1,9 +1,12 @@
 import { ipcMain } from 'electron';
 
+import log from 'electron-log';
 import { simpleGit, CleanOptions, ResetMode } from 'simple-git';
+import axios from 'axios';
 
 import { GitStatus } from 'types/project';
 
+import { execAsync } from '../libs/childProcess';
 import { settings } from '../settings';
 
 const getGit = async (id: string) => {
@@ -24,7 +27,7 @@ ipcMain.handle('git:getStatus', async (e, id: string): Promise<GitStatus> => {
   try {
     const git = await getGit(id);
 
-    await git.fetch(['--all']);
+    await git.fetch();
 
     // Get current branch status
     const status = await git.status();
@@ -106,6 +109,51 @@ ipcMain.handle('git:mergeTo', async (e, id: string, from: string, target: string
       return { merges: e.git.merges, message: e.git.result, success: false };
     }
 
+    return { message: e.message, success: false };
+  }
+});
+
+const protectedBranches = ['master', 'main'];
+
+ipcMain.handle('git:api:reset', async (_, id: string, origin: string, target: string) => {
+  try {
+    if (protectedBranches.includes(origin)) throw new Error(`Branch ${origin} is forbidden to reset`);
+
+    const git = await getGit(id);
+
+    const accessToken = await execAsync('gh auth token');
+    if (!accessToken) throw new Error('Access token not found. Please login to GitHub using gh auth login');
+
+    const headers = {
+      Authorization: `token ${accessToken}`,
+      'Content-Type': 'application/json'
+    };
+
+    const repo = await git.remote(['get-url', 'origin']);
+    if (!repo) throw new Error('Repo not found');
+    const [repository] = repo.split(':')[1].split('.git');
+
+    log.info('url', `https://api.github.com/repos/${repository}/git/refs/heads/${target}`);
+
+    const targetData = await axios.get(`https://api.github.com/repos/${repository}/git/refs/heads/${target}`, {
+      headers
+    });
+
+    const sha: string | undefined = targetData.data?.object?.sha;
+    if (!sha) throw new Error('Target branch not found');
+
+    log.info(targetData, 'sha');
+
+    const resetData = await axios.patch(
+      `https://api.github.com/repos/${repository}/git/refs/heads/${origin}`,
+      { force: true, sha },
+      { headers }
+    );
+
+    log.info(resetData, 'resetData');
+
+    return { message: `Branch ${origin} was reset to ${target}`, success: true };
+  } catch (e) {
     return { message: e.message, success: false };
   }
 });

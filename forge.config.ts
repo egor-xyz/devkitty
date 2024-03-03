@@ -15,11 +15,11 @@ const isDev = process.env.IS_DEV === 'true';
 const forgeConfig: ForgeConfig = {
   makers: [new MakerZIP({}, ['darwin'])],
   packagerConfig: {
-    asar: true,
     appBundleId: 'app.devkitty',
     appCategoryType: 'public.app-category.developer-tools',
     appCopyright: 'Copyright © 2024 Devkitty',
     appVersion: version,
+    asar: true,
     executableName: 'Devkitty',
     icon: './icons/icon',
     name: 'Devkitty',
@@ -32,7 +32,7 @@ const forgeConfig: ForgeConfig = {
       : undefined,
     osxSign: !isDev
       ? {
-          optionsForFile: (path: string) => ({
+          optionsForFile: () => ({
             entitlements: './entitlements.mac.plist'
           })
         }

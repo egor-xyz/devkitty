@@ -20,6 +20,9 @@ const bridge = {
     pull: (id: string) => ipcRenderer.invoke('git:pull', id),
     reset: (id: string, target: string, force: boolean) => ipcRenderer.invoke('git:reset', id, target, force)
   },
+  gitAPI: {
+    reset: (id: string, origin: string, target: string) => ipcRenderer.invoke('git:api:reset', id, origin, target)
+  },
   launch: {
     editor: (fullPath: string, editor: FoundEditor) => ipcRenderer.invoke('launch:editor', { editor, fullPath }),
     shell: (fullPath: string, shell: FoundShell<string>) => ipcRenderer.invoke('launch:shell', { fullPath, shell })
