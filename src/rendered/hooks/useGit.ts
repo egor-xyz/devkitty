@@ -15,9 +15,7 @@ export const useGit = () => {
   const intervalId = useRef<number>();
   const unmounted = useRef(false);
 
-  // run method each 5 seconds
   const getStatus = async (id: string, polling = true) => {
-    console.log(`getting status for ${id}`);
     setLoading(true);
 
     const res = await window.bridge.git.getStatus(id);

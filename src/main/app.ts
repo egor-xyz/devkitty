@@ -23,7 +23,7 @@ app.name = 'Devkitty';
 
 const createWindow = (): void => {
   // restore window position and size
-  const { height = 600, width = isDev ? 1326 : 800, x, y } = settings.get('windowBounds') || {};
+  const { height = 600, width = isDev ? 1426 : 800, x, y } = settings.get('windowBounds') || {};
 
   // Create the browser window.
   const mainWindow = new BrowserWindow({
