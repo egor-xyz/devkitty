@@ -64,14 +64,30 @@ export const GitResetModal: FC<ModalProps & GitResetModalProps> = (props) => {
 
   const resetRemote = async () => {
     console.log('resetRemote');
+    const res = await window.bridge.gitAPI.reset(id, origin, target);
+    if (!res.success) {
+      (await appToaster).show({
+        icon: 'info-sign',
+        intent: 'warning',
+        message: `Remote reset ${res.message}`,
+        timeout: 0
+      });
+      setLoading(false);
+      return;
+    }
+
+    console.log(res, 'resetRemote');
+    // onClose();
   };
 
   const resetBranch = async () => {
+    setLoading(true);
+
     if (remoteMode) {
       resetRemote();
       return;
     }
-    setLoading(true);
+
     const res = await window.bridge.git.reset(id, target, forcePush);
     if (!res.success) {
       (await appToaster).show({
@@ -121,8 +137,8 @@ export const GitResetModal: FC<ModalProps & GitResetModalProps> = (props) => {
             <StyledBranchSelect
               fill
               currentBranch={origin}
+              disabled={loading}
               gitStatus={gitStatus}
-              loading={loading}
               onSelect={selectOrigin}
             />
           </Row>
@@ -133,8 +149,8 @@ export const GitResetModal: FC<ModalProps & GitResetModalProps> = (props) => {
           <StyledBranchSelect
             fill
             currentBranch={target}
+            disabled={loading}
             gitStatus={gitStatus}
-            loading={loading}
             onSelect={selectTarget}
           />
         </Row>

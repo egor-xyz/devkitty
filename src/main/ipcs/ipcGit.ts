@@ -109,3 +109,16 @@ ipcMain.handle('git:mergeTo', async (e, id: string, from: string, target: string
     return { message: e.message, success: false };
   }
 });
+
+ipcMain.handle('git:api:reset', async (_, id: string, origin: string, target: string) => {
+  try {
+    const projects = settings.get('projects');
+    const project = projects.find((project) => project.id === id);
+
+    console.log('project', project, origin, target);
+
+    return { message: 'Reset done', success: true };
+  } catch (e) {
+    return { message: e.message, success: false };
+  }
+});
