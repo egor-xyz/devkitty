@@ -5,7 +5,7 @@
   "description": "Swiss army knife for developers",
   "main": ".vite/build/app.js",
   "scripts": {
-    "start": "ELECTRON_DISABLE_SECURITY_WARNINGS=true electron-forge start",
+    "start": "electron-forge start",
     "package:arm": "electron-forge package --arch=arm64",
     "make": "electron-forge make --arch=x64,arm64",
     "make:arm": "NODE_ENV=production electron-forge make --arch=arm64",
