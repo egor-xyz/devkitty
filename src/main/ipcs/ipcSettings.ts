@@ -15,11 +15,6 @@ ipcMain.handle('settings:set', (_, key, value, safe?: boolean) => {
     });
   }
 
-  //TODO: tmp fix for groups if they not array
-  if (!Array.isArray(state) && (key === 'selectedGroups' || key === 'collapsedGroups')) {
-    return settings.set(key, value);
-  }
-
   if (!Array.isArray(state)) {
     return settings.set(key, { ...state, ...value });
   }

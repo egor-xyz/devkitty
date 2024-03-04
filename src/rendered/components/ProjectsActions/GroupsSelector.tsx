@@ -35,9 +35,6 @@ export const GroupsSelector = () => {
     allSelected ? unselectAll() : selectAll();
   };
 
-  //TODO: tmp fix for groups if they not array
-  const validGroups = Array.isArray(selectedGroups) ? selectedGroups : [];
-
   return (
     <Root $collapsed={projectActionCollapsed}>
       <GroupsControl>
@@ -46,12 +43,12 @@ export const GroupsSelector = () => {
         <OldSchoolWrapper>
           {groupsWithAliases.map(({ name, id, icon }) => (
             <OldSchoolButton
-              $active={validGroups.includes(id)}
+              $active={selectedGroups.includes(id)}
               key={id}
               onClick={() => select(id)}
             >
               <StyledIcon
-                color={validGroups.includes(id) ? Colors.RED3 : Colors.DARK_GRAY5}
+                color={selectedGroups.includes(id) ? Colors.RED3 : Colors.DARK_GRAY5}
                 icon={icon}
               />
               {name}
