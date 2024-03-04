@@ -29,7 +29,6 @@ const createWindow = (): void => {
     titleBarStyle: 'hidden',
     trafficLightPosition: { x: 15, y: 17 },
     webPreferences: {
-      nodeIntegration: true,
       preload: path.join(__dirname, 'preload.js')
     },
     ...loadWindowState()
