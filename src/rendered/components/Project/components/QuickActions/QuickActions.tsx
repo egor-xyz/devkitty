@@ -1,5 +1,6 @@
 import { Button, ButtonGroup, Classes, IconName, MaybeElement } from '@blueprintjs/core';
 import { FC, useState } from 'react';
+import { FaRegCopy, FaCopy } from 'react-icons/fa';
 
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { GitStatus, Project } from 'types/project';
@@ -15,13 +16,13 @@ type Props = {
 };
 
 export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
-  const [copyIcon, setCopyIcon] = useState<'clipboard' | 'saved'>('clipboard');
+  const [copyIcon, setCopyIcon] = useState<JSX.Element>(<FaRegCopy />);
   const { selectedEditor, selectedShell } = useAppSettings();
   const { openModal } = useModal();
 
   const copyToClipboard = () => {
-    setCopyIcon('saved');
-    setTimeout(() => setCopyIcon('clipboard'), 1000);
+    setCopyIcon(<FaCopy />);
+    setTimeout(() => setCopyIcon(<FaRegCopy />), 1000);
 
     navigator.clipboard.writeText(gitStatus?.branchSummary?.current);
   };
@@ -46,8 +47,13 @@ export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
     <ButtonGroup className={!gitStatus && Classes.SKELETON}>
       <Button
         icon={copyIcon}
-        title={'Copy current branch to clipboard'}
+        title={'Copy the branch name to clipboard'}
         onClick={copyToClipboard}
+      />
+
+      <Button
+        icon={'open-application'}
+        title="Open in ..."
       />
 
       {selectedShell && (
