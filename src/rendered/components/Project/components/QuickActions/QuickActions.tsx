@@ -1,13 +1,15 @@
 import { Button, ButtonGroup, Classes, IconName, MaybeElement } from '@blueprintjs/core';
 import { FC, useState } from 'react';
-import { FaRegCopy, FaCopy } from 'react-icons/fa';
 
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
-import { GitStatus, Project } from 'types/project';
 import { useModal } from 'rendered/hooks/useModal';
+import { GitStatus, Project } from 'types/project';
 
 import VSCode from '../../assets/VSCode.svg?react';
 import Warp from '../../assets/Warp.svg?react';
+import { StyledFaCopy, StyledFaRegCopy } from './QuickActions.styles';
+
+const size = 16;
 
 type Props = {
   gitStatus: GitStatus;
@@ -16,13 +18,13 @@ type Props = {
 };
 
 export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
-  const [copyIcon, setCopyIcon] = useState<JSX.Element>(<FaRegCopy />);
+  const [copyIcon, setCopyIcon] = useState(<StyledFaRegCopy size={size} />);
   const { selectedEditor, selectedShell } = useAppSettings();
   const { openModal } = useModal();
 
   const copyToClipboard = () => {
-    setCopyIcon(<FaCopy />);
-    setTimeout(() => setCopyIcon(<FaRegCopy />), 1000);
+    setCopyIcon(<StyledFaCopy size={size} />);
+    setTimeout(() => setCopyIcon(<StyledFaRegCopy size={size} />), 1000);
 
     navigator.clipboard.writeText(gitStatus?.branchSummary?.current);
   };
@@ -52,8 +54,13 @@ export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
       />
 
       <Button
-        icon={'open-application'}
+        icon={'share'}
         title="Open in ..."
+      />
+
+      <Button
+        icon={'git-pull'}
+        title="Git actions"
       />
 
       {selectedShell && (
