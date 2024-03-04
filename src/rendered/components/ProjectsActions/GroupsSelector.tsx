@@ -2,7 +2,6 @@ import { Colors } from '@blueprintjs/colors';
 
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { useGroups } from 'rendered/hooks/useGroups';
-import { useMountEffect } from 'rendered/hooks/useMountEffect';
 
 import { GroupsControl, OldSchoolButton, OldSchoolWrapper, Root, StyledIcon, Title } from './GroupsSelector.styles';
 import click from './assets/click.mp3';
@@ -12,7 +11,7 @@ const volume = 0.2;
 
 export const GroupsSelector = () => {
   const projectActionCollapsed = useAppSettings(({ projectActionCollapsed }) => projectActionCollapsed);
-  const { groupsWithAliases, toggleSelected, selectAll, unselectAll, selectedGroups, collapsedGroups } = useGroups();
+  const { groupsWithAliases, toggleSelected, selectAll, unselectAll, selectedGroups } = useGroups();
   const soundEffects = useAppSettings(({ soundEffects }) => soundEffects);
 
   // all groups are selected
@@ -36,12 +35,8 @@ export const GroupsSelector = () => {
     allSelected ? unselectAll() : selectAll();
   };
 
-  useMountEffect(() => {
-    // tmp fix for groups if they not array
-    if (!Array.isArray(selectedGroups) || !Array.isArray(collapsedGroups)) {
-      useGroups.setState({ collapsedGroups: [], selectedGroups: [] });
-    }
-  });
+  //TODO: tmp fix for groups if they not array
+  const validGroups = Array.isArray(selectedGroups) ? selectedGroups : [];
 
   return (
     <Root $collapsed={projectActionCollapsed}>
@@ -51,12 +46,12 @@ export const GroupsSelector = () => {
         <OldSchoolWrapper>
           {groupsWithAliases.map(({ name, id, icon }) => (
             <OldSchoolButton
-              $active={selectedGroups.includes(id)}
+              $active={validGroups.includes(id)}
               key={id}
               onClick={() => select(id)}
             >
               <StyledIcon
-                color={selectedGroups.includes(id) ? Colors.RED3 : Colors.DARK_GRAY5}
+                color={validGroups.includes(id) ? Colors.RED3 : Colors.DARK_GRAY5}
                 icon={icon}
               />
               {name}
