@@ -20,6 +20,7 @@ type Actions = {
   toggleCollapsed: (id: string) => void;
   toggleSelected: (id: string) => void;
   unselectAll: () => void;
+  unselectCollapsed: () => void;
 };
 
 export const useGroups = create<State & Actions>()((set, get) => ({
@@ -104,6 +105,10 @@ export const useGroups = create<State & Actions>()((set, get) => ({
   unselectAll: () => {
     set({ selectedGroups: [] });
     window.bridge.settings.set('selectedGroups', []);
+  },
+  unselectCollapsed: () => {
+    set({ collapsedGroups: [] });
+    window.bridge.settings.set('collapsedGroups', []);
   }
 }));
 
