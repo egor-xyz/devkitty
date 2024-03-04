@@ -5,8 +5,7 @@ import log from 'electron-log';
 import { updateElectronApp } from 'update-electron-app';
 
 import './ipcs';
-
-import { settings } from './settings';
+import { loadWindowState, saveBounds } from './libs/window';
 import { updateEditorsAndShells } from './libs/integrations/integrations';
 
 log.initialize({ preload: true, spyRendererConsole: false });
@@ -22,13 +21,8 @@ const isDev = process.env.NODE_ENV === 'development';
 app.name = 'Devkitty';
 
 const createWindow = (): void => {
-  // restore window position and size
-  const { height = 600, width = isDev ? 1426 : 800, x, y } = settings.get('windowBounds') || {};
-
-  // Create the browser window.
   const mainWindow = new BrowserWindow({
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#141414' : '#ffffff',
-    height,
     minHeight: 600,
     minWidth: 800,
     show: isDev ? false : true,
@@ -38,14 +32,12 @@ const createWindow = (): void => {
       nodeIntegration: true,
       preload: path.join(__dirname, 'preload.js')
     },
-    width,
-    x,
-    y
+    ...loadWindowState()
   });
 
   mainWindow.on('close', () => {
     if (!isDev && mainWindow.webContents.isDevToolsOpened()) return;
-    settings.set('windowBounds', mainWindow.getBounds());
+    saveBounds(mainWindow);
   });
 
   // all external links should open in default browser
