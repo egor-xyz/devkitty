@@ -7,19 +7,17 @@ ipcMain.handle('settings:get', (_, key) => settings.get(key));
 ipcMain.handle('settings:set', (_, key, value, safe?: boolean) => {
   const state = settings.get(key);
 
-  const newValue = { ...value };
-
   if (safe) {
-    Object.keys(newValue).forEach((key) => {
-      if (newValue[key]) {
-        newValue[key] = safeStorage.encryptString(String(newValue[key]));
+    Object.keys(value).forEach((key) => {
+      if (value[key]) {
+        value[key] = safeStorage.encryptString(String(value[key]));
       }
     });
   }
 
   if (!Array.isArray(state)) {
-    return settings.set(key, { ...state, ...newValue });
+    return settings.set(key, { ...state, ...value });
   }
 
-  return settings.set(key, newValue);
+  return settings.set(key, value);
 });
