@@ -10,7 +10,7 @@ import { version } from './package.json';
 
 config();
 
-const isDev = process.env.IS_DEV === 'true';
+const notSign = process.env.NOT_SIGN === 'true';
 
 const forgeConfig: ForgeConfig = {
   makers: [new MakerZIP({}, ['darwin'])],
@@ -23,14 +23,14 @@ const forgeConfig: ForgeConfig = {
     executableName: 'Devkitty',
     icon: './icons/icon',
     name: 'Devkitty',
-    osxNotarize: !isDev
+    osxNotarize: !notSign
       ? {
           appleId: process.env.APPLE_ID || '',
           appleIdPassword: process.env.APPLE_ID_PASSWORD || '',
           teamId: process.env.APPLE_TEAM_ID || ''
         }
       : undefined,
-    osxSign: !isDev
+    osxSign: !notSign
       ? {
           optionsForFile: () => ({
             entitlements: './entitlements.mac.plist'
