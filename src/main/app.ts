@@ -15,10 +15,13 @@ updateElectronApp({
   updateInterval: '5 minutes'
 });
 
-// Initialize app & settings
+app.name = 'Devkitty';
+
 const isDev = process.env.NODE_ENV === 'development';
 
-app.name = 'Devkitty';
+if (isDev) {
+  app.setPath('userData', path.resolve('./.tmp'));
+}
 
 const createWindow = (): void => {
   const mainWindow = new BrowserWindow({
@@ -29,7 +32,6 @@ const createWindow = (): void => {
     titleBarStyle: 'hidden',
     trafficLightPosition: { x: 15, y: 17 },
     webPreferences: {
-      nodeIntegration: true,
       preload: path.join(__dirname, 'preload.js')
     },
     ...loadWindowState()
@@ -98,6 +100,3 @@ app.on('window-all-closed', () => {
     app.quit();
   }
 });
-
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and import them here.
