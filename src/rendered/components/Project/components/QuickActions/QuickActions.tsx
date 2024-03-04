@@ -34,7 +34,15 @@ export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
         onClick={copyToClipboard}
       />
 
-      <Popover content={<OpenInMenu project={project} />}>
+      <Popover
+        content={
+          <OpenInMenu
+            gitStatus={gitStatus}
+            project={project}
+          />
+        }
+        placement="bottom"
+      >
         <Button
           icon={'share'}
           loading={loading}
@@ -49,6 +57,7 @@ export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
             project={project}
           />
         }
+        placement="bottom"
       >
         <Button
           icon={'git-merge'}
