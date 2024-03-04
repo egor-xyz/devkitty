@@ -43,12 +43,12 @@ export const GroupsSelector = () => {
         <OldSchoolWrapper>
           {groupsWithAliases.map(({ name, id, icon }) => (
             <OldSchoolButton
-              $active={selectedGroups.includes(id)}
+              $active={selectedGroups?.includes(id)}
               key={id}
               onClick={() => select(id)}
             >
               <StyledIcon
-                color={selectedGroups.includes(id) ? Colors.RED3 : Colors.DARK_GRAY5}
+                color={selectedGroups?.includes(id) ? Colors.RED3 : Colors.DARK_GRAY5}
                 icon={icon}
               />
               {name}
