@@ -1,12 +1,13 @@
-import { Button, ButtonGroup, Classes, IconName, MaybeElement } from '@blueprintjs/core';
+import { Button, ButtonGroup, Classes, Popover } from '@blueprintjs/core';
 import { FC, useState } from 'react';
 
-import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { GitStatus, Project } from 'types/project';
-import { useModal } from 'rendered/hooks/useModal';
 
-import VSCode from '../../assets/VSCode.svg?react';
-import Warp from '../../assets/Warp.svg?react';
+import { GitMenu } from '../GitMenu';
+import { OpenInMenu } from '../OpenInMenu';
+import { StyledFaCopy, StyledFaRegCopy } from './QuickActions.styles';
+
+const size = 16;
 
 type Props = {
   gitStatus: GitStatus;
@@ -15,63 +16,55 @@ type Props = {
 };
 
 export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
-  const [copyIcon, setCopyIcon] = useState<'clipboard' | 'saved'>('clipboard');
-  const { selectedEditor, selectedShell } = useAppSettings();
-  const { openModal } = useModal();
+  const [copyIcon, setCopyIcon] = useState(<StyledFaRegCopy size={size} />);
 
   const copyToClipboard = () => {
-    setCopyIcon('saved');
-    setTimeout(() => setCopyIcon('clipboard'), 1000);
+    setCopyIcon(<StyledFaCopy size={size} />);
+    setTimeout(() => setCopyIcon(<StyledFaRegCopy size={size} />), 1000);
 
     navigator.clipboard.writeText(gitStatus?.branchSummary?.current);
   };
-
-  const openInEditor = () => {
-    window.bridge.launch.editor(project.filePath, selectedEditor);
-  };
-
-  const openInShell = () => {
-    window.bridge.launch.shell(project.filePath, selectedShell);
-  };
-
-  const openMerge = () => {
-    openModal({ name: 'git:merge', props: { gitStatus, id: project.id, name: project.name } });
-  };
-
-  const shellIcon: IconName | MaybeElement = selectedShell?.shell === 'Warp' ? <Warp height={15} /> : 'console';
-  const editorIcon: IconName | MaybeElement =
-    selectedEditor?.editor === 'Visual Studio Code' ? <VSCode height={15} /> : 'code';
 
   return (
     <ButtonGroup className={!gitStatus && Classes.SKELETON}>
       <Button
         icon={copyIcon}
-        title={'Copy current branch to clipboard'}
+        loading={loading}
+        title={'Copy the branch name to clipboard'}
         onClick={copyToClipboard}
       />
 
-      {selectedShell && (
+      <Popover
+        content={
+          <OpenInMenu
+            gitStatus={gitStatus}
+            project={project}
+          />
+        }
+        placement="bottom"
+      >
         <Button
-          icon={shellIcon}
-          title={`Open in ${selectedShell?.shell}`}
-          onClick={openInShell}
+          icon={'share'}
+          loading={loading}
+          title="Open in ..."
         />
-      )}
+      </Popover>
 
-      {selectedEditor && (
+      <Popover
+        content={
+          <GitMenu
+            gitStatus={gitStatus}
+            project={project}
+          />
+        }
+        placement="bottom"
+      >
         <Button
-          icon={editorIcon}
-          title={`Open in ${selectedEditor?.editor}`}
-          onClick={openInEditor}
+          icon={'git-merge'}
+          loading={loading}
+          title="Git actions"
         />
-      )}
-
-      <Button
-        icon={'git-merge'}
-        loading={loading}
-        title="Merge to"
-        onClick={openMerge}
-      />
+      </Popover>
     </ButtonGroup>
   );
 };
