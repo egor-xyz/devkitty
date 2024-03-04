@@ -7,11 +7,14 @@ import { Settings } from 'types/settings';
 
 const isDev = process.env.NODE_ENV === 'development';
 
+if (isDev) {
+  app.setPath('userData', path.resolve('./.tmp'));
+}
+
 export const settings = new Store<Settings>({
   beforeEachMigration: (store, context) => {
     console.log(`[main-config] migrate from ${context.fromVersion} → ${context.toVersion}`);
   },
-  cwd: isDev ? path.resolve('..', app.getAppPath()) : app.getPath('userData'),
   defaults: {
     appSettings: {
       editors: [],
