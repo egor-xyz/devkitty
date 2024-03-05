@@ -1,4 +1,4 @@
-import { Rectangle, nativeTheme } from 'electron';
+import { nativeTheme } from 'electron';
 
 import { Group, Groups } from 'types';
 
@@ -12,5 +12,4 @@ export type Settings = {
   projects: Projects;
   selectedGroups: Group['id'][];
   themeSource: typeof nativeTheme.themeSource;
-  windowBounds: Rectangle;
 };

@@ -1,11 +1,11 @@
-import { app, BrowserWindow, nativeTheme, shell } from 'electron';
+import { app, BrowserWindow, BrowserWindowConstructorOptions, nativeTheme, shell } from 'electron';
 import path from 'path';
 
+import electronWindowState from 'electron-window-state';
 import log from 'electron-log';
 import { updateElectronApp } from 'update-electron-app';
 
 import './ipcs';
-import { loadWindowState, saveBounds } from './libs/window';
 import { updateEditorsAndShells } from './libs/integrations/integrations';
 
 log.initialize({ preload: true, spyRendererConsole: false });
@@ -24,8 +24,15 @@ if (isDev) {
 }
 
 const createWindow = (): void => {
+  const mainWindowState = electronWindowState({
+    defaultHeight: 600,
+    defaultWidth: isDev ? 1426 : 800
+  });
+
   const mainWindow = new BrowserWindow({
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#141414' : '#ffffff',
+
+    height: mainWindowState.height,
     minHeight: 600,
     minWidth: 800,
     show: isDev ? false : true,
@@ -34,13 +41,12 @@ const createWindow = (): void => {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
     },
-    ...loadWindowState()
+    width: mainWindowState.width,
+    x: mainWindowState.x,
+    y: mainWindowState.y
   });
 
-  mainWindow.on('close', () => {
-    if (!isDev && mainWindow.webContents.isDevToolsOpened()) return;
-    saveBounds(mainWindow);
-  });
+  mainWindowState.manage(mainWindow);
 
   // all external links should open in default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -82,21 +88,21 @@ const createWindow = (): void => {
 // Some APIs can only be used after this event occurs.
 app.on('ready', () => {
   createWindow();
+});
 
-  app.on('activate', () => {
-    // On OS X it's common to re-create a window in the app when the
-    // dock icon is clicked and there are no other windows open.
-    if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
-    }
-  });
+app.on('activate', () => {
+  // On OS X it's common to re-create a window in the app when the
+  // dock icon is clicked and there are no other windows open.
+  if (BrowserWindow.getAllWindows().length === 0) {
+    createWindow();
+  }
 });
 
 // Quit when all windows are closed, except on macOS. There, it's common
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit();
-  }
+  // if (process.platform !== 'darwin') {
+  app.quit();
+  // }
 });
