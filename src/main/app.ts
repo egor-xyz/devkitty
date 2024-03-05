@@ -1,8 +1,8 @@
-import { app, BrowserWindow, BrowserWindowConstructorOptions, nativeTheme, shell } from 'electron';
+import { app, BrowserWindow, nativeTheme, shell } from 'electron';
 import path from 'path';
 
-import electronWindowState from 'electron-window-state';
 import log from 'electron-log';
+import electronWindowState from 'electron-window-state';
 import { updateElectronApp } from 'update-electron-app';
 
 import './ipcs';
