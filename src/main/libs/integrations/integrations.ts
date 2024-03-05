@@ -1,4 +1,5 @@
 import { BrowserWindow } from 'electron';
+import os from 'os';
 
 // @ts-ignore
 import { getMacInstalledApps } from 'get-installed-apps';
@@ -18,7 +19,9 @@ type Apps = Array<{
 }>;
 
 export const updateEditorsAndShells = async (mainWindow: BrowserWindow) => {
-  const apps: Apps = await getMacInstalledApps();
+  const apps1: Apps = await getMacInstalledApps();
+  const apps2: Apps = (await getMacInstalledApps(`${os.homedir()}/Applications`)) ?? [];
+  const apps = [...apps1, ...apps2];
 
   const editors: FoundEditor[] = apps
     .filter(({ appIdentifier }) => editorIds.includes(appIdentifier))
