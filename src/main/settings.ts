@@ -28,7 +28,13 @@ export const settings = new Store<Settings>({
     groupAliases: [],
     projects: [],
     selectedGroups: [],
-    themeSource: 'system'
+    themeSource: 'system',
+    windowBounds: {
+      height: 600,
+      width: isDev ? 1426 : 800,
+      x: 0,
+      y: 0
+    }
   },
   migrations: {},
   name: 'devkitty.settings'

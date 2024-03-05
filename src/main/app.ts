@@ -2,11 +2,11 @@ import { app, BrowserWindow, nativeTheme, shell } from 'electron';
 import path from 'path';
 
 import log from 'electron-log';
-import electronWindowState from 'electron-window-state';
 import { updateElectronApp } from 'update-electron-app';
 
 import './ipcs';
 import { updateEditorsAndShells } from './libs/integrations/integrations';
+import { loadWindowState, saveBounds } from './libs/window';
 
 log.initialize({ preload: true, spyRendererConsole: false });
 
@@ -24,29 +24,18 @@ if (isDev) {
 }
 
 const createWindow = (): void => {
-  const mainWindowState = electronWindowState({
-    defaultHeight: 600,
-    defaultWidth: isDev ? 1426 : 800
-  });
-
   const mainWindow = new BrowserWindow({
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#141414' : '#ffffff',
-
-    height: mainWindowState.height,
     minHeight: 600,
     minWidth: 800,
-    show: isDev ? false : true,
+    show: false,
     titleBarStyle: 'hidden',
     trafficLightPosition: { x: 15, y: 17 },
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
     },
-    width: mainWindowState.width,
-    x: mainWindowState.x,
-    y: mainWindowState.y
+    ...loadWindowState()
   });
-
-  mainWindowState.manage(mainWindow);
 
   // all external links should open in default browser
   mainWindow.webContents.setWindowOpenHandler(({ url }) => {
@@ -63,12 +52,22 @@ const createWindow = (): void => {
 
   updateEditorsAndShells(mainWindow);
 
-  if (isDev) {
+  mainWindow.on('close', () => {
+    if (!isDev && mainWindow.webContents.isDevToolsOpened()) return;
+    saveBounds(mainWindow);
+  });
+
+  mainWindow.once('ready-to-show', () => {
+    if (!isDev) {
+      mainWindow.show();
+      return;
+    }
+
     setTimeout(() => {
       mainWindow.showInactive();
       mainWindow.webContents.openDevTools();
     }, 500);
-  }
+  });
 
   // CSP interceptor
   // mainWindow.webContents.session.webRequest.onHeadersReceived((details, callback) => {
@@ -102,7 +101,7 @@ app.on('activate', () => {
 // for applications and their menu bar to stay active until the user quits
 // explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
-  // if (process.platform !== 'darwin') {
-  app.quit();
-  // }
+  if (process.platform !== 'darwin') {
+    app.quit();
+  }
 });
