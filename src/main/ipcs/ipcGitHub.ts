@@ -67,13 +67,13 @@ ipcMain.handle('git:api:getAction', async (_, id: string, filterBy: string[]) =>
       return { message: 'No running actions', success: true };
     }
 
-    // Filter by branch and only from last hour
+    // Filter by branch and only from last 24 hours
     const runs = data.workflow_runs
       .filter((run) => filterBy.includes(run.head_branch))
-      .filter((run) => new Date(run.created_at).getTime() > Date.now() - 3600000);
+      .filter((run) => new Date(run.created_at).getTime() > Date.now() - 86400000);
 
     if (runs.length < 1) {
-      return { message: 'No actions for this branch', success: true };
+      return { message: 'No actions for this branch', success: false };
     }
 
     return { data, filterBy, runs, success: true };

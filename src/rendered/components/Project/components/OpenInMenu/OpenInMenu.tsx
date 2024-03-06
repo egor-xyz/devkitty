@@ -4,6 +4,7 @@ import { FaGithub } from 'react-icons/fa';
 
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { GitStatus, Project } from 'types/project';
+import { ActionsIcon } from 'rendered/assets/icons';
 
 import VSCode from '../../assets/VSCode.svg?react';
 import Warp from '../../assets/Warp.svg?react';
@@ -67,7 +68,7 @@ export const OpenInMenu: FC<Props> = ({ project, gitStatus }) => {
         onClick={() => openInGitHub('/')}
       />
       <MenuItem
-        icon={'circle-arrow-right'}
+        icon={<ActionsIcon />}
         text={`Actions`}
         onClick={() => openInGitHub('/actions')}
       />

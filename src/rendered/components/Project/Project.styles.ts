@@ -56,7 +56,7 @@ export const MiddleBlock = styled.div`
   gap: 10px;
 `;
 
-export const Actions = styled.div`
+export const ProjectActions = styled.div`
   display: flex;
   position: relative;
   flex-direction: row-reverse;

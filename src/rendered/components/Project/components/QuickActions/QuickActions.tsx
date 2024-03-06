@@ -2,6 +2,7 @@ import { Button, ButtonGroup, Classes, Popover } from '@blueprintjs/core';
 import { FC, useState } from 'react';
 
 import { GitStatus, Project } from 'types/project';
+import { ActionsIcon } from 'rendered/assets/icons';
 
 import { GitMenu } from '../GitMenu';
 import { OpenInMenu } from '../OpenInMenu';
@@ -10,12 +11,14 @@ import { StyledFaCopy, StyledFaRegCopy } from './QuickActions.styles';
 const size = 16;
 
 type Props = {
+  actions: boolean;
   gitStatus: GitStatus;
   loading?: boolean;
   project: Project;
+  toggleActions: () => void;
 };
 
-export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
+export const QuickActions: FC<Props> = ({ project, gitStatus, loading, toggleActions, actions }) => {
   const [copyIcon, setCopyIcon] = useState(<StyledFaRegCopy size={size} />);
 
   const copyToClipboard = () => {
@@ -23,15 +26,6 @@ export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
     setTimeout(() => setCopyIcon(<StyledFaRegCopy size={size} />), 1000);
 
     navigator.clipboard.writeText(gitStatus?.branchSummary?.current);
-  };
-
-  const getActions = async () => {
-    const savedOrigin = localStorage.getItem(`GitResetModal:origin-${project.id}`);
-    const filterBy = [gitStatus.branchSummary.current];
-    if (savedOrigin) filterBy.push(savedOrigin);
-
-    const res = await window.bridge.gitAPI.getAction(project.id, filterBy);
-    console.log(res);
   };
 
   return (
@@ -76,10 +70,11 @@ export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
       </Popover>
 
       <Button
-        icon={'take-action'}
+        active={actions}
+        icon={<ActionsIcon />}
         loading={loading}
         title="Git actions"
-        onClick={getActions}
+        onClick={toggleActions}
       />
     </ButtonGroup>
   );

@@ -1,3 +1,4 @@
+/* eslint-disable react/jsx-max-depth */
 import { Button, ButtonGroup, Classes, Colors, Popover } from '@blueprintjs/core';
 import { FC, useState } from 'react';
 
@@ -7,11 +8,12 @@ import { Project as IProject } from 'types/project';
 import { useModal } from 'rendered/hooks/useModal';
 
 import { GitStatusGroup } from '../GitStatusGroup';
-import { Actions, Info, InfoText, MiddleBlock, RepoInfo, Root, StyledSpinner, Title } from './Project.styles';
+import { ProjectActions, Info, InfoText, MiddleBlock, RepoInfo, Root, StyledSpinner, Title } from './Project.styles';
 import { CheckoutBranch } from './components/CheckoutBranch';
 import { Error } from './components/Error';
 import { ProjectMenu } from './components/ProjectMenu';
 import { QuickActions } from './components/QuickActions';
+import { Actions } from './components/Actions';
 
 type Props = {
   project: IProject;
@@ -20,6 +22,7 @@ type Props = {
 export const Project: FC<Props> = ({ project }) => {
   const { gitStatus, getStatus, loading, pull } = useGit();
   const { openModal } = useModal();
+  const [actions, setActions] = useState(false);
 
   const [pullLoading, setPullLoading] = useState(false);
 
@@ -56,77 +59,91 @@ export const Project: FC<Props> = ({ project }) => {
     );
   }
 
+  const toggleActions = () => setActions(!actions);
+
   return (
-    <Root>
-      <Info>
-        <InfoText className={!gitStatus && Classes.SKELETON}>
-          <Title>{name}</Title>
-          <RepoInfo>{gitStatus?.organization ?? 'Local git'}</RepoInfo>
-        </InfoText>
+    <>
+      <Root>
+        <Info>
+          <InfoText className={!gitStatus && Classes.SKELETON}>
+            <Title>{name}</Title>
+            <RepoInfo>{gitStatus?.organization ?? 'Local git'}</RepoInfo>
+          </InfoText>
 
-        <GitStatusGroup
-          gitStatus={gitStatus}
-          name={name}
-        />
-      </Info>
+          <GitStatusGroup
+            gitStatus={gitStatus}
+            name={name}
+          />
+        </Info>
 
-      <MiddleBlock>
-        <CheckoutBranch
-          getStatus={runGetStatus}
-          gitStatus={gitStatus}
-          id={id}
-          name={name}
-        />
+        <MiddleBlock>
+          <CheckoutBranch
+            getStatus={runGetStatus}
+            gitStatus={gitStatus}
+            id={id}
+            name={name}
+          />
 
-        <QuickActions
+          <QuickActions
+            actions={actions}
+            gitStatus={gitStatus}
+            project={project}
+            toggleActions={toggleActions}
+          />
+        </MiddleBlock>
+
+        <ProjectActions className={!gitStatus && Classes.SKELETON}>
+          <ButtonGroup large>
+            {!behind && (
+              <Button
+                icon="refresh"
+                onClick={runGetStatus}
+              />
+            )}
+            {Boolean(behind) && (
+              <Button
+                icon="arrow-down"
+                intent="warning"
+                loading={pullLoading}
+                onClick={runPull}
+              />
+            )}
+            <Popover
+              content={
+                <ProjectMenu
+                  getStatus={runGetStatus}
+                  gitStatus={gitStatus}
+                  group={group}
+                  id={id}
+                  name={name}
+                  pull={runPull}
+                  removeProject={removeAlert}
+                />
+              }
+              placement="bottom-end"
+            >
+              <Button
+                icon="caret-down"
+                intent={ahead || behind ? 'warning' : 'none'}
+              />
+            </Popover>
+          </ButtonGroup>
+
+          <StyledSpinner
+            color={Colors.ORANGE1}
+            icon="dot"
+            loading={loading}
+          />
+        </ProjectActions>
+      </Root>
+
+      {actions && (
+        <Actions
           gitStatus={gitStatus}
           project={project}
+          setActions={setActions}
         />
-      </MiddleBlock>
-
-      <Actions className={!gitStatus && Classes.SKELETON}>
-        <ButtonGroup large>
-          {!behind && (
-            <Button
-              icon="refresh"
-              onClick={runGetStatus}
-            />
-          )}
-          {Boolean(behind) && (
-            <Button
-              icon="arrow-down"
-              intent="warning"
-              loading={pullLoading}
-              onClick={runPull}
-            />
-          )}
-          <Popover
-            content={
-              <ProjectMenu
-                getStatus={runGetStatus}
-                gitStatus={gitStatus}
-                group={group}
-                id={id}
-                name={name}
-                pull={runPull}
-                removeProject={removeAlert}
-              />
-            }
-            placement="bottom-end"
-          >
-            <Button
-              icon="caret-down"
-              intent={ahead || behind ? 'warning' : 'none'}
-            />
-          </Popover>
-        </ButtonGroup>
-
-        <StyledSpinner
-          color={Colors.ORANGE1}
-          icon="dot"
-          loading={loading}
-        />
-      </Actions>
-    </Root>
+      )}
+    </>
   );
 };
