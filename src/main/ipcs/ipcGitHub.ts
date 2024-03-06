@@ -52,3 +52,32 @@ ipcMain.handle('git:api:reset', async (_, id: string, origin: string, target: st
     return { message: e.message, success: false };
   }
 });
+
+ipcMain.handle('git:api:getAction', async (_, id: string, filterBy: string[]) => {
+  try {
+    const { owner, repo } = await getRepoInfo(id);
+    if (!owner || !repo) throw new Error('Project not found');
+
+    const { data } = await getClient().rest.actions.listWorkflowRunsForRepo({
+      owner,
+      repo
+    });
+
+    if (data.total_count < 1) {
+      return { message: 'No running actions', success: true };
+    }
+
+    // Filter by branch and only from last hour
+    const runs = data.workflow_runs
+      .filter((run) => filterBy.includes(run.head_branch))
+      .filter((run) => new Date(run.created_at).getTime() > Date.now() - 3600000);
+
+    if (runs.length < 1) {
+      return { message: 'No actions for this branch', success: true };
+    }
+
+    return { data, filterBy, runs, success: true };
+  } catch (e) {
+    return { message: e.message, success: false };
+  }
+});

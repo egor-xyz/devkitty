@@ -25,6 +25,15 @@ export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
     navigator.clipboard.writeText(gitStatus?.branchSummary?.current);
   };
 
+  const getActions = async () => {
+    const savedOrigin = localStorage.getItem(`GitResetModal:origin-${project.id}`);
+    const filterBy = [gitStatus.branchSummary.current];
+    if (savedOrigin) filterBy.push(savedOrigin);
+
+    const res = await window.bridge.gitAPI.getAction(project.id, filterBy);
+    console.log(res);
+  };
+
   return (
     <ButtonGroup className={!gitStatus && Classes.SKELETON}>
       <Button
@@ -65,6 +74,13 @@ export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
           title="Git actions"
         />
       </Popover>
+
+      <Button
+        icon={'take-action'}
+        loading={loading}
+        title="Git actions"
+        onClick={getActions}
+      />
     </ButtonGroup>
   );
 };
