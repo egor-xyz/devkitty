@@ -4,7 +4,7 @@ import { useMountEffect } from 'rendered/hooks/useMountEffect';
 import { GitStatus, Project } from 'types/project';
 import { appToaster } from 'rendered/utils/appToaster';
 
-import { Root } from './Actions.styles';
+import { GitHubAction } from '../GitHubAction';
 
 type Props = {
   gitStatus: GitStatus;
@@ -12,7 +12,7 @@ type Props = {
   setActions: (actions: boolean) => void;
 };
 
-export const Actions: FC<Props> = ({ gitStatus, project, setActions }) => {
+export const GitHubActions: FC<Props> = ({ gitStatus, project, setActions }) => {
   const [runs, setRuns] = useState([]);
 
   const getActions = async () => {
@@ -21,7 +21,7 @@ export const Actions: FC<Props> = ({ gitStatus, project, setActions }) => {
     if (savedOrigin) filterBy.push(savedOrigin);
 
     const res = await window.bridge.gitAPI.getAction(project.id, filterBy);
-    console.log(res);
+    console.log(res.runs);
 
     if (!res.success) {
       (await appToaster).show({
@@ -43,8 +43,11 @@ export const Actions: FC<Props> = ({ gitStatus, project, setActions }) => {
 
   return (
     <>
-      {runs.map(({ id, display_title }: any) => (
-        <Root key={id}>{display_title}</Root>
+      {runs.map((run: any) => (
+        <GitHubAction
+          key={run.id}
+          run={run}
+        />
       ))}
     </>
   );

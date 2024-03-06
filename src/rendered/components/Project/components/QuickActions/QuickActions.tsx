@@ -2,7 +2,7 @@ import { Button, ButtonGroup, Classes, Popover } from '@blueprintjs/core';
 import { FC, useState } from 'react';
 
 import { GitStatus, Project } from 'types/project';
-import { ActionsIcon } from 'rendered/assets/icons';
+import { ActionsIcon } from 'rendered/assets/gitHubIcons';
 
 import { GitMenu } from '../GitMenu';
 import { OpenInMenu } from '../OpenInMenu';

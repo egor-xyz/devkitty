@@ -13,7 +13,7 @@ import { CheckoutBranch } from './components/CheckoutBranch';
 import { Error } from './components/Error';
 import { ProjectMenu } from './components/ProjectMenu';
 import { QuickActions } from './components/QuickActions';
-import { Actions } from './components/Actions';
+import { GitHubActions } from './components/GitHubActions';
 
 type Props = {
   project: IProject;
@@ -138,7 +138,7 @@ export const Project: FC<Props> = ({ project }) => {
       </Root>
 
       {actions && (
-        <Actions
+        <GitHubActions
           gitStatus={gitStatus}
           project={project}
           setActions={setActions}

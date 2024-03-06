@@ -4,7 +4,7 @@ import { FaGithub } from 'react-icons/fa';
 
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { GitStatus, Project } from 'types/project';
-import { ActionsIcon } from 'rendered/assets/icons';
+import { ActionsIcon } from 'rendered/assets/gitHubIcons';
 
 import VSCode from '../../assets/VSCode.svg?react';
 import Warp from '../../assets/Warp.svg?react';
