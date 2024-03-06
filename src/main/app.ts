@@ -1,6 +1,7 @@
 import { app, BrowserWindow, nativeTheme, shell } from 'electron';
 import path from 'path';
 
+import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
 import log from 'electron-log';
 import { updateElectronApp } from 'update-electron-app';
 
@@ -85,7 +86,9 @@ const createWindow = (): void => {
 // This method will be called when Electron has finished
 // initialization and is ready to create browser windows.
 // Some APIs can only be used after this event occurs.
-app.on('ready', () => {
+app.on('ready', async () => {
+  if (isDev) await installExtension(REACT_DEVELOPER_TOOLS);
+
   createWindow();
 });
 
