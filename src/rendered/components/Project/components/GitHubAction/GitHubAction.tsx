@@ -1,11 +1,13 @@
 import { FC } from 'react';
 
+import { Run } from 'types/gitHub';
+
 import { Root } from './GitHubAction.styles';
 
 type Props = {
-  run: any;
+  run: Run;
 };
 
-export const GitHubAction: FC<Props> = () => {
-  return <Root>GitHubAction</Root>;
+export const GitHubAction: FC<Props> = ({ run: { display_title } }) => {
+  return <Root>{display_title}</Root>;
 };

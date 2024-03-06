@@ -7,7 +7,7 @@ import { settings } from '../settings';
 
 const protectedBranches = ['master', 'main'];
 
-const getClient = () => {
+const octokit = () => {
   const { gitHubToken } = settings.get('appSettings');
   if (!gitHubToken) throw new Error('GitHub token not found');
 
@@ -30,7 +30,7 @@ ipcMain.handle('git:api:reset', async (_, id: string, origin: string, target: st
     const { owner, repo } = await getRepoInfo(id);
     if (!owner || !repo) throw new Error('Project not found');
 
-    const targetData = await getClient().rest.git.getRef({
+    const targetData = await octokit().rest.git.getRef({
       owner,
       ref: `heads/${target}`,
       repo
@@ -39,7 +39,7 @@ ipcMain.handle('git:api:reset', async (_, id: string, origin: string, target: st
     const sha = targetData.data?.object?.sha;
     if (!sha) throw new Error('Target branch not found');
 
-    getClient().rest.git.updateRef({
+    octokit().rest.git.updateRef({
       force: true,
       owner,
       ref: `heads/${origin}`,
@@ -58,7 +58,7 @@ ipcMain.handle('git:api:getAction', async (_, id: string, filterBy: string[]) =>
     const { owner, repo } = await getRepoInfo(id);
     if (!owner || !repo) throw new Error('Project not found');
 
-    const { data } = await getClient().rest.actions.listWorkflowRunsForRepo({
+    const { data } = await octokit().rest.actions.listWorkflowRunsForRepo({
       owner,
       repo
     });
