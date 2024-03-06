@@ -25,8 +25,6 @@ ipcMain.handle('git:getStatus', async (e, id: string): Promise<GitStatus> => {
   try {
     const git = await getGit(id);
 
-    await git.fetch();
-
     // Get current branch status
     const status = await git.status();
     const isClean = status.isClean();
@@ -43,6 +41,8 @@ ipcMain.handle('git:getStatus', async (e, id: string): Promise<GitStatus> => {
     }
 
     const branchSummary = await git.branch();
+
+    git.fetch();
 
     return { branchSummary, organization, status: gitStatus, success: true };
   } catch (e) {
