@@ -2,7 +2,7 @@ import { ipcMain, safeStorage } from 'electron';
 
 import { Octokit } from 'octokit';
 
-import { getGit } from '../libs/git';
+import { getRepoInfo } from '../libs/git';
 import { settings } from '../settings';
 
 const protectedBranches = ['master', 'main'];
@@ -27,16 +27,13 @@ ipcMain.handle('git:api:reset', async (_, id: string, origin: string, target: st
     const token = safeStorage.decryptString(Buffer.from(gitHubToken));
     if (!token) throw new Error('GitHub token not found');
 
-    const git = await getGit(id);
-
-    const repo = await git.remote(['get-url', 'origin']);
-    if (!repo) throw new Error('Repo not found');
-    const [repository] = repo.split(':')[1].split('.git');
+    const { owner, repo } = await getRepoInfo(id);
+    if (!owner || !repo) throw new Error('Project not found');
 
     const targetData = await getClient().rest.git.getRef({
-      owner: repository.split('/')[0],
+      owner,
       ref: `heads/${target}`,
-      repo: repository.split('/')[1]
+      repo
     });
 
     const sha = targetData.data?.object?.sha;
@@ -44,9 +41,9 @@ ipcMain.handle('git:api:reset', async (_, id: string, origin: string, target: st
 
     getClient().rest.git.updateRef({
       force: true,
-      owner: repository.split('/')[0],
+      owner,
       ref: `heads/${origin}`,
-      repo: repository.split('/')[1],
+      repo,
       sha
     });
 
