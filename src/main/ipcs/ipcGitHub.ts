@@ -62,7 +62,6 @@ ipcMain.handle('git:api:getAction', async (_, id: string, filterBy: string[]) =>
 
     const { data } = await octokit().rest.actions.listWorkflowRunsForRepo({
       owner,
-      per_page: 3,
       repo
     });
 
@@ -79,7 +78,7 @@ ipcMain.handle('git:api:getAction', async (_, id: string, filterBy: string[]) =>
       return { message: 'No actions for this branch', success: false };
     }
 
-    return { data, filterBy, runs, success: true };
+    return { runs: runs.slice(0, 3), success: true };
   } catch (e) {
     log.error(e);
     return { message: e.message, success: false };
