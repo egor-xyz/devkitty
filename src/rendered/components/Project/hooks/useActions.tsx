@@ -1,12 +1,15 @@
 import { useEffect, useMemo, useState } from 'react';
 
 import { GitStatus, Project } from 'types/project';
+import { appToaster } from 'rendered/utils/appToaster';
+import { useAppSettings } from 'rendered/hooks/useAppSettings';
 
 import { Workflow } from '../components/Workflow';
 
 export const useActions = (gitStatus: GitStatus, project: Project) => {
   const [runs, setRuns] = useState([]);
   const [showActions, setShowActions] = useState(false);
+  const { gitHubToken } = useAppSettings();
 
   const getActions = async () => {
     const savedOrigin = localStorage.getItem(`GitResetModal:origin-${project.id}`);
@@ -17,13 +20,26 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
 
     if (!res.success) {
       setShowActions(false);
+      (await appToaster).show({
+        intent: 'primary',
+        message: `No actions found for ${project.name}`
+      });
       return;
     }
 
     setRuns(res.runs ?? []);
   };
 
-  const toggleActions = () => setShowActions(!showActions);
+  const toggleActions = async () => {
+    if (!showActions && !gitHubToken) {
+      (await appToaster).show({
+        intent: 'warning',
+        message: 'Set GitHub token in settings to see actions'
+      });
+      return;
+    }
+    setShowActions(!showActions);
+  };
 
   useEffect(() => {
     if (!showActions || !gitStatus?.branchSummary.current || !project.id) return;

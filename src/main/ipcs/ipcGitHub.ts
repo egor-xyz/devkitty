@@ -1,5 +1,6 @@
 import { ipcMain, safeStorage } from 'electron';
 
+import log from 'electron-log';
 import { Octokit } from 'octokit';
 
 import { getRepoInfo } from '../libs/git';
@@ -49,6 +50,7 @@ ipcMain.handle('git:api:reset', async (_, id: string, origin: string, target: st
 
     return { message: `Branch ${origin} was reset to ${target}`, success: true };
   } catch (e) {
+    log.error(e);
     return { message: e.message, success: false };
   }
 });
@@ -79,6 +81,7 @@ ipcMain.handle('git:api:getAction', async (_, id: string, filterBy: string[]) =>
 
     return { data, filterBy, runs, success: true };
   } catch (e) {
+    log.error(e);
     return { message: e.message, success: false };
   }
 });
