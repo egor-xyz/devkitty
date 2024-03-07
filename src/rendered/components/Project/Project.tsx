@@ -1,19 +1,19 @@
 /* eslint-disable react/jsx-max-depth */
 import { Button, ButtonGroup, Classes, Colors, Popover } from '@blueprintjs/core';
-import { FC, useEffect, useState } from 'react';
+import { FC, useState } from 'react';
 
 import { useGit } from 'rendered/hooks/useGit';
+import { useModal } from 'rendered/hooks/useModal';
 import { useMountEffect } from 'rendered/hooks/useMountEffect';
 import { Project as IProject } from 'types/project';
-import { useModal } from 'rendered/hooks/useModal';
 
 import { GitStatusGroup } from '../GitStatusGroup';
-import { ProjectActions, Info, InfoText, MiddleBlock, RepoInfo, Root, StyledSpinner, Title } from './Project.styles';
+import { Info, InfoText, MiddleBlock, ProjectActions, RepoInfo, Root, StyledSpinner, Title } from './Project.styles';
 import { CheckoutBranch } from './components/CheckoutBranch';
 import { Error } from './components/Error';
+import { GitHubActions } from './components/GitHubActions';
 import { ProjectMenu } from './components/ProjectMenu';
 import { QuickActions } from './components/QuickActions';
-import { GitHubActions } from './components/GitHubActions';
 
 type Props = {
   project: IProject;
@@ -60,10 +60,6 @@ export const Project: FC<Props> = ({ project }) => {
   }
 
   const toggleActions = () => setShowActions(!showActions);
-
-  useEffect(() => {
-    if (gitStatus?.branchSummary.all) setShowActions(true);
-  }, [gitStatus]);
 
   return (
     <>
