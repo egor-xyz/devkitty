@@ -80,8 +80,6 @@ export const GitResetModal: FC<ModalProps & GitResetModalProps> = (props) => {
       message: res.message
     });
 
-    window.open(`https://github.com/${gitStatus.organization}/${name}/actions`, '_blank');
-
     onClose();
   };
 
