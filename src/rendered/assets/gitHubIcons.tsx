@@ -79,6 +79,7 @@ export const getStatusIcon = (status: Run['status']) => {
       return ActionsCanceledIcon;
     case 'in_progress':
       return ActionInProgressIcon;
+    case 'queued':
     case 'pending':
       return ActionPendingIcon;
     default:
