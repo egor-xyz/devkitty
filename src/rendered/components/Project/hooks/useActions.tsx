@@ -14,7 +14,6 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
     if (savedOrigin) filterBy.push(savedOrigin);
 
     const res = await window.bridge.gitAPI.getAction(project.id, filterBy);
-    console.log(res.runs);
 
     if (!res.success) {
       setShowActions(false);
