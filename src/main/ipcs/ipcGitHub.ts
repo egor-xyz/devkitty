@@ -60,6 +60,7 @@ ipcMain.handle('git:api:getAction', async (_, id: string, filterBy: string[]) =>
 
     const { data } = await octokit().rest.actions.listWorkflowRunsForRepo({
       owner,
+      per_page: 3,
       repo
     });
 

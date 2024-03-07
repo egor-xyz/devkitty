@@ -8,6 +8,7 @@ import actionFailed from './gitHub/action-failed.svg?react';
 import actionCanceled from './gitHub/action-canceled.svg?react';
 import actionInProgressIcon from './gitHub/action-in-progress.svg?react';
 import actionPendingIcon from './gitHub/action-pending.svg?react';
+import ActionQueuedIcon from './gitHub/action-queued.svg?react';
 import actions from './gitHub/actions.svg?react';
 
 export const ActionsIcon = styled(actions)`
@@ -80,6 +81,7 @@ export const getStatusIcon = (status: Run['status']) => {
     case 'in_progress':
       return ActionInProgressIcon;
     case 'queued':
+      return ActionQueuedIcon;
     case 'pending':
       return ActionPendingIcon;
     default:
