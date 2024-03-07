@@ -1,7 +1,7 @@
 import { Button, Tag } from '@blueprintjs/core';
 import { FC } from 'react';
 
-import { Actions, Info, Root, Title, MiddleBlock } from '../../Project.styles';
+import { ProjectActions, Info, Root, Title, MiddleBlock } from '../../Project.styles';
 
 type Props = {
   name: string;
@@ -24,13 +24,13 @@ export const Error: FC<Props> = ({ name, removeAlert }) => (
       </Tag>
     </MiddleBlock>
 
-    <Actions>
+    <ProjectActions>
       <Button
         large
         icon="trash"
         intent="danger"
         onClick={removeAlert}
       />
-    </Actions>
+    </ProjectActions>
   </Root>
 );

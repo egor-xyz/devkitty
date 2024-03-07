@@ -2,6 +2,7 @@ import { Button, ButtonGroup, Classes, Popover } from '@blueprintjs/core';
 import { FC, useState } from 'react';
 
 import { GitStatus, Project } from 'types/project';
+import { ActionsIcon } from 'rendered/assets/gitHubIcons';
 
 import { GitMenu } from '../GitMenu';
 import { OpenInMenu } from '../OpenInMenu';
@@ -10,12 +11,14 @@ import { StyledFaCopy, StyledFaRegCopy } from './QuickActions.styles';
 const size = 16;
 
 type Props = {
+  actions: boolean;
   gitStatus: GitStatus;
   loading?: boolean;
   project: Project;
+  toggleActions: () => void;
 };
 
-export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
+export const QuickActions: FC<Props> = ({ project, gitStatus, loading, toggleActions, actions }) => {
   const [copyIcon, setCopyIcon] = useState(<StyledFaRegCopy size={size} />);
 
   const copyToClipboard = () => {
@@ -65,6 +68,14 @@ export const QuickActions: FC<Props> = ({ project, gitStatus, loading }) => {
           title="Git actions"
         />
       </Popover>
+
+      <Button
+        active={actions}
+        icon={<ActionsIcon />}
+        loading={loading}
+        title="Git actions"
+        onClick={toggleActions}
+      />
     </ButtonGroup>
   );
 };
