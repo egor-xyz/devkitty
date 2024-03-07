@@ -9,7 +9,7 @@ export const Root = styled.div`
   min-height: 20px;
   padding: 6px 15px 6px 20px;
   background-color: ${Colors.LIGHT_GRAY4};
-  margin: 2px 2px;
+  margin: 2px 0px;
 
   & + & {
     margin-top: 0;
