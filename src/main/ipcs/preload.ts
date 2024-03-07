@@ -21,6 +21,7 @@ const bridge = {
     reset: (id: string, target: string, force: boolean) => ipcRenderer.invoke('git:reset', id, target, force)
   },
   gitAPI: {
+    getAction: (id: string, filterBy: string[]) => ipcRenderer.invoke('git:api:getAction', id, filterBy),
     reset: (id: string, origin: string, target: string) => ipcRenderer.invoke('git:api:reset', id, origin, target)
   },
   launch: {
