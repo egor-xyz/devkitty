@@ -1,12 +1,14 @@
 import { Colors } from '@blueprintjs/core';
-import actions from 'rendered/assets/actions.svg?react';
-import actionDone from 'rendered/assets/action-done.svg?react';
-import actionFailed from 'rendered/assets/action-failed.svg?react';
-import actionCanceled from 'rendered/assets/action-canceled.svg?react';
-import actionInProgressIcon from 'rendered/assets/action-in-progress.svg?react';
 import styled, { keyframes } from 'styled-components';
 
 import { Run } from 'types/gitHub';
+
+import actionDone from './gitHub/action-done.svg?react';
+import actionFailed from './gitHub/action-failed.svg?react';
+import actionCanceled from './gitHub/action-canceled.svg?react';
+import actionInProgressIcon from './gitHub/action-in-progress.svg?react';
+import actionPendingIcon from './gitHub/action-pending.svg?react';
+import actions from './gitHub/actions.svg?react';
 
 export const ActionsIcon = styled(actions)`
   fill: ${Colors.GRAY1};
@@ -50,6 +52,23 @@ export const ActionInProgressIcon = styled(actionInProgressIcon)`
   height: 16px;
 `;
 
+const blink = keyframes`
+  0% {
+    opacity: 0.2;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.2;
+  }
+`;
+
+export const ActionPendingIcon = styled(actionPendingIcon)`
+  animation: ${blink} 1.5s linear infinite;
+  height: 16px;
+`;
+
 export const getStatusIcon = (status: Run['status']) => {
   switch (status) {
     case 'completed':
@@ -60,6 +79,8 @@ export const getStatusIcon = (status: Run['status']) => {
       return ActionsCanceledIcon;
     case 'in_progress':
       return ActionInProgressIcon;
+    case '"pending"':
+      return ActionPendingIcon;
     default:
       return ActionsIcon;
   }
