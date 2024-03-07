@@ -24,11 +24,14 @@ export const Project: FC<Props> = ({ project }) => {
   const { openModal } = useModal();
   const [pullLoading, setPullLoading] = useState(false);
 
-  const { Actions, showActions, toggleActions } = useActions(gitStatus, project);
+  const { Actions, showActions, toggleActions, getActions } = useActions(gitStatus, project);
 
   const { group, id, name } = project;
 
-  const runGetStatus = () => getStatus(id);
+  const updateProject = () => {
+    showActions && getActions();
+    getStatus(id);
+  };
 
   const runPull = async () => {
     setPullLoading(true);
@@ -76,7 +79,7 @@ export const Project: FC<Props> = ({ project }) => {
 
         <MiddleBlock>
           <CheckoutBranch
-            getStatus={runGetStatus}
+            getStatus={updateProject}
             gitStatus={gitStatus}
             id={id}
             name={name}
@@ -95,7 +98,7 @@ export const Project: FC<Props> = ({ project }) => {
             {!behind && (
               <Button
                 icon="refresh"
-                onClick={runGetStatus}
+                onClick={updateProject}
               />
             )}
             {Boolean(behind) && (
@@ -109,7 +112,7 @@ export const Project: FC<Props> = ({ project }) => {
             <Popover
               content={
                 <ProjectMenu
-                  getStatus={runGetStatus}
+                  getStatus={updateProject}
                   gitStatus={gitStatus}
                   group={group}
                   id={id}

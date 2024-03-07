@@ -49,6 +49,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
 
   return {
     Actions,
+    getActions,
     showActions,
     toggleActions
   };
