@@ -19,3 +19,44 @@ export const Root = styled.div`
     background-color: ${Colors.DARK_GRAY2};
   }
 `;
+
+export const Status = styled.div``;
+
+export const Title = styled.div`
+  display: flex;
+  text-align: left;
+  justify-content: start;
+  gap: 15px;
+  align-items: center;
+  width: 430px;
+`;
+
+export const TitleText = styled.div`
+  font-size: 13px;
+  display: flex;
+  flex-direction: column;
+`;
+
+export const TitleDescription = styled.div`
+  margin-top: -2px;
+  font-size: 11px;
+  font-weight: 300;
+
+  @media (prefers-color-scheme: dark) {
+    color: ${Colors.GRAY3};
+  }
+`;
+
+export const Event = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 11px;
+  margin-left: 10px;
+  font-weight: 300;
+  width: 200px;
+
+  @media (prefers-color-scheme: dark) {
+    color: ${Colors.GRAY3};
+  }
+`;

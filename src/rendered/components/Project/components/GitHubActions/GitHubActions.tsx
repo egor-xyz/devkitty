@@ -2,7 +2,6 @@ import { FC, useState } from 'react';
 
 import { useMountEffect } from 'rendered/hooks/useMountEffect';
 import { GitStatus, Project } from 'types/project';
-import { appToaster } from 'rendered/utils/appToaster';
 
 import { GitHubAction } from '../GitHubAction';
 
@@ -24,11 +23,6 @@ export const GitHubActions: FC<Props> = ({ gitStatus, project, setActions }) => 
     console.log(res.runs);
 
     if (!res.success) {
-      (await appToaster).show({
-        intent: 'warning',
-        message: res.message
-      });
-
       setActions(false);
 
       return;

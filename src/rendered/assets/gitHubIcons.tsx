@@ -3,7 +3,10 @@ import actions from 'rendered/assets/actions.svg?react';
 import actionDone from 'rendered/assets/action-done.svg?react';
 import actionFailed from 'rendered/assets/action-failed.svg?react';
 import actionCanceled from 'rendered/assets/action-canceled.svg?react';
-import styled from 'styled-components';
+import actionInProgressIcon from 'rendered/assets/action-in-progress.svg?react';
+import styled, { keyframes } from 'styled-components';
+
+import { Run } from 'types/gitHub';
 
 export const ActionsIcon = styled(actions)`
   fill: ${Colors.GRAY1};
@@ -32,3 +35,32 @@ export const ActionFailedIcon = styled(actionFailed)`
     fill: #e5534b;
   }
 `;
+
+const rotate = keyframes`
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+`;
+
+export const ActionInProgressIcon = styled(actionInProgressIcon)`
+  animation: ${rotate} 1s linear infinite;
+  height: 16px;
+`;
+
+export const getStatusIcon = (status: Run['status']) => {
+  switch (status) {
+    case 'completed':
+      return ActionDoneIcon;
+    case 'failed':
+      return ActionFailedIcon;
+    case 'cancelled':
+      return ActionsCanceledIcon;
+    case 'in_progress':
+      return ActionInProgressIcon;
+    default:
+      return ActionsIcon;
+  }
+};

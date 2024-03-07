@@ -1,6 +1,6 @@
 /* eslint-disable react/jsx-max-depth */
 import { Button, ButtonGroup, Classes, Colors, Popover } from '@blueprintjs/core';
-import { FC, useState } from 'react';
+import { FC, useEffect, useState } from 'react';
 
 import { useGit } from 'rendered/hooks/useGit';
 import { useMountEffect } from 'rendered/hooks/useMountEffect';
@@ -22,7 +22,7 @@ type Props = {
 export const Project: FC<Props> = ({ project }) => {
   const { gitStatus, getStatus, loading, pull } = useGit();
   const { openModal } = useModal();
-  const [actions, setActions] = useState(false);
+  const [showActions, setShowActions] = useState(false);
 
   const [pullLoading, setPullLoading] = useState(false);
 
@@ -59,7 +59,11 @@ export const Project: FC<Props> = ({ project }) => {
     );
   }
 
-  const toggleActions = () => setActions(!actions);
+  const toggleActions = () => setShowActions(!showActions);
+
+  useEffect(() => {
+    if (gitStatus?.branchSummary.all) setShowActions(true);
+  }, [gitStatus]);
 
   return (
     <>
@@ -85,7 +89,7 @@ export const Project: FC<Props> = ({ project }) => {
           />
 
           <QuickActions
-            actions={actions}
+            actions={showActions}
             gitStatus={gitStatus}
             project={project}
             toggleActions={toggleActions}
@@ -137,11 +141,11 @@ export const Project: FC<Props> = ({ project }) => {
         </ProjectActions>
       </Root>
 
-      {actions && (
+      {showActions && (
         <GitHubActions
           gitStatus={gitStatus}
           project={project}
-          setActions={setActions}
+          setActions={setShowActions}
         />
       )}
     </>
