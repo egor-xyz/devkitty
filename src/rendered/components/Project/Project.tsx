@@ -11,9 +11,9 @@ import { GitStatusGroup } from '../GitStatusGroup';
 import { Info, InfoText, MiddleBlock, ProjectActions, RepoInfo, Root, StyledSpinner, Title } from './Project.styles';
 import { CheckoutBranch } from './components/CheckoutBranch';
 import { Error } from './components/Error';
-import { GitHubActions } from './components/GitHubActions';
 import { ProjectMenu } from './components/ProjectMenu';
 import { QuickActions } from './components/QuickActions';
+import { useActions } from './hooks/useActions';
 
 type Props = {
   project: IProject;
@@ -22,9 +22,9 @@ type Props = {
 export const Project: FC<Props> = ({ project }) => {
   const { gitStatus, getStatus, loading, pull } = useGit();
   const { openModal } = useModal();
-  const [showActions, setShowActions] = useState(false);
-
   const [pullLoading, setPullLoading] = useState(false);
+
+  const { Actions, showActions, toggleActions } = useActions(gitStatus, project);
 
   const { group, id, name } = project;
 
@@ -58,8 +58,6 @@ export const Project: FC<Props> = ({ project }) => {
       />
     );
   }
-
-  const toggleActions = () => setShowActions(!showActions);
 
   return (
     <>
@@ -137,13 +135,7 @@ export const Project: FC<Props> = ({ project }) => {
         </ProjectActions>
       </Root>
 
-      {showActions && (
-        <GitHubActions
-          gitStatus={gitStatus}
-          project={project}
-          setActions={setShowActions}
-        />
-      )}
+      {Actions}
     </>
   );
 };
