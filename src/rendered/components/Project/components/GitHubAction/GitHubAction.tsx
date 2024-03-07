@@ -10,8 +10,14 @@ type Props = {
   run: Run;
 };
 
-export const GitHubAction: FC<Props> = ({ run: { display_title, name, run_number, head_branch, event, status } }) => {
+export const GitHubAction: FC<Props> = ({
+  run: { display_title, name, run_number, head_branch, event, status, html_url }
+}) => {
   const Icon = getStatusIcon(status);
+
+  const openInBrowser = () => {
+    window.open(html_url, '_blank');
+  };
 
   return (
     <Root>
@@ -23,7 +29,7 @@ export const GitHubAction: FC<Props> = ({ run: { display_title, name, run_number
         <TitleText>
           <div>{display_title}</div>
           <TitleDescription>
-            <b>{name}</b> #{run_number}:
+            <b>{name}</b> #{run_number}
           </TitleDescription>
         </TitleText>
       </Title>
@@ -32,7 +38,10 @@ export const GitHubAction: FC<Props> = ({ run: { display_title, name, run_number
         <Tag minimal>{head_branch}</Tag> {event}
       </Event>
 
-      <Button icon="globe" />
+      <Button
+        icon="globe"
+        onClick={openInBrowser}
+      />
     </Root>
   );
 };

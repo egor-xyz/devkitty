@@ -31,7 +31,6 @@ export const OpenInMenu: FC<Props> = ({ project, gitStatus }) => {
     selectedEditor?.editor === 'Visual Studio Code' ? <VSCode height={15} /> : 'code';
 
   const openInGitHub = (path: string = '') => {
-    console.log('openInGitHub', path);
     window.open(`https://github.com/${gitStatus.organization}/${project.name}${path}`, '_blank');
   };
 
