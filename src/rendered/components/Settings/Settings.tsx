@@ -7,7 +7,6 @@ import { SettingsIntegrations } from '../SettingsIntegrations';
 import { SettingsGroups } from '../SettingsGroups';
 
 export const Settings = () => {
-  // take id from query string
   const { id = 'appearance' } = useParams<{ id?: string }>();
   const navigate = useNavigate();
 
