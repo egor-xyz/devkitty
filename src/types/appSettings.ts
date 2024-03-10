@@ -5,6 +5,7 @@ export type AppSettings = {
   editors: FoundEditor[];
   fetchInterval: number;
   gitHubToken?: string;
+  oldFashionGroups: boolean;
   projectActionCollapsed: boolean;
   selectedEditor?: FoundEditor;
   selectedShell?: FoundShell<string>;

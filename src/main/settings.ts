@@ -19,6 +19,7 @@ export const settings = new Store<Settings>({
     appSettings: {
       editors: [],
       fetchInterval: 10000,
+      oldFashionGroups: false,
       projectActionCollapsed: true,
       shells: [],
       showLogo: true,

@@ -5,9 +5,9 @@ import { useState } from 'react';
 import { useGroups } from 'rendered/hooks/useGroups';
 import { Group } from 'types';
 
-import { Actions, Block, GroupForm, Row } from './GroupRenamer.styles';
+import { Actions, Block, GroupForm, Row } from './GroupRename.styles';
 
-export const GroupRenamer = () => {
+export const GroupRename = () => {
   const { groups, groupAliases, setGroupAlias, removeGroupAlias: remooveGroupAlias } = useGroups();
   const [selectedGroup, setSelectedGroup] = useState<Group>(groupAliases[0] ?? groups[0]);
 

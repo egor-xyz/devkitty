@@ -1,0 +1,1 @@
+export { GroupRename } from './GroupRename';
