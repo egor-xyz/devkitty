@@ -51,14 +51,9 @@ export const Projects = () => {
 
     return [...groups, others].map((group) => ({
       ...group,
-      projects: projects.filter(
-        ({ groupId }) =>
-          groupId === group.id ||
-          (group.id === 'ungrouped' && !groupId) ||
-          (group.id === 'ungrouped' && groupId && !groupsWithAliases.find(({ id }) => id === groupId))
-      )
+      projects: projects.filter(({ groupId }) => groupId === group.id || (group.id === 'ungrouped' && !groupId))
     }));
-  }, [sortOldFashionGroups, groups, projects, groupsWithAliases, oldFashionGroups]);
+  }, [sortOldFashionGroups, groups, projects, oldFashionGroups]);
 
   const isEmpty = oldFashionGroups
     ? Boolean(selectedGroups.length) && !sortedProjects.length && projects.length > 0
