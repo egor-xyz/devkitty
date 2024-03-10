@@ -1,10 +1,11 @@
 import { Menu, MenuDivider, MenuItem } from '@blueprintjs/core';
 import { FC } from 'react';
 
-import { useGroups } from 'rendered/hooks/useGroups';
+import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { useModal } from 'rendered/hooks/useModal';
-import { useProjects } from 'rendered/hooks/useProjects';
 import { GitStatus } from 'types/project';
+
+import { OldFashionGroupsSelect } from '../OldFashionGroupsSelect/OldFashionGroupsSelect';
 
 type Props = {
   getStatus: () => void;
@@ -18,8 +19,8 @@ type Props = {
 
 export const ProjectMenu: FC<Props> = ({ getStatus, name, id, gitStatus, removeProject, pull, group }) => {
   const { openModal } = useModal();
-  const { groupsWithAliases } = useGroups();
-  const { addGroup } = useProjects();
+
+  const { oldFashionGroups } = useAppSettings();
 
   return (
     <Menu>
@@ -45,36 +46,12 @@ export const ProjectMenu: FC<Props> = ({ getStatus, name, id, gitStatus, removeP
         onClick={() => openModal({ name: 'git:reset', props: { gitStatus, id, name } })}
       />
 
-      <MenuDivider />
-
-      <MenuItem
-        icon="unresolve"
-        text="Group"
-      >
-        {group && (
-          <>
-            <MenuItem
-              icon="small-cross"
-              intent="warning"
-              key="blank"
-              text={`Remove from ${group}`}
-              onClick={() => addGroup(id, undefined)}
-            />
-
-            <MenuDivider />
-          </>
-        )}
-
-        {groupsWithAliases.map(({ fullName, id: groupID, icon }) => (
-          <MenuItem
-            disabled={groupID === group}
-            icon={icon}
-            key={groupID}
-            text={fullName}
-            onClick={() => addGroup(id, groupID)}
-          />
-        ))}
-      </MenuItem>
+      {oldFashionGroups && (
+        <OldFashionGroupsSelect
+          group={group}
+          id={id}
+        />
+      )}
 
       <MenuDivider title="Danger zone" />
 
