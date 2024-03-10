@@ -23,7 +23,7 @@ type Actions = {
   unselectCollapsed: () => void;
 };
 
-export const useGroups = create<State & Actions>()((set, get) => ({
+export const useGroups = create<State & Actions>((set, get) => ({
   collapsedGroups: [],
   groupAliases: [],
   groups,
