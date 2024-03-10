@@ -27,6 +27,10 @@ export const GroupCollapse: FC<Props> = ({ group, collapsed, onClick, projects }
 
   const isEmpty = !projects.length;
 
+  if (group.id === 'ungrouped' && isEmpty) {
+    return null;
+  }
+
   return (
     <Root key={group.id}>
       <GroupTitle onClick={() => !isEmpty && onClick()}>
