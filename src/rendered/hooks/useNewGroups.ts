@@ -3,6 +3,7 @@ import { create } from 'zustand';
 import { Group, Groups } from 'types/Group';
 
 type State = {
+  groupIds: string[];
   groups: Groups;
 };
 
@@ -20,10 +21,12 @@ export const useNewGroups = create<State & Actions>((set, get) => ({
     set((state) => ({ groups: state.groups.filter((group) => group.id !== id) }));
     window.bridge.settings.set('newGroups', get().groups);
   },
+  groupIds: [],
   groups: []
 }));
 
 (async () => {
-  const groups = await window.bridge.settings.get('newGroups');
-  useNewGroups.setState({ groups });
+  const groups: Groups = await window.bridge.settings.get('newGroups');
+  const groupIds = groups.map(({ id }) => id);
+  useNewGroups.setState({ groupIds, groups });
 })();

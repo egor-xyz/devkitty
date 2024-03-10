@@ -1,10 +1,10 @@
+import { Button, CompoundTag } from '@blueprintjs/core';
 import { FC } from 'react';
-import { Button, Tag } from '@blueprintjs/core';
 
 import { getStatusIcon } from 'rendered/assets/gitHubIcons';
 import { Run } from 'types/gitHub';
 
-import { Root, Title, TitleDescription, Event, Status, TitleText } from './Workflow.styles';
+import { Event, Root, Status, Title, TitleDescription, TitleText } from './Workflow.styles';
 
 type Props = {
   run: Run;
@@ -35,7 +35,13 @@ export const Workflow: FC<Props> = ({
       </Title>
 
       <Event>
-        <Tag minimal>{head_branch}</Tag> {event}
+        <CompoundTag
+          minimal
+          round
+          leftContent={head_branch}
+        >
+          {event !== 'workflow_dispatch' ? event : 'manual'}
+        </CompoundTag>
       </Event>
 
       <Button

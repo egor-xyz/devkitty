@@ -18,7 +18,7 @@ const others: Group = { fullName: 'Ungrouped', icon: 'folder-open', id: 'ungroup
 export const Projects = () => {
   const { oldFashionGroups } = useAppSettings();
   const { groupsWithAliases, selectedGroups, collapsedGroups, toggleCollapsed, selectAll } = useGroups();
-  const { groups } = useNewGroups();
+  const { groups, groupIds } = useNewGroups();
   const { projects, addProject } = useProjects();
 
   const sortOldFashionGroups = useCallback(() => {
@@ -51,7 +51,9 @@ export const Projects = () => {
 
     return [...groups, others].map((group) => ({
       ...group,
-      projects: projects.filter(({ groupId }) => groupId === group.id || (group.id === 'ungrouped' && !groupId))
+      projects: projects.filter(
+        ({ groupId }) => groupId === group.id || (group.id === 'ungrouped' && (!groupId || !groupIds.includes(groupId)))
+      )
     }));
   }, [sortOldFashionGroups, groups, projects, oldFashionGroups]);
 
