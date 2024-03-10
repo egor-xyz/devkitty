@@ -1,6 +1,7 @@
 import { MenuDivider, MenuItem } from '@blueprintjs/core';
 import { FC } from 'react';
 
+import { useModal } from 'rendered/hooks/useModal';
 import { useNewGroups } from 'rendered/hooks/useNewGroups';
 import { useProjects } from 'rendered/hooks/useProjects';
 
@@ -13,6 +14,9 @@ export const GroupsSelect: FC<Props> = ({ groupId, id }) => {
   console.log('GroupsSelect', groupId, id);
   const { groups } = useNewGroups();
   const { addGroupId } = useProjects();
+  const { openModal } = useModal();
+
+  const addGroup = () => openModal({ name: 'group', props: { projectId: id } });
 
   return (
     <>
@@ -25,6 +29,7 @@ export const GroupsSelect: FC<Props> = ({ groupId, id }) => {
         <MenuItem
           icon="plus"
           text="Add group"
+          onClick={addGroup}
         />
 
         {groupId && (
