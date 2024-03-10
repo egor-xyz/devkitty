@@ -58,7 +58,7 @@ export const Projects = () => {
           (group.id === 'ungrouped' && groupId && !groupsWithAliases.find(({ id }) => id === groupId))
       )
     }));
-  }, [sortOldFashionGroups, groups]);
+  }, [sortOldFashionGroups, groups, projects, groupsWithAliases, oldFashionGroups]);
 
   const isEmpty = oldFashionGroups
     ? Boolean(selectedGroups.length) && !sortedProjects.length && projects.length > 0
