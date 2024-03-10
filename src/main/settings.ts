@@ -28,7 +28,6 @@ export const settings = new Store<Settings>({
     collapsedGroups: [],
     groupAliases: [],
     newGroups: [],
-    newGroupsOrder: [],
     projects: [],
     selectedGroups: [],
     themeSource: 'system',
