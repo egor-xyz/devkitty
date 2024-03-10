@@ -5,19 +5,21 @@ import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { useModal } from 'rendered/hooks/useModal';
 import { GitStatus } from 'types/project';
 
-import { OldFashionGroupsSelect } from '../OldFashionGroupsSelect/OldFashionGroupsSelect';
+import { OldFashionGroupsSelect } from '../OldFashionGroupsSelect';
+import { GroupsSelect } from '../GroupsSelect';
 
 type Props = {
   getStatus: () => void;
   gitStatus: GitStatus;
   group?: string;
+  groupId?: string;
   id: string;
   name: string;
   pull: () => void;
   removeProject: () => void;
 };
 
-export const ProjectMenu: FC<Props> = ({ getStatus, name, id, gitStatus, removeProject, pull, group }) => {
+export const ProjectMenu: FC<Props> = ({ getStatus, name, id, gitStatus, removeProject, pull, group, groupId }) => {
   const { openModal } = useModal();
 
   const { oldFashionGroups } = useAppSettings();
@@ -49,6 +51,13 @@ export const ProjectMenu: FC<Props> = ({ getStatus, name, id, gitStatus, removeP
       {oldFashionGroups && (
         <OldFashionGroupsSelect
           group={group}
+          id={id}
+        />
+      )}
+
+      {!oldFashionGroups && (
+        <GroupsSelect
+          groupId={groupId}
           id={id}
         />
       )}

@@ -6,7 +6,11 @@ type State = {
   groups: Groups;
 };
 
-export const useNewGroups = create<State>((set) => ({
+type Actions = {
+  addGroup: (group: Group) => void;
+};
+
+export const useNewGroups = create<State & Actions>((set) => ({
   addGroup: (group: Group) => set((state) => ({ groups: [...state.groups, group] })),
   groups: []
 }));
