@@ -1,7 +1,7 @@
 import { IconName } from '@blueprintjs/icons';
 
 export type Group = {
-  fullName: string;
+  fullName?: string;
   icon?: IconName;
   id: string;
   name: string;
