@@ -1,5 +1,5 @@
 import { Button, Classes, DialogBody, InputGroup } from '@blueprintjs/core';
-import { FC, useState } from 'react';
+import { ChangeEventHandler, FC, useState } from 'react';
 import { v4 } from 'uuid';
 
 import { useNewGroups } from 'rendered/hooks/useNewGroups';
@@ -8,7 +8,7 @@ import { ModalProps } from 'types/Modal';
 import { useProjects } from 'rendered/hooks/useProjects';
 import { appToaster } from 'rendered/utils/appToaster';
 
-import { Actions, StyledDialog } from './GroupModal.styles';
+import { Actions, Error, StyledDialog } from './GroupModal.styles';
 
 export type GroupModalProps = {
   groupId?: string;
@@ -23,6 +23,16 @@ export const GroupModal: FC<ModalProps & GroupModalProps> = ({ isOpen, onClose, 
 
   const title = groupId ? 'Edit group' : 'Add group';
   const actionText = groupId ? 'Save' : 'Add';
+
+  const handleChange: ChangeEventHandler<HTMLInputElement> = ({ target: { value } }) => {
+    if (error) setError(undefined);
+
+    if (groups.some((group) => group.name.toLowerCase() === value.toLowerCase())) {
+      setError('Group name already exists');
+    }
+
+    setName(value);
+  };
 
   const handleSave = async () => {
     setError(undefined);
@@ -65,15 +75,17 @@ export const GroupModal: FC<ModalProps & GroupModalProps> = ({ isOpen, onClose, 
           intent={error ? 'danger' : 'none'}
           placeholder="group name..."
           value={name}
-          onChange={({ target: { value } }) => setName(value ?? '')}
+          onChange={handleChange}
         />
 
         <Actions>
           <Button
-            intent="primary"
+            intent="warning"
             text={actionText}
             onClick={handleSave}
           />
+
+          {error && <Error>{error}</Error>}
         </Actions>
       </DialogBody>
     </StyledDialog>
