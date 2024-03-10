@@ -59,8 +59,6 @@ export const GroupModal: FC<ModalProps & GroupModalProps> = ({ isOpen, onClose, 
     onClose();
   };
 
-  console.log(groups);
-
   return (
     <StyledDialog
       className={darkMode && Classes.DARK}

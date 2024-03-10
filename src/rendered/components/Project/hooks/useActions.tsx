@@ -21,8 +21,12 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
     if (!res.success) {
       setShowActions(false);
       (await appToaster).show({
-        intent: 'primary',
-        message: `No actions found for ${project.name}`
+        intent: 'warning',
+        message: (
+          <>
+            No actions found for branch <b>{gitStatus.branchSummary.current}</b> ({project.name}, last 24 hours)
+          </>
+        )
       });
       return;
     }
