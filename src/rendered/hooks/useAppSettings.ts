@@ -9,6 +9,7 @@ type Actions = {
 export const useAppSettings = create<AppSettings & Actions>((set) => ({
   editors: [],
   fetchInterval: 10000,
+  oldFashionGroups: false,
   projectActionCollapsed: true,
   set: (newState, safe) => {
     set(() => {

@@ -11,7 +11,7 @@ import { LeftGroup, Logo, RightGroup, StyledNavbar, Shadow, ShadowContainer, Tit
 export const AppNavbar = () => {
   const { pathname } = useLocation();
   const { themeSource, toggleDarkMode } = useDarkMode();
-  const { showLogo, projectActionCollapsed, set } = useAppSettings();
+  const { showLogo, projectActionCollapsed, set, oldFashionGroups } = useAppSettings();
   const { addProject } = useProjects();
 
   const refresh = () => {
@@ -37,7 +37,7 @@ export const AppNavbar = () => {
       </LeftGroup>
 
       <RightGroup align="right">
-        {pathname === '/' && (
+        {oldFashionGroups && pathname === '/' && (
           <>
             <Button
               minimal

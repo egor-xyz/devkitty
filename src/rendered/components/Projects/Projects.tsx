@@ -1,10 +1,12 @@
-import { useMemo } from 'react';
+import { useCallback, useMemo } from 'react';
 import { Button, NonIdealState } from '@blueprintjs/core';
 import Devkitty from 'rendered/assets/devkitty.svg?react';
 
 import { useGroups } from 'rendered/hooks/useGroups';
 import { useProjects } from 'rendered/hooks/useProjects';
-import { Group } from 'types';
+import { Group } from 'types/Group';
+import { useAppSettings } from 'rendered/hooks/useAppSettings';
+import { useNewGroups } from 'rendered/hooks/useNewGroups';
 
 import { GroupCollapse } from '../GroupCollapse';
 import { Project } from '../Project';
@@ -14,11 +16,12 @@ import { ProjectsWrapper, Root } from './Projects.styles';
 const others: Group = { fullName: 'Ungrouped', icon: 'folder-open', id: 'ungrouped', name: 'Ungrouped' };
 
 export const Projects = () => {
+  const { oldFashionGroups } = useAppSettings();
   const { groupsWithAliases, selectedGroups, collapsedGroups, toggleCollapsed, selectAll } = useGroups();
+  const { groups } = useNewGroups();
   const { projects, addProject } = useProjects();
 
-  const sortedProjects = useMemo(() => {
-    // project group id not in groups
+  const sortOldFashionGroups = useCallback(() => {
     let sortedProjects = [...groupsWithAliases, others].map((group) => ({
       ...group,
       projects: projects.filter(
@@ -41,11 +44,33 @@ export const Projects = () => {
     return sortedProjects;
   }, [groupsWithAliases, projects, selectedGroups]);
 
-  const isEmpty = Boolean(selectedGroups.length) && !sortedProjects.length && projects.length > 0;
+  const sortedProjects = useMemo(() => {
+    if (oldFashionGroups) {
+      return sortOldFashionGroups();
+    }
+
+    return [...groups, others].map((group) => ({
+      ...group,
+      projects: projects.filter(
+        ({ groupId }) =>
+          groupId === group.id ||
+          (group.id === 'ungrouped' && !groupId) ||
+          (group.id === 'ungrouped' && groupId && !groupsWithAliases.find(({ id }) => id === groupId))
+      )
+    }));
+  }, [sortOldFashionGroups, groups]);
+
+  const isEmpty = oldFashionGroups
+    ? Boolean(selectedGroups.length) && !sortedProjects.length && projects.length > 0
+    : false;
+
+  const withGroups = oldFashionGroups
+    ? Boolean(selectedGroups.length)
+    : groups.length > 0 && projects.length > 0 && sortedProjects.length > 1;
 
   return (
     <Root>
-      <GroupsSelector />
+      {oldFashionGroups && <GroupsSelector />}
 
       <ProjectsWrapper>
         {!projects.length && (
@@ -84,7 +109,7 @@ export const Projects = () => {
           />
         )}
 
-        {!selectedGroups.length &&
+        {!withGroups &&
           projects.map((project) => (
             <Project
               key={project.id}
@@ -92,7 +117,7 @@ export const Projects = () => {
             />
           ))}
 
-        {Boolean(selectedGroups.length) &&
+        {withGroups &&
           sortedProjects.map((group) => (
             <GroupCollapse
               collapsed={Boolean(collapsedGroups.includes(group.id))}

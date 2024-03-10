@@ -26,7 +26,7 @@ export const Project: FC<Props> = ({ project }) => {
 
   const { Actions, showActions, toggleActions, getActions } = useActions(gitStatus, project);
 
-  const { group, id, name } = project;
+  const { group, id, name, groupId } = project;
 
   const updateProject = () => {
     showActions && getActions();
@@ -115,6 +115,7 @@ export const Project: FC<Props> = ({ project }) => {
                   getStatus={updateProject}
                   gitStatus={gitStatus}
                   group={group}
+                  groupId={groupId}
                   id={id}
                   name={name}
                   pull={runPull}

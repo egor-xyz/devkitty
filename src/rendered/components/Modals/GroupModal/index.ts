@@ -1,0 +1,1 @@
+export { GroupModal } from './GroupModal';

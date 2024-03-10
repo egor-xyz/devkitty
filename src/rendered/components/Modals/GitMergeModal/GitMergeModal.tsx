@@ -1,7 +1,7 @@
 import { Button, Classes, Dialog, DialogBody, DialogFooter, Icon } from '@blueprintjs/core';
 import { FC, useState } from 'react';
 
-import { ModalProps } from 'types';
+import { ModalProps } from 'types/Modal';
 import { GitStatus } from 'types/project';
 import { useGit } from 'rendered/hooks/useGit';
 

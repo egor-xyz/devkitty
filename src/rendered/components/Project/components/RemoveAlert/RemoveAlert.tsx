@@ -2,7 +2,7 @@ import { Alert, Classes } from '@blueprintjs/core';
 import { FC } from 'react';
 
 import { useProjects } from 'rendered/hooks/useProjects';
-import { ModalProps } from 'types';
+import { ModalProps } from 'types/Modal';
 
 export type RemoveAlertProps = {
   id: string;

@@ -5,6 +5,7 @@ type Status = Omit<StatusResult, 'isClean'> & { isClean: boolean };
 export type Project = {
   filePath: string;
   group?: string;
+  groupId?: string; // new groups
   id: string;
   name: string;
 };

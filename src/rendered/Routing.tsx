@@ -12,7 +12,7 @@ export const Routing = () => (
 
     <Route
       element={<Settings />}
-      path="settings"
+      path="settings/:id?"
     />
 
     <Route

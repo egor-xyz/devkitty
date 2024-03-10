@@ -1,25 +1,28 @@
 import { Menu, MenuDivider, MenuItem } from '@blueprintjs/core';
 import { FC } from 'react';
 
-import { useGroups } from 'rendered/hooks/useGroups';
+import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { useModal } from 'rendered/hooks/useModal';
-import { useProjects } from 'rendered/hooks/useProjects';
 import { GitStatus } from 'types/project';
+
+import { OldFashionGroupsSelect } from '../OldFashionGroupsSelect';
+import { GroupsSelect } from '../GroupsSelect';
 
 type Props = {
   getStatus: () => void;
   gitStatus: GitStatus;
   group?: string;
+  groupId?: string;
   id: string;
   name: string;
   pull: () => void;
   removeProject: () => void;
 };
 
-export const ProjectMenu: FC<Props> = ({ getStatus, name, id, gitStatus, removeProject, pull, group }) => {
+export const ProjectMenu: FC<Props> = ({ getStatus, name, id, gitStatus, removeProject, pull, group, groupId }) => {
   const { openModal } = useModal();
-  const { groupsWithAliases } = useGroups();
-  const { addGroup } = useProjects();
+
+  const { oldFashionGroups } = useAppSettings();
 
   return (
     <Menu>
@@ -47,34 +50,19 @@ export const ProjectMenu: FC<Props> = ({ getStatus, name, id, gitStatus, removeP
 
       <MenuDivider />
 
-      <MenuItem
-        icon="unresolve"
-        text="Group"
-      >
-        {group && (
-          <>
-            <MenuItem
-              icon="small-cross"
-              intent="warning"
-              key="blank"
-              text={`Remove from ${group}`}
-              onClick={() => addGroup(id, undefined)}
-            />
+      {oldFashionGroups && (
+        <OldFashionGroupsSelect
+          group={group}
+          id={id}
+        />
+      )}
 
-            <MenuDivider />
-          </>
-        )}
-
-        {groupsWithAliases.map(({ fullName, id: groupID, icon }) => (
-          <MenuItem
-            disabled={groupID === group}
-            icon={icon}
-            key={groupID}
-            text={fullName}
-            onClick={() => addGroup(id, groupID)}
-          />
-        ))}
-      </MenuItem>
+      {!oldFashionGroups && (
+        <GroupsSelect
+          groupId={groupId}
+          id={id}
+        />
+      )}
 
       <MenuDivider title="Danger zone" />
 

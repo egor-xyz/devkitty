@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { ThemeSource } from 'types';
+import { ThemeSource } from 'types/Modal';
 
 type Store = {
   darkMode: boolean;

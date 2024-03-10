@@ -1,4 +1,4 @@
-import { Groups } from 'types';
+import { Groups } from 'types/Group';
 
 export const groups: Groups = [
   {

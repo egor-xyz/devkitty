@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { Group, Groups } from 'types';
+import { Group, Groups } from 'types/Group';
 import { appToaster } from 'rendered/utils/appToaster';
 
 import { groups } from './utils/groups';
@@ -23,7 +23,7 @@ type Actions = {
   unselectCollapsed: () => void;
 };
 
-export const useGroups = create<State & Actions>()((set, get) => ({
+export const useGroups = create<State & Actions>((set, get) => ({
   collapsedGroups: [],
   groupAliases: [],
   groups,
