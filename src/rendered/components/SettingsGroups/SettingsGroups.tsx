@@ -19,12 +19,15 @@ export const SettingsGroups = () => {
         onChange={() => set({ oldFashionGroups: !oldFashionGroups })}
       />
 
-      <Divider />
+      {oldFashionGroups && (
+        <>
+          <Divider />
+          <h3>Rename</h3>
+          <p>You can change any group name</p>
 
-      <h3>Rename</h3>
-      <p>You can change any group name</p>
-
-      <GroupRename />
+          <GroupRename />
+        </>
+      )}
     </Root>
   );
 };
