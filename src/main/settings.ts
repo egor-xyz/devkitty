@@ -8,7 +8,7 @@ import { Settings } from 'types/settings';
 const isDev = process.env.NODE_ENV === 'development';
 
 if (isDev) {
-  app.setPath('userData', path.resolve('./.tmp'));
+  app.setPath('userData', path.resolve('.'));
 }
 
 export const settings = new Store<Settings>({
@@ -28,6 +28,7 @@ export const settings = new Store<Settings>({
     collapsedGroups: [],
     groupAliases: [],
     newGroups: [],
+    newGroupsOrder: [],
     projects: [],
     selectedGroups: [],
     themeSource: 'system',

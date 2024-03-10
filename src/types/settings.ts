@@ -10,6 +10,7 @@ export type Settings = {
   collapsedGroups: Group['id'][];
   groupAliases: Groups;
   newGroups: Groups;
+  newGroupsOrder: Group['id'][];
   projects: Projects;
   selectedGroups: Group['id'][];
   themeSource: typeof nativeTheme.themeSource;
