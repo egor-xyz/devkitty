@@ -12,7 +12,7 @@ import { Actions, Error, StyledDialog } from './GroupModal.styles';
 
 export type GroupModalProps = {
   groupId?: string;
-  projectId: string;
+  projectId?: string;
 };
 
 export const GroupModal: FC<ModalProps & GroupModalProps> = ({ isOpen, onClose, darkMode, groupId, projectId }) => {
@@ -49,7 +49,7 @@ export const GroupModal: FC<ModalProps & GroupModalProps> = ({ isOpen, onClose, 
     };
 
     addGroup(newGroup);
-    addGroupId(projectId, newGroup.id);
+    projectId && addGroupId(projectId, newGroup.id);
 
     (await appToaster).show({
       intent: 'success',

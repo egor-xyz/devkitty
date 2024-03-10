@@ -8,6 +8,7 @@ type State = {
 
 type Actions = {
   addGroup: (group: Group) => void;
+  deleteGroup: (id: string) => void;
 };
 
 export const useNewGroups = create<State & Actions>((set, get) => ({
@@ -15,8 +16,11 @@ export const useNewGroups = create<State & Actions>((set, get) => ({
     set((state) => ({ groups: [...state.groups, group] }));
     window.bridge.settings.set('newGroups', get().groups);
   },
-  groups: [],
-  updateGroup: (group: Group) => set((state) => ({ groups: state.groups.map((g) => (g.id === group.id ? group : g)) }))
+  deleteGroup: (id: string) => {
+    set((state) => ({ groups: state.groups.filter((group) => group.id !== id) }));
+    window.bridge.settings.set('newGroups', get().groups);
+  },
+  groups: []
 }));
 
 (async () => {
