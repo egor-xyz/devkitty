@@ -5,6 +5,7 @@ import { useDrag, useDrop } from 'react-dnd';
 import { Group } from 'types/Group';
 import { Projects } from 'types/project';
 import { useModal } from 'rendered/hooks/useModal';
+import { useNewGroups } from 'rendered/hooks/useNewGroups';
 
 import { Project } from '../Project';
 import { GroupBody, GroupTitle, Root } from './GroupCollapse.styles';
@@ -21,6 +22,7 @@ type Props = {
 
 export const GroupCollapse: FC<Props> = ({ group, collapsed, onClick, projects, index }) => {
   const { openModal } = useModal();
+  const { changeOrder } = useNewGroups();
 
   const ref = useRef<HTMLDivElement>(null);
   const [{ handlerId }, drop] = useDrop({
@@ -48,7 +50,7 @@ export const GroupCollapse: FC<Props> = ({ group, collapsed, onClick, projects, 
 
       if (dragIndex > hoverIndex && hoverClientY > hoverMiddleY) return;
 
-      console.log('move group', dragIndex, hoverIndex);
+      changeOrder(dragIndex, hoverIndex);
 
       item.index = hoverIndex;
     }
@@ -84,7 +86,7 @@ export const GroupCollapse: FC<Props> = ({ group, collapsed, onClick, projects, 
     <Root
       data-handler-id={handlerId}
       key={group.id}
-      ref={ref}
+      ref={group.id === 'ungrouped' ? null : ref}
       style={{ opacity }}
     >
       <GroupTitle onClick={() => !isEmpty && onClick()}>
