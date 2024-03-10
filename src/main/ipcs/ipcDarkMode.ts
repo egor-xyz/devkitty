@@ -1,6 +1,6 @@
 import { ipcMain, nativeTheme } from 'electron';
 
-import { ThemeSource } from 'types';
+import { ThemeSource } from 'types/Modal';
 
 import { settings } from '../settings';
 

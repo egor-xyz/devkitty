@@ -2,7 +2,7 @@ import type { FC, JSX } from 'react';
 import { create } from 'zustand';
 
 import { GitResetModal, type GitResetModalProps } from 'rendered/components/Modals/GitResetModal';
-import { ModalProps } from 'types';
+import { ModalProps } from 'types/Modal';
 import { GitMergeModal, GitMergeModalProps } from 'rendered/components/Modals/GitMergeModal';
 import { RemoveAlert } from 'rendered/components/Project/components/RemoveAlert';
 import { RemoveAlertProps } from 'rendered/components/Project/components/RemoveAlert/RemoveAlert';

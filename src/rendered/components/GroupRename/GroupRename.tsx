@@ -3,7 +3,7 @@ import { Select } from '@blueprintjs/select';
 import { useState } from 'react';
 
 import { useGroups } from 'rendered/hooks/useGroups';
-import { Group } from 'types';
+import { Group } from 'types/Group';
 
 import { Actions, Block, GroupForm, Row } from './GroupRename.styles';
 

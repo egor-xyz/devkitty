@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { Group, Groups } from 'types';
+import { Group, Groups } from 'types/Group';
 import { appToaster } from 'rendered/utils/appToaster';
 
 import { groups } from './utils/groups';

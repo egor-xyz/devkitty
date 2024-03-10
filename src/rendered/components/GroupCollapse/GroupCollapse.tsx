@@ -1,7 +1,7 @@
 import { Classes, Icon } from '@blueprintjs/core';
 import type { FC } from 'react';
 
-import { Group } from 'types';
+import { Group } from 'types/Group';
 import { Projects } from 'types/project';
 
 import { Project } from '../Project';

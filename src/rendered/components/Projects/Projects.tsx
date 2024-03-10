@@ -4,7 +4,7 @@ import Devkitty from 'rendered/assets/devkitty.svg?react';
 
 import { useGroups } from 'rendered/hooks/useGroups';
 import { useProjects } from 'rendered/hooks/useProjects';
-import { Group } from 'types';
+import { Group } from 'types/Group';
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { useNewGroups } from 'rendered/hooks/useNewGroups';
 

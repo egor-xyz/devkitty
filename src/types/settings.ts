@@ -1,6 +1,6 @@
 import { Rectangle, nativeTheme } from 'electron';
 
-import { Group, Groups } from 'types';
+import { Group, Groups } from 'types/Group';
 
 import { AppSettings } from './appSettings';
 import { Projects } from './project';

@@ -2,7 +2,7 @@ import { Button, Classes, Dialog, DialogFooter, Intent, Switch } from '@blueprin
 import { FC, useState } from 'react';
 
 import { appToaster } from 'rendered/utils/appToaster';
-import { ModalProps } from 'types';
+import { ModalProps } from 'types/Modal';
 import { GitStatus } from 'types/project';
 
 import { StyledBranchSelect, StyledDialogBody, Row, Options } from './GitResetModal.styles';

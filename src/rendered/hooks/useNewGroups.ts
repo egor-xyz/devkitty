@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { Group, Groups } from 'types';
+import { Group, Groups } from 'types/Group';
 
 type State = {
   groups: Groups;

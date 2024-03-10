@@ -1,7 +1,7 @@
 import { Classes, Dialog } from '@blueprintjs/core';
 import { FC } from 'react';
 
-import { ModalProps } from 'types';
+import { ModalProps } from 'types/Modal';
 
 export type GroupModalProps = {
   groupId?: string;
