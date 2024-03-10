@@ -12,7 +12,6 @@ export const Settings = () => {
   const navigate = useNavigate();
 
   const handleTabChange = (id: string) => {
-    console.log('id', id);
     navigate(`/settings/${id}`);
   };
 
