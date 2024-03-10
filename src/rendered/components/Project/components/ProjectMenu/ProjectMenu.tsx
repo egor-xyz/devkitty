@@ -48,6 +48,8 @@ export const ProjectMenu: FC<Props> = ({ getStatus, name, id, gitStatus, removeP
         onClick={() => openModal({ name: 'git:reset', props: { gitStatus, id, name } })}
       />
 
+      <MenuDivider />
+
       {oldFashionGroups && (
         <OldFashionGroupsSelect
           group={group}

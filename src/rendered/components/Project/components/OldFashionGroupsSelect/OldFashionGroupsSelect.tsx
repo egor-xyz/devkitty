@@ -14,36 +14,33 @@ export const OldFashionGroupsSelect: FC<Props> = ({ group, id }) => {
   const { addGroup } = useProjects();
 
   return (
-    <>
-      <MenuDivider />
-      <MenuItem
-        icon="unresolve"
-        text="Group"
-      >
-        {group && (
-          <>
-            <MenuItem
-              icon="small-cross"
-              intent="warning"
-              key="blank"
-              text={`Remove from ${group}`}
-              onClick={() => addGroup(id, undefined)}
-            />
-
-            <MenuDivider />
-          </>
-        )}
-
-        {groupsWithAliases.map(({ fullName, id: groupID, icon }) => (
+    <MenuItem
+      icon="unresolve"
+      text="Group"
+    >
+      {group && (
+        <>
           <MenuItem
-            disabled={groupID === group}
-            icon={icon}
-            key={groupID}
-            text={fullName}
-            onClick={() => addGroup(id, groupID)}
+            icon="small-cross"
+            intent="warning"
+            key="blank"
+            text={`Remove from ${group}`}
+            onClick={() => addGroup(id, undefined)}
           />
-        ))}
-      </MenuItem>
-    </>
+
+          <MenuDivider />
+        </>
+      )}
+
+      {groupsWithAliases.map(({ fullName, id: groupID, icon }) => (
+        <MenuItem
+          disabled={groupID === group}
+          icon={icon}
+          key={groupID}
+          text={fullName}
+          onClick={() => addGroup(id, groupID)}
+        />
+      ))}
+    </MenuItem>
   );
 };

@@ -17,44 +17,43 @@ export const GroupsSelect: FC<Props> = ({ groupId, id }) => {
 
   const addGroup = () => openModal({ name: 'group', props: { projectId: id } });
 
+  const { name } = groups.find(({ id: _groupId }) => _groupId === groupId) ?? {};
+
   return (
-    <>
-      <MenuDivider />
-
+    <MenuItem
+      icon="unresolve"
+      text="Group"
+    >
       <MenuItem
-        icon="unresolve"
-        text="Group"
-      >
-        <MenuItem
-          icon="plus"
-          text="Add group"
-          onClick={addGroup}
-        />
+        icon="plus"
+        text="Add group"
+        onClick={addGroup}
+      />
 
-        {groupId && (
-          <>
-            <MenuItem
-              icon="small-cross"
-              intent="warning"
-              key="blank"
-              text={`Remove from ${groupId}`}
-              onClick={() => addGroupId(id, undefined)}
-            />
+      {groupId && <MenuDivider />}
 
-            <MenuDivider />
-          </>
-        )}
-
-        {groups.map(({ fullName, id: _groupId, icon }) => (
+      {groupId && (
+        <>
           <MenuItem
-            disabled={_groupId === groupId}
-            icon={icon}
-            key={_groupId}
-            text={fullName}
-            onClick={() => addGroupId(id, _groupId)}
+            icon="small-cross"
+            intent="warning"
+            key="blank"
+            text={`Remove from ${name}`}
+            onClick={() => addGroupId(id, undefined)}
           />
-        ))}
-      </MenuItem>
-    </>
+        </>
+      )}
+
+      {Boolean(groups.length) && <MenuDivider />}
+      {groups.map(({ fullName, id: _groupId, icon }) => (
+        <MenuItem
+          disabled={_groupId === groupId}
+          icon={icon}
+          key={_groupId}
+          text={fullName}
+          onClick={() => addGroupId(id, _groupId)}
+        />
+      ))}
+    </MenuItem>
   );
 };

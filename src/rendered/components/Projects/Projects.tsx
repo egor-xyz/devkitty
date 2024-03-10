@@ -49,17 +49,17 @@ export const Projects = () => {
       return sortOldFashionGroups();
     }
 
-    const sortedProjects = [...groups, others].map((group) => ({
-      ...group,
-      projects: projects.filter(
-        ({ groupId }) =>
-          groupId === group.id ||
-          (group.id === 'ungrouped' && !groupId) ||
-          (group.id === 'ungrouped' && groupId && !groupsWithAliases.find(({ id }) => id === groupId))
-      )
-    }));
-
-    return sortedProjects;
+    return [...groups, others]
+      .map((group) => ({
+        ...group,
+        projects: projects.filter(
+          ({ groupId }) =>
+            groupId === group.id ||
+            (group.id === 'ungrouped' && !groupId) ||
+            (group.id === 'ungrouped' && groupId && !groupsWithAliases.find(({ id }) => id === groupId))
+        )
+      }))
+      .filter((group) => group.projects.length);
   }, [sortOldFashionGroups]);
 
   const isEmpty = oldFashionGroups
@@ -68,7 +68,9 @@ export const Projects = () => {
 
   const withGroups = oldFashionGroups
     ? Boolean(selectedGroups.length)
-    : groups.length > 0 && projects.length > 0 && selectedGroups.length > 1;
+    : groups.length > 0 && projects.length > 0 && sortedProjects.length > 1;
+
+  console.log(sortedProjects);
 
   return (
     <Root>
@@ -120,15 +122,18 @@ export const Projects = () => {
           ))}
 
         {withGroups &&
-          sortedProjects.map((group) => (
-            <GroupCollapse
-              collapsed={Boolean(collapsedGroups.includes(group.id))}
-              group={group}
-              key={group.id}
-              projects={group.projects}
-              onClick={() => toggleCollapsed(group.id)}
-            />
-          ))}
+          sortedProjects.map(
+            (group) =>
+              group.projects.length > 0 && (
+                <GroupCollapse
+                  collapsed={Boolean(collapsedGroups.includes(group.id))}
+                  group={group}
+                  key={group.id}
+                  projects={group.projects}
+                  onClick={() => toggleCollapsed(group.id)}
+                />
+              )
+          )}
       </ProjectsWrapper>
     </Root>
   );
