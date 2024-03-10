@@ -1,6 +1,6 @@
 import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
 
-import { ThemeSource } from 'types';
+import { ThemeSource } from 'types/Modal';
 import { AppSettings } from 'types/appSettings';
 import { FoundEditor } from 'types/foundEditor';
 import { FoundShell } from 'types/foundShell';

@@ -1,19 +1,19 @@
 import { Alert, Classes } from '@blueprintjs/core';
 import { FC } from 'react';
 
-import { useProjects } from 'rendered/hooks/useProjects';
+import { useNewGroups } from 'rendered/hooks/useNewGroups';
+import { Group } from 'types/Group';
 import { ModalProps } from 'types/Modal';
 
-export type RemoveAlertProps = {
-  id: string;
-  name: string;
+export type RemoveGroupAlertProps = {
+  group: Group;
 };
 
-export const RemoveAlert: FC<RemoveAlertProps & ModalProps> = ({ isOpen, name, darkMode, id, onClose }) => {
-  const { removeProject } = useProjects();
+export const RemoveGroupAlert: FC<RemoveGroupAlertProps & ModalProps> = ({ isOpen, group, darkMode, onClose }) => {
+  const { deleteGroup } = useNewGroups();
 
   const remove = () => {
-    removeProject(id);
+    deleteGroup(group.id);
     onClose();
   };
 
@@ -28,8 +28,8 @@ export const RemoveAlert: FC<RemoveAlertProps & ModalProps> = ({ isOpen, name, d
       onClose={onClose}
       onConfirm={remove}
     >
-      Are you sure you want to remove the project <br />
-      <b>{name}</b>?
+      Are you sure you want to delete the group <br />
+      <b>{group.name}</b>?
     </Alert>
   );
 };

@@ -2,10 +2,15 @@ import type { FC, JSX } from 'react';
 import { create } from 'zustand';
 
 import { GitResetModal, type GitResetModalProps } from 'rendered/components/Modals/GitResetModal';
-import { ModalProps } from 'types';
+import { ModalProps } from 'types/Modal';
 import { GitMergeModal, GitMergeModalProps } from 'rendered/components/Modals/GitMergeModal';
 import { RemoveAlert } from 'rendered/components/Project/components/RemoveAlert';
 import { RemoveAlertProps } from 'rendered/components/Project/components/RemoveAlert/RemoveAlert';
+import { GroupModal, GroupModalProps } from 'rendered/components/Modals/GroupModal/GroupModal';
+import {
+  RemoveGroupAlert,
+  RemoveGroupAlertProps
+} from 'rendered/components/Project/components/RemoveGroupAlert/RemoveGroupAlert';
 
 import { useDarkModeStore } from './useDarkMode';
 
@@ -23,6 +28,14 @@ type ActiveModal = ModalProps &
         name: 'remove:project';
         props: RemoveAlertProps;
       }
+    | {
+        name: 'group';
+        props: GroupModalProps;
+      }
+    | {
+        name: 'remove:group';
+        props: RemoveGroupAlertProps;
+      }
   );
 
 type State = {
@@ -34,6 +47,8 @@ type State = {
 const Modals: Record<ActiveModal['name'], FC<ActiveModal['props']>> = {
   'git:merge': GitMergeModal,
   'git:reset': GitResetModal,
+  group: GroupModal,
+  'remove:group': RemoveGroupAlert,
   'remove:project': RemoveAlert
 };
 

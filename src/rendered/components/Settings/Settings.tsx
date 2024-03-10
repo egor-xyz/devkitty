@@ -1,36 +1,47 @@
 import { Tabs } from '@blueprintjs/core';
+import { useParams, useNavigate } from 'react-router-dom';
 
 import { Root } from './Settings.styles';
 import { SettingsAppearance } from '../SettingsAppearance';
 import { SettingsIntegrations } from '../SettingsIntegrations';
 import { SettingsGroups } from '../SettingsGroups';
 
-export const Settings = () => (
-  <Root>
-    <Tabs
-      vertical
-      defaultSelectedTabId="appearance"
-    >
-      <Tabs.Tab
-        icon="style"
-        id="appearance"
-        panel={<SettingsAppearance />}
-        title="Appearance"
-      />
+export const Settings = () => {
+  const { id = 'appearance' } = useParams<{ id?: string }>();
+  const navigate = useNavigate();
 
-      <Tabs.Tab
-        icon="data-lineage"
-        id="integrations"
-        panel={<SettingsIntegrations />}
-        title="Integrations"
-      />
+  const handleTabChange = (id: string) => {
+    navigate(`/settings/${id}`);
+  };
 
-      <Tabs.Tab
-        icon="group-objects"
-        id="groups"
-        panel={<SettingsGroups />}
-        title="Groups"
-      />
-    </Tabs>
-  </Root>
-);
+  return (
+    <Root>
+      <Tabs
+        vertical
+        defaultSelectedTabId={id}
+        onChange={handleTabChange}
+      >
+        <Tabs.Tab
+          icon="style"
+          id="appearance"
+          panel={<SettingsAppearance />}
+          title="Appearance"
+        />
+
+        <Tabs.Tab
+          icon="data-lineage"
+          id="integrations"
+          panel={<SettingsIntegrations />}
+          title="Integrations"
+        />
+
+        <Tabs.Tab
+          icon="group-objects"
+          id="groups"
+          panel={<SettingsGroups />}
+          title="Groups"
+        />
+      </Tabs>
+    </Root>
+  );
+};
