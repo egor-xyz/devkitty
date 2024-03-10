@@ -11,7 +11,6 @@ type Props = {
 };
 
 export const GroupsSelect: FC<Props> = ({ groupId, id }) => {
-  console.log('GroupsSelect', groupId, id);
   const { groups } = useNewGroups();
   const { addGroupId } = useProjects();
   const { openModal } = useModal();
