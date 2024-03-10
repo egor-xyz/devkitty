@@ -115,10 +115,11 @@ export const Projects = () => {
           ))}
 
         {withGroups &&
-          sortedProjects.map((group) => (
+          sortedProjects.map((group, index) => (
             <GroupCollapse
               collapsed={Boolean(collapsedGroups.includes(group.id))}
               group={group}
+              index={index}
               key={group.id}
               projects={group.projects}
               onClick={() => toggleCollapsed(group.id)}
