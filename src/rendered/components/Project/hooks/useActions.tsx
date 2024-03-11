@@ -1,17 +1,20 @@
 import { useEffect, useMemo, useState } from 'react';
+import { Classes, Tag } from '@blueprintjs/core';
 
 import { GitStatus, Project } from 'types/project';
 import { appToaster } from 'rendered/utils/appToaster';
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 
 import { Workflow } from '../components/Workflow';
+import { Empty } from './useActions.styles';
 
 export const useActions = (gitStatus: GitStatus, project: Project) => {
   const [runs, setRuns] = useState([]);
   const [showActions, setShowActions] = useState(false);
+  const [isEmpty, setIsEmpty] = useState(false);
   const {
     gitHubToken,
-    gitHubActions: { all }
+    gitHubActions: { all, inProgress }
   } = useAppSettings();
 
   const getActions = async () => {
@@ -22,24 +25,11 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
     const res = await window.bridge.gitAPI.getAction(project.id, filterBy);
 
     if (!res.success) {
-      setShowActions(false);
-      (await appToaster).show({
-        intent: 'warning',
-        message: (
-          <>
-            No actions found{' '}
-            {!all && (
-              <>
-                for branch <b>{gitStatus.branchSummary.current}</b>
-              </>
-            )}{' '}
-            ({project.name}, last 24 hours)
-          </>
-        )
-      });
+      setIsEmpty(true);
       return;
     }
 
+    setIsEmpty(false);
     setRuns(res.runs ?? []);
   };
 
@@ -61,9 +51,23 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
 
   const Actions = useMemo(
     () =>
-      showActions &&
-      runs.length > 0 && (
+      showActions && (
         <>
+          {isEmpty && (
+            <Empty className={Classes.TEXT_MUTED}>
+              <span>
+                No actions {inProgress && 'in progress'} were found
+                {!all && (
+                  <>
+                    &nbsp;for the&nbsp;<b>{gitStatus.branchSummary?.current}</b>&nbsp;branch
+                  </>
+                )}
+                &nbsp;in the last {inProgress ? '5 minutes' : '24 hours'}
+              </span>
+              <Tag minimal>watcher is active</Tag>
+            </Empty>
+          )}
+
           {runs.map((run: any) => (
             <Workflow
               key={run.id}
@@ -72,7 +76,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
           ))}
         </>
       ),
-    [runs, showActions]
+    [runs, showActions, isEmpty, all, inProgress, gitStatus]
   );
 
   return {
