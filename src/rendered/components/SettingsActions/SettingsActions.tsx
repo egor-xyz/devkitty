@@ -14,7 +14,7 @@ export const SettingsActions = () => {
       <Divider />
 
       <Label>
-        Show actions per repo
+        Amount of actions to show under the project
         <NumericInput
           max={5}
           min={1}
@@ -22,6 +22,8 @@ export const SettingsActions = () => {
           onValueChange={(value) => set({ gitHubActions: { ...gitHubActions, count: value } })}
         />
       </Label>
+
+      <br />
 
       <Switch
         checked={!all}

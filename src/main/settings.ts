@@ -20,8 +20,7 @@ export const settings = new Store<Settings>({
       editors: [],
       fetchInterval: 10000,
       gitHubActions: {
-        all: false,
-        branches: [],
+        all: true,
         count: 3
       },
       oldFashionGroups: false,

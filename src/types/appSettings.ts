@@ -6,9 +6,8 @@ export type AppSettings = {
   fetchInterval: number;
   gitHubActions: {
     all: boolean;
-    branches: string[];
     count: number;
-  },
+  };
   gitHubToken?: string;
   oldFashionGroups: boolean;
   projectActionCollapsed: boolean;
