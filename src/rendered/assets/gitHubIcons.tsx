@@ -73,6 +73,7 @@ export const ActionPendingIcon = styled(actionPendingIcon)`
 export const getStatusIcon = (status: Run['status']) => {
   switch (status) {
     case 'completed':
+    case 'success':
       return ActionDoneIcon;
     case 'failed':
       return ActionFailedIcon;
