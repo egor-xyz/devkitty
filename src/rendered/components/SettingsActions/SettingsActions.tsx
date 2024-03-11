@@ -6,7 +6,7 @@ import { Root } from './SettingsActions.styles';
 
 export const SettingsActions = () => {
   const { gitHubActions, set } = useAppSettings();
-  const { all, count } = gitHubActions;
+  const { all, count, inProgress } = gitHubActions;
 
   return (
     <Root>
@@ -29,6 +29,12 @@ export const SettingsActions = () => {
         checked={!all}
         label="Show actions only for current branch"
         onChange={() => set({ gitHubActions: { ...gitHubActions, all: !all } })}
+      />
+
+      <Switch
+        checked={inProgress}
+        label="Show actions in progress only (+5 minutes to see results)"
+        onChange={() => set({ gitHubActions: { ...gitHubActions, inProgress: !inProgress } })}
       />
     </Root>
   );

@@ -11,7 +11,8 @@ export const useAppSettings = create<AppSettings & Actions>((set) => ({
   fetchInterval: 10000,
   gitHubActions: {
     all: true,
-    count: 3
+    count: 3,
+    inProgress: false
   },
   oldFashionGroups: false,
   projectActionCollapsed: true,
