@@ -1,15 +1,23 @@
 import { Colors } from '@blueprintjs/core';
 import styled, { css } from 'styled-components';
 
-export const Root = styled.div`
-  display: flex;
-  flex-direction: column;
-  background-color: ${Colors.LIGHT_GRAY5};
+export const Root = styled.div<{ $isDragging: boolean }>(
+  ({ $isDragging }) => css`
+    display: flex;
+    flex-direction: column;
+    background-color: ${Colors.LIGHT_GRAY5};
+    transition: opacity 0.3s ease-in-out;
 
-  @media (prefers-color-scheme: dark) {
-    background-color: ${Colors.DARK_GRAY1};
-  }
-`;
+    ${$isDragging &&
+    css`
+      opacity: 0.3;
+    `}
+
+    @media (prefers-color-scheme: dark) {
+      background-color: ${Colors.DARK_GRAY1};
+    }
+  `
+);
 
 export const GroupTitle = styled.div`
   display: flex;
