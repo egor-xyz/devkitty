@@ -21,7 +21,8 @@ export const settings = new Store<Settings>({
       fetchInterval: 10000,
       gitHubActions: {
         all: true,
-        count: 3
+        count: 3,
+        inProgress: false
       },
       oldFashionGroups: false,
       projectActionCollapsed: true,

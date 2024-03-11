@@ -7,6 +7,7 @@ export type AppSettings = {
   gitHubActions: {
     all: boolean;
     count: number;
+    inProgress: boolean;
   };
   gitHubToken?: string;
   oldFashionGroups: boolean;
