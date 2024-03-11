@@ -19,6 +19,11 @@ export const settings = new Store<Settings>({
     appSettings: {
       editors: [],
       fetchInterval: 10000,
+      gitHubActions: {
+        all: false,
+        branches: [],
+        count: 3
+      },
       oldFashionGroups: false,
       projectActionCollapsed: true,
       shells: [],
