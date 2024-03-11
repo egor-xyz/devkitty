@@ -34,6 +34,7 @@ export const Title = styled.div`
 export const TitleText = styled.div`
   font-size: 13px;
   display: flex;
+  white-space: nowrap;
   flex-direction: column;
 `;
 
