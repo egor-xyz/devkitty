@@ -10,7 +10,7 @@ import { useNewGroups } from 'rendered/hooks/useNewGroups';
 import { Project } from '../Project';
 import { GroupBody, GroupTitle, Root } from './GroupCollapse.styles';
 
-const dragType = 'group';
+const GROUP = 'group';
 
 type Props = {
   collapsed: boolean;
@@ -26,7 +26,7 @@ export const GroupCollapse: FC<Props> = ({ group, collapsed, onClick, projects, 
 
   const ref = useRef<HTMLDivElement>(null);
   const [{ handlerId }, drop] = useDrop({
-    accept: dragType,
+    accept: GROUP,
     collect(monitor) {
       return {
         handlerId: monitor.getHandlerId()
@@ -60,14 +60,12 @@ export const GroupCollapse: FC<Props> = ({ group, collapsed, onClick, projects, 
     collect: (monitor) => ({
       isDragging: monitor.isDragging()
     }),
-    item: () => {
-      return { id: group.id, index };
-    },
-    type: dragType
+    item: () => ({ id: group.id, index }),
+
+    type: GROUP
   });
 
-  const opacity = isDragging ? 0 : 1;
-  drag(drop(ref));
+  drop(ref);
 
   const removeGroup = () => {
     openModal({
@@ -84,12 +82,15 @@ export const GroupCollapse: FC<Props> = ({ group, collapsed, onClick, projects, 
 
   return (
     <Root
+      $isDragging={isDragging}
       data-handler-id={handlerId}
       key={group.id}
       ref={group.id === 'ungrouped' ? null : ref}
-      style={{ opacity }}
     >
-      <GroupTitle onClick={() => !isEmpty && onClick()}>
+      <GroupTitle
+        ref={drag}
+        onClick={() => !isEmpty && onClick()}
+      >
         <div className={Classes.ALIGN_LEFT}>
           <Icon icon={group.icon} />{' '}
           <span>
