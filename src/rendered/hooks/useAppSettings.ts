@@ -9,6 +9,10 @@ type Actions = {
 export const useAppSettings = create<AppSettings & Actions>((set) => ({
   editors: [],
   fetchInterval: 10000,
+  gitHubActions: {
+    all: true,
+    count: 3
+  },
   oldFashionGroups: false,
   projectActionCollapsed: true,
   set: (newState, safe) => {

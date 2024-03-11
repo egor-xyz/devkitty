@@ -4,6 +4,10 @@ import { FoundShell } from './foundShell';
 export type AppSettings = {
   editors: FoundEditor[];
   fetchInterval: number;
+  gitHubActions: {
+    all: boolean;
+    count: number;
+  };
   gitHubToken?: string;
   oldFashionGroups: boolean;
   projectActionCollapsed: boolean;

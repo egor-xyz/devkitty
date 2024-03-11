@@ -24,6 +24,8 @@ if (isDev) {
   app.setPath('userData', path.resolve('./.tmp'));
 }
 
+const devBounds = () => (isDev ? { height: 600, width: 1426 } : {});
+
 const createWindow = (): void => {
   const mainWindow = new BrowserWindow({
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#141414' : '#ffffff',
@@ -35,7 +37,8 @@ const createWindow = (): void => {
     webPreferences: {
       preload: path.join(__dirname, 'preload.js')
     },
-    ...loadWindowState()
+    ...loadWindowState(),
+    ...devBounds()
   });
 
   // all external links should open in default browser

@@ -10,6 +10,8 @@ type Props = {
   run: Run;
 };
 
+const tagLength = 12;
+
 export const Workflow: FC<Props> = ({
   run: { display_title, name, run_number, head_branch, event, status, html_url }
 }) => {
@@ -38,7 +40,8 @@ export const Workflow: FC<Props> = ({
         <CompoundTag
           minimal
           round
-          leftContent={head_branch}
+          leftContent={head_branch.length > tagLength ? `${head_branch.slice(0, tagLength)}...` : head_branch}
+          title={head_branch.length > tagLength ? head_branch : undefined}
         >
           {event !== 'workflow_dispatch' ? event : 'manual'}
         </CompoundTag>

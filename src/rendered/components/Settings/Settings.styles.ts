@@ -1,6 +1,8 @@
+import styled from 'styled-components';
 import { Colors } from '@blueprintjs/colors';
 import { Classes } from '@blueprintjs/core';
-import styled from 'styled-components';
+
+import { ActionsIcon } from 'rendered/assets/gitHubIcons';
 
 export const Root = styled.div`
   height: calc(100vh - 50px);
@@ -22,4 +24,8 @@ export const Root = styled.div`
       margin: 10px 0;
     }
   }
+`;
+
+export const StyledActionsIcon = styled(ActionsIcon)`
+  margin-right: 6px;
 `;

@@ -9,7 +9,10 @@ import { Workflow } from '../components/Workflow';
 export const useActions = (gitStatus: GitStatus, project: Project) => {
   const [runs, setRuns] = useState([]);
   const [showActions, setShowActions] = useState(false);
-  const { gitHubToken } = useAppSettings();
+  const {
+    gitHubToken,
+    gitHubActions: { all }
+  } = useAppSettings();
 
   const getActions = async () => {
     const savedOrigin = localStorage.getItem(`GitResetModal:origin-${project.id}`);
@@ -24,7 +27,13 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
         intent: 'warning',
         message: (
           <>
-            No actions found for branch <b>{gitStatus.branchSummary.current}</b> ({project.name}, last 24 hours)
+            No actions found{' '}
+            {!all && (
+              <>
+                for branch <b>{gitStatus.branchSummary.current}</b>
+              </>
+            )}{' '}
+            ({project.name}, last 24 hours)
           </>
         )
       });

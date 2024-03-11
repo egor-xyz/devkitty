@@ -6,7 +6,7 @@ import { ThemeSelector } from '../ThemeSelector';
 import { Root } from './SettingsAppearance.styles';
 
 export const SettingsAppearance = () => {
-  const { showLogo, set, soundEffects } = useAppSettings();
+  const { showLogo, set, soundEffects, oldFashionGroups } = useAppSettings();
 
   return (
     <Root>
@@ -29,6 +29,12 @@ export const SettingsAppearance = () => {
         checked={soundEffects}
         label="Sound Effects"
         onChange={() => set({ soundEffects: !soundEffects })}
+      />
+
+      <Switch
+        checked={oldFashionGroups}
+        label='"Old Fashion" Groups'
+        onChange={() => set({ oldFashionGroups: !oldFashionGroups })}
       />
     </Root>
   );
