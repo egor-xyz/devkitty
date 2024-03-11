@@ -62,7 +62,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
                     &nbsp;for the&nbsp;<b>{gitStatus.branchSummary?.current}</b>&nbsp;branch
                   </>
                 )}
-                &nbsp;in the last {inProgress ? '5 minutes' : '24 hours'}
+                &nbsp;in the last {inProgress ? '30 minutes' : '24 hours'}
               </span>
               <Tag minimal>watcher is active</Tag>
             </Empty>
