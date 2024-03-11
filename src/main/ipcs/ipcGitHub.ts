@@ -58,7 +58,7 @@ ipcMain.handle('git:api:reset', async (_, id: string, origin: string, target: st
 ipcMain.handle('git:api:getAction', async (_, id: string, filterBy: string[]) => {
   try {
     const { gitHubActions } = settings.get('appSettings');
-    const { all } = gitHubActions;
+    const { all, count } = gitHubActions;
 
     const { owner, repo } = await getRepoInfo(id);
     if (!owner || !repo) throw new Error('Project not found');
@@ -81,7 +81,7 @@ ipcMain.handle('git:api:getAction', async (_, id: string, filterBy: string[]) =>
       return { message: 'No actions for this branch', success: false };
     }
 
-    return { runs: runs.slice(0, 3), success: true };
+    return { runs: runs.slice(0, count), success: true };
   } catch (e) {
     log.error(e);
     return { message: e.message, success: false };
