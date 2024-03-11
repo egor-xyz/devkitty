@@ -33,7 +33,7 @@ export const SettingsActions = () => {
 
       <Switch
         checked={inProgress}
-        label="Show actions in progress only (+5 minutes to see results)"
+        label="Display ongoing actions and those completed within the last 30 minutes"
         onChange={() => set({ gitHubActions: { ...gitHubActions, inProgress: !inProgress } })}
       />
     </Root>
