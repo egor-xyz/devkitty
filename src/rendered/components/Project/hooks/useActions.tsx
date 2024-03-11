@@ -53,7 +53,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
     () =>
       showActions && (
         <>
-          {isEmpty && (
+          {isEmpty && runs.length < 1 && (
             <Empty className={Classes.TEXT_MUTED}>
               <span>
                 No actions {inProgress && 'in progress'} were found
