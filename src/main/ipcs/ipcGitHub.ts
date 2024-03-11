@@ -57,6 +57,9 @@ ipcMain.handle('git:api:reset', async (_, id: string, origin: string, target: st
 
 ipcMain.handle('git:api:getAction', async (_, id: string, filterBy: string[]) => {
   try {
+    const { gitHubActions } = settings.get('appSettings');
+    const { all } = gitHubActions;
+
     const { owner, repo } = await getRepoInfo(id);
     if (!owner || !repo) throw new Error('Project not found');
 
@@ -71,7 +74,7 @@ ipcMain.handle('git:api:getAction', async (_, id: string, filterBy: string[]) =>
 
     // Filter by branch and only from last 24 hours
     const runs = data.workflow_runs
-      .filter((run) => filterBy.includes(run.head_branch))
+      .filter((run) => all || filterBy.includes(run.head_branch))
       .filter((run) => new Date(run.created_at).getTime() > Date.now() - 86400000);
 
     if (runs.length < 1) {

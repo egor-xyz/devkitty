@@ -3,10 +3,11 @@ import { useParams, useNavigate } from 'react-router-dom';
 
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 
-import { Root } from './Settings.styles';
+import { Root, StyledActionsIcon } from './Settings.styles';
 import { SettingsAppearance } from '../SettingsAppearance';
 import { SettingsIntegrations } from '../SettingsIntegrations';
 import { SettingsGroups } from '../SettingsGroups';
+import { SettingsActions } from '../SettingsActions';
 
 export const Settings = () => {
   const { id = 'appearance' } = useParams<{ id?: string }>();
@@ -36,6 +37,13 @@ export const Settings = () => {
           id="integrations"
           panel={<SettingsIntegrations />}
           title="Integrations"
+        />
+
+        <Tabs.Tab
+          icon={<StyledActionsIcon />}
+          id="actions"
+          panel={<SettingsActions />}
+          title="Actions"
         />
 
         {oldFashionGroups && (
