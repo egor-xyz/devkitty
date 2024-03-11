@@ -12,10 +12,9 @@ type Props = {
 
 const tagLength = 12;
 
-export const Workflow: FC<Props> = ({
-  run: { display_title, name, run_number, head_branch, event, status, html_url }
-}) => {
-  const Icon = getStatusIcon(status);
+export const Workflow: FC<Props> = ({ run }) => {
+  const { name, html_url, head_branch, run_number, event, status, display_title, conclusion } = run;
+  const Icon = getStatusIcon(conclusion || status);
 
   const openInBrowser = () => {
     window.open(html_url, '_blank');
@@ -24,8 +23,8 @@ export const Workflow: FC<Props> = ({
   return (
     <Root>
       <Title>
-        <Status>
-          <Icon title={status} />
+        <Status title={conclusion || status}>
+          <Icon />
         </Status>
 
         <TitleText>
