@@ -1,4 +1,4 @@
-import { Classes, Divider, Label, NumericInput, Switch } from '@blueprintjs/core';
+import { Divider, Label, NumericInput, Switch } from '@blueprintjs/core';
 
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 
@@ -13,22 +13,21 @@ export const SettingsActions = () => {
       <h2>GitHub Actions</h2>
       <Divider />
 
-      <Switch
-        checked={!all}
-        label="Show actions only for current branch"
-        onChange={() => set({ gitHubActions: { ...gitHubActions, all: !all } })}
-      />
-
-      <Label className={Classes.INLINE}>
+      <Label>
         Show actions per repo
         <NumericInput
-          leftIcon="list"
           max={5}
           min={1}
           value={count}
           onValueChange={(value) => set({ gitHubActions: { ...gitHubActions, count: value } })}
         />
       </Label>
+
+      <Switch
+        checked={!all}
+        label="Show actions only for current branch"
+        onChange={() => set({ gitHubActions: { ...gitHubActions, all: !all } })}
+      />
     </Root>
   );
 };
