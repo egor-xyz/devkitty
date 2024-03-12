@@ -76,6 +76,7 @@ export const getStatusIcon = (status: Run['status']) => {
     case 'success':
       return ActionDoneIcon;
     case 'failed':
+    case 'failure':
       return ActionFailedIcon;
     case 'cancelled':
       return ActionsCanceledIcon;
