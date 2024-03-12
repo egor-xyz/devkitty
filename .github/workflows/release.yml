@@ -17,6 +17,11 @@ on:
         description: 'Dry run'
         required: true
         default: false
+      draft:
+        type: boolean
+        description: 'Draft release'
+        required: true
+        default: false
 
 concurrency:
   group: ${{ github.event.repository.name }}-release
@@ -55,7 +60,7 @@ jobs:
           chmod +x add-osx-cert.sh && ./add-osx-cert.sh
           npm run make
         env:
-          IS_DEV: ${{ github.event.inputs.dry_run }}
+          NOT_SIGN: ${{ github.event.inputs.dry_run }}
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_ID_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
@@ -82,4 +87,4 @@ jobs:
           name: Release v${{ steps.version.outputs.new_tag }}
           body: ${{ steps.changelog.outputs.changelog }}
           artifacts: 'out/**/*.zip'
-          draft: true
+          draft: ${{ github.event.inputs.draft }}
