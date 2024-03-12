@@ -16,23 +16,17 @@ export const useGit = () => {
   const unmounted = useRef(false);
 
   const getStatus = async (id: string, polling = true) => {
-    try {
-      setLoading(true);
+    setLoading(true);
 
-      const res = await window.bridge.git.getStatus(id);
-      console.log(res, 'res:getStatus');
+    const res = await window.bridge.git.getStatus(id);
 
-      setLoading(false);
-      setGitStatus(res);
+    setGitStatus(res);
+    setLoading(false);
 
-      if (!unmounted.current && polling && !intervalId.current && fetchInterval > 2000) {
-        intervalId.current = window.setInterval(() => {
-          getStatus(id);
-        }, fetchInterval);
-      }
-    } catch (e) {
-      console.log(e, 'error:getStatus');
-      setLoading(false);
+    if (!unmounted.current && polling && !intervalId.current && fetchInterval > 2000) {
+      intervalId.current = window.setInterval(() => {
+        getStatus(id);
+      }, fetchInterval);
     }
   };
 
