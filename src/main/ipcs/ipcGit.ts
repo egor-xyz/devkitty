@@ -6,7 +6,7 @@ import { GitStatus } from 'types/project';
 
 import { getGit } from '../libs/git';
 
-ipcMain.handle('git:getStatus', async (e, id: string): Promise<GitStatus> => {
+ipcMain.handle('git:getStatus', async (_, id: string): Promise<GitStatus> => {
   try {
     const git = await getGit(id);
 

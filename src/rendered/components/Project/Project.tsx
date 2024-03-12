@@ -50,7 +50,6 @@ export const Project: FC<Props> = ({ project }) => {
     getStatus(id, true);
   });
 
-  const ahead = gitStatus?.status?.ahead ?? 0;
   const behind = gitStatus?.status?.behind ?? 0;
 
   if (gitStatus && !gitStatus.success) {
@@ -66,7 +65,7 @@ export const Project: FC<Props> = ({ project }) => {
     <>
       <Root>
         <Info>
-          <InfoText className={!gitStatus && Classes.SKELETON}>
+          <InfoText className={loading && !gitStatus && Classes.SKELETON}>
             <Title>{name}</Title>
             <RepoInfo>{gitStatus?.organization ?? 'Local git'}</RepoInfo>
           </InfoText>
@@ -126,7 +125,7 @@ export const Project: FC<Props> = ({ project }) => {
             >
               <Button
                 icon="caret-down"
-                intent={ahead || behind ? 'warning' : 'none'}
+                intent={behind ? 'warning' : 'none'}
               />
             </Popover>
           </ButtonGroup>
