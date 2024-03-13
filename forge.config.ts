@@ -33,7 +33,7 @@ const forgeConfig: ForgeConfig = {
     osxSign: !notSign
       ? {
           optionsForFile: () => ({
-            entitlements: './entitlements.mac.plist'
+            entitlements: './entitlements.mas.plist'
           })
         }
       : undefined,
