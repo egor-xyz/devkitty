@@ -151,4 +151,4 @@ const editors: Editor[] = [
   }
 ];
 
-export const editorIds = editors.map((editor) => editor.bundleIdentifiers).flat();
+export const editorNames = editors.map((editor) => editor.name);

@@ -1,36 +1,33 @@
 import { BrowserWindow } from 'electron';
 import os from 'os';
 
-// @ts-ignore
-import { getMacInstalledApps } from 'get-installed-apps';
 import { isEqual } from 'lodash';
 
 import { FoundShell } from 'types/foundShell';
 
-import { settings } from '../../settings';
 import { FoundEditor } from '../../../types/foundEditor';
-import { editorIds } from './editors';
-import { shellIds } from './shells';
-
-type Apps = Array<{
-  appIdentifier: string;
-  appName: string;
-  kMDItemFSName: string;
-}>;
+import { settings } from '../../settings';
+import { editorNames } from './editors';
+import { getInstalledApps } from './getInstalledApps';
+import { shellNames } from './shells';
 
 export const updateEditorsAndShells = async (mainWindow: BrowserWindow) => {
-  const apps1: Apps = await getMacInstalledApps();
-  const apps2: Apps = (await getMacInstalledApps(`${os.homedir()}/Applications`)) ?? [];
+  const apps1 = await getInstalledApps('/Applications');
+  const apps2 = await getInstalledApps(`${os.homedir()}/Applications`);
   const apps = [...apps1, ...apps2];
 
-  const editors: FoundEditor[] = apps
-    .filter(({ appIdentifier }) => editorIds.includes(appIdentifier))
-    .map(({ kMDItemFSName, appName }) => ({
-      editor: appName,
-      path: `/Applications/${kMDItemFSName}`
-    }));
+  const editors: FoundEditor[] = editorNames
+    .map((editor) => {
+      const path = apps.find((app) => app.includes(editor));
+      if (!path) return undefined;
 
-  // log.info('Available editors', editors);
+      return {
+        editor,
+        path
+      };
+    })
+    .filter((editor) => editor) as FoundEditor[];
+
   settings.set('appSettings.editors', editors);
 
   if (
@@ -40,12 +37,17 @@ export const updateEditorsAndShells = async (mainWindow: BrowserWindow) => {
     settings.set('appSettings.selectedEditor', editors[0]);
   }
 
-  const shells: FoundShell<string>[] = apps
-    .filter(({ appIdentifier }) => shellIds.includes(appIdentifier))
-    .map(({ kMDItemFSName, appName }) => ({
-      path: `/Applications/${kMDItemFSName}`,
-      shell: appName
-    }));
+  const shells: FoundShell<string>[] = shellNames
+    .map((shell) => {
+      const path = apps.find((app) => app.includes(shell));
+      if (!path) return undefined;
+
+      return {
+        path,
+        shell
+      };
+    })
+    .filter((shell) => shell) as FoundShell<string>[];
 
   // add default macOS terminal
   shells.push({
@@ -53,7 +55,6 @@ export const updateEditorsAndShells = async (mainWindow: BrowserWindow) => {
     shell: 'Terminal'
   });
 
-  // log.info('Available shells', shells);
   settings.set('appSettings.shells', shells);
 
   if (
