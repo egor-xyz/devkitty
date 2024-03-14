@@ -95,3 +95,4 @@ devkitty.settings.json
 .vite
 AuthKey_*
 .tmp
+.idea

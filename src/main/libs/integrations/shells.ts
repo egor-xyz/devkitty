@@ -38,4 +38,4 @@ const shells: Shell[] = [
   }
 ];
 
-export const shellIds = shells.map((shell) => shell.bundleIdentifiers).flat();
+export const shellNames = shells.map((shell) => shell.name);
