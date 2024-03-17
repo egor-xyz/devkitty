@@ -14,5 +14,4 @@ export type AppSettings = {
   selectedShell?: FoundShell<string>;
   shells: FoundShell<string>[];
   showLogo: boolean;
-  soundEffects: boolean;
 };
