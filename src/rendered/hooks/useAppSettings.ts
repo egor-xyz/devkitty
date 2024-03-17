@@ -14,8 +14,6 @@ export const useAppSettings = create<AppSettings & Actions>((set) => ({
     count: 3,
     inProgress: false
   },
-  oldFashionGroups: false,
-  projectActionCollapsed: true,
   set: (newState, safe) => {
     set(() => {
       window.bridge.settings.set('appSettings', newState, safe);

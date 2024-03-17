@@ -1,17 +1,14 @@
 import { Menu, MenuDivider, MenuItem } from '@blueprintjs/core';
 import { FC } from 'react';
 
-import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { useModal } from 'rendered/hooks/useModal';
 import { GitStatus } from 'types/project';
 
-import { OldFashionGroupsSelect } from '../OldFashionGroupsSelect';
 import { GroupsSelect } from '../GroupsSelect';
 
 type Props = {
   getStatus: () => void;
   gitStatus: GitStatus;
-  group?: string;
   groupId?: string;
   id: string;
   name: string;
@@ -19,10 +16,8 @@ type Props = {
   removeProject: () => void;
 };
 
-export const ProjectMenu: FC<Props> = ({ getStatus, name, id, gitStatus, removeProject, pull, group, groupId }) => {
+export const ProjectMenu: FC<Props> = ({ getStatus, name, id, gitStatus, removeProject, pull, groupId }) => {
   const { openModal } = useModal();
-
-  const { oldFashionGroups } = useAppSettings();
 
   return (
     <Menu>
@@ -50,19 +45,10 @@ export const ProjectMenu: FC<Props> = ({ getStatus, name, id, gitStatus, removeP
 
       <MenuDivider />
 
-      {oldFashionGroups && (
-        <OldFashionGroupsSelect
-          group={group}
-          id={id}
-        />
-      )}
-
-      {!oldFashionGroups && (
-        <GroupsSelect
-          groupId={groupId}
-          id={id}
-        />
-      )}
+      <GroupsSelect
+        groupId={groupId}
+        id={id}
+      />
 
       <MenuDivider title="Danger zone" />
 

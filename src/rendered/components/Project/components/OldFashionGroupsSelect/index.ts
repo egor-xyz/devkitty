@@ -1,1 +1,0 @@
-export { OldFashionGroupsSelect } from './OldFashionGroupsSelect';
