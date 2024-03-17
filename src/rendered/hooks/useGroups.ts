@@ -1,12 +1,9 @@
 import { create } from 'zustand';
 
-import { Group, Groups } from 'types/Group';
-
-import { groups } from './utils/groups';
+import { Group } from 'types/Group';
 
 type State = {
   collapsedGroups: Group['id'][];
-  groups: Groups;
 };
 
 type Actions = {
@@ -16,7 +13,6 @@ type Actions = {
 
 export const useGroups = create<State & Actions>((set, get) => ({
   collapsedGroups: [],
-  groups,
   toggleCollapsed: (id) => {
     const { collapsedGroups } = get();
     const index = collapsedGroups.indexOf(id);
