@@ -25,8 +25,7 @@ export const settings = new Store<Settings>({
         inProgress: false
       },
       shells: [],
-      showLogo: true,
-      soundEffects: true
+      showLogo: true
     },
     collapsedGroups: [],
     newGroups: [],

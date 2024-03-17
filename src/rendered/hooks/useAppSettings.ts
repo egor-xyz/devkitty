@@ -21,8 +21,7 @@ export const useAppSettings = create<AppSettings & Actions>((set) => ({
     });
   },
   shells: [],
-  showLogo: true,
-  soundEffects: true
+  showLogo: true
 }));
 
 (async () => {

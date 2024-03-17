@@ -6,29 +6,23 @@ import { ThemeSelector } from '../ThemeSelector';
 import { Root } from './SettingsAppearance.styles';
 
 export const SettingsAppearance = () => {
-  const { showLogo, set, soundEffects } = useAppSettings();
+  const { showLogo, set } = useAppSettings();
 
   return (
     <Root>
       <h2>Appearance</h2>
       <Divider />
 
-      <h3>Theme</h3>
+      <h3>Color Theme</h3>
       <ThemeSelector />
 
+      <h3>Misc</h3>
       <Divider />
-      <h3>Theme</h3>
 
       <Switch
         checked={showLogo}
         label="Show Logo"
         onChange={() => set({ showLogo: !showLogo })}
-      />
-
-      <Switch
-        checked={soundEffects}
-        label="Sound Effects"
-        onChange={() => set({ soundEffects: !soundEffects })}
       />
     </Root>
   );
