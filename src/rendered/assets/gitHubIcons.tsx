@@ -52,6 +52,7 @@ const rotate = keyframes`
 export const ActionInProgressIcon = styled(actionInProgressIcon)`
   animation: ${rotate} 1s linear infinite;
   height: 16px;
+  width: 16px;
 `;
 
 const blink = keyframes`
