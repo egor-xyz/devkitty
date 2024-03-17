@@ -10,8 +10,6 @@ export type AppSettings = {
     inProgress: boolean;
   };
   gitHubToken?: string;
-  oldFashionGroups: boolean;
-  projectActionCollapsed: boolean;
   selectedEditor?: FoundEditor;
   selectedShell?: FoundShell<string>;
   shells: FoundShell<string>[];

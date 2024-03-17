@@ -1,6 +1,6 @@
 import { Button, ButtonGroup, Classes, Icon, Navbar } from '@blueprintjs/core';
 import clsx from 'clsx';
-import { NavLink, useLocation } from 'react-router-dom';
+import { NavLink } from 'react-router-dom';
 
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { useDarkMode } from 'rendered/hooks/useDarkMode';
@@ -9,16 +9,13 @@ import { useProjects } from 'rendered/hooks/useProjects';
 import { LeftGroup, Logo, RightGroup, StyledNavbar, Shadow, ShadowContainer, Title } from './AppNavbar.styles';
 
 export const AppNavbar = () => {
-  const { pathname } = useLocation();
   const { themeSource, toggleDarkMode } = useDarkMode();
-  const { showLogo, projectActionCollapsed, set, oldFashionGroups } = useAppSettings();
+  const { showLogo } = useAppSettings();
   const { addProject } = useProjects();
 
   const refresh = () => {
     window.location.reload();
   };
-
-  const toggleProjectActionCollapsed = () => set({ projectActionCollapsed: !projectActionCollapsed });
 
   return (
     <StyledNavbar>
@@ -37,18 +34,6 @@ export const AppNavbar = () => {
       </LeftGroup>
 
       <RightGroup align="right">
-        {oldFashionGroups && pathname === '/' && (
-          <>
-            <Button
-              minimal
-              icon={projectActionCollapsed ? 'chevron-down' : 'chevron-up'}
-              onClick={toggleProjectActionCollapsed}
-            />
-
-            <Navbar.Divider />
-          </>
-        )}
-
         <Button
           minimal
           icon="refresh"

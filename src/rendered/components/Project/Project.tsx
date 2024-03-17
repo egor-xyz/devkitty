@@ -26,7 +26,7 @@ export const Project: FC<Props> = ({ project }) => {
 
   const { Actions, showActions, toggleActions, getActions } = useActions(gitStatus, project);
 
-  const { group, id, name, groupId } = project;
+  const { id, name, groupId } = project;
 
   const updateProject = () => {
     showActions && getActions();
@@ -113,7 +113,6 @@ export const Project: FC<Props> = ({ project }) => {
                 <ProjectMenu
                   getStatus={updateProject}
                   gitStatus={gitStatus}
-                  group={group}
                   groupId={groupId}
                   id={id}
                   name={name}

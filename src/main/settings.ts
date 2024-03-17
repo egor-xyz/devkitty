@@ -24,14 +24,11 @@ export const settings = new Store<Settings>({
         count: 3,
         inProgress: false
       },
-      oldFashionGroups: false,
-      projectActionCollapsed: true,
       shells: [],
       showLogo: true,
       soundEffects: true
     },
     collapsedGroups: [],
-    groupAliases: [],
     newGroups: [],
     projects: [],
     selectedGroups: [],
