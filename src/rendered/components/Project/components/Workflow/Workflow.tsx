@@ -4,7 +4,7 @@ import { FC } from 'react';
 import { getStatusIcon } from 'rendered/assets/gitHubIcons';
 import { Run } from 'types/gitHub';
 
-import { Event, Root, Status, Title, TitleDescription, TitleText } from './Workflow.styles';
+import { Event, Root, Status, MainBlock, TitleDescription, Title, TitleMain } from './Workflow.styles';
 
 type Props = {
   run: Run;
@@ -22,18 +22,18 @@ export const Workflow: FC<Props> = ({ run }) => {
 
   return (
     <Root>
-      <Title>
+      <MainBlock>
         <Status title={conclusion || status}>
           <Icon />
         </Status>
 
-        <TitleText>
-          <div>{display_title}</div>
+        <Title>
+          <TitleMain>{display_title}</TitleMain>
           <TitleDescription>
             <b>{name}</b> #{run_number}
           </TitleDescription>
-        </TitleText>
-      </Title>
+        </Title>
+      </MainBlock>
 
       <Event>
         <CompoundTag

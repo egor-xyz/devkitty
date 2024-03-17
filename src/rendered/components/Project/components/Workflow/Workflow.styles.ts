@@ -22,7 +22,8 @@ export const Root = styled.div`
 
 export const Status = styled.div``;
 
-export const Title = styled.div`
+export const MainBlock = styled.div`
+  overflow: hidden;
   display: flex;
   text-align: left;
   justify-content: start;
@@ -31,14 +32,23 @@ export const Title = styled.div`
   width: 430px;
 `;
 
-export const TitleText = styled.div`
+export const Title = styled.div`
+  overflow: hidden;
   font-size: 13px;
   display: flex;
-  white-space: nowrap;
   flex-direction: column;
 `;
 
+export const TitleMain = styled.div`
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+`;
+
 export const TitleDescription = styled.div`
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
   margin-top: -2px;
   font-size: 11px;
   font-weight: 300;
