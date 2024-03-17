@@ -2,7 +2,7 @@ import { Button, Classes, DialogBody, InputGroup } from '@blueprintjs/core';
 import { ChangeEventHandler, FC, useState } from 'react';
 import { v4 } from 'uuid';
 
-import { useNewGroups } from 'rendered/hooks/useNewGroups';
+import { useGroups } from 'rendered/hooks/useGroups';
 import { Group } from 'types/Group';
 import { ModalProps } from 'types/Modal';
 import { useProjects } from 'rendered/hooks/useProjects';
@@ -16,7 +16,7 @@ export type GroupModalProps = {
 };
 
 export const GroupModal: FC<ModalProps & GroupModalProps> = ({ isOpen, onClose, darkMode, groupId, projectId }) => {
-  const { groups, addGroup } = useNewGroups();
+  const { groups, addGroup } = useGroups();
   const [name, setName] = useState<Group['name']>('');
   const [error, setError] = useState<string>();
   const { addGroupId } = useProjects();

@@ -5,7 +5,7 @@ import { useDrag, useDrop } from 'react-dnd';
 import { Group } from 'types/Group';
 import { Projects } from 'types/project';
 import { useModal } from 'rendered/hooks/useModal';
-import { useNewGroups } from 'rendered/hooks/useNewGroups';
+import { useGroups } from 'rendered/hooks/useGroups';
 
 import { Project } from '../Project';
 import { GroupBody, GroupTitle, Root } from './GroupCollapse.styles';
@@ -22,7 +22,7 @@ type Props = {
 
 export const GroupCollapse: FC<Props> = ({ group, collapsed, onClick, projects, index }) => {
   const { openModal } = useModal();
-  const { changeOrder } = useNewGroups();
+  const { changeOrder } = useGroups();
 
   const ref = useRef<HTMLDivElement>(null);
   const [{ handlerId }, drop] = useDrop({
