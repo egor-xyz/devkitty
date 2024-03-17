@@ -5,7 +5,6 @@ import Devkitty from 'rendered/assets/devkitty.svg?react';
 import { useGroups } from 'rendered/hooks/useGroups';
 import { useProjects } from 'rendered/hooks/useProjects';
 import { Group } from 'types/Group';
-import { useNewGroups } from 'rendered/hooks/useNewGroups';
 
 import { GroupCollapse } from '../GroupCollapse';
 import { Project } from '../Project';
@@ -14,8 +13,7 @@ import { ProjectsWrapper, Root } from './Projects.styles';
 const others: Group = { fullName: 'Ungrouped', icon: 'folder-open', id: 'ungrouped', name: 'Ungrouped' };
 
 export const Projects = () => {
-  const { collapsedGroups, toggleCollapsed } = useGroups();
-  const { groups, groupIds } = useNewGroups();
+  const { collapsedGroups, toggleCollapsed, groups, groupIds } = useGroups();
   const { projects, addProject } = useProjects();
 
   const sortedProjects = useMemo(() => {
