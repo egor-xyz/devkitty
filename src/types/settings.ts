@@ -10,7 +10,6 @@ export type Settings = {
   collapsedGroups: Group['id'][];
   newGroups: Groups;
   projects: Projects;
-  selectedGroups: Group['id'][];
   themeSource: typeof nativeTheme.themeSource;
   windowBounds: Rectangle;
 };

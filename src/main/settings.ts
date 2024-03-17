@@ -31,7 +31,6 @@ export const settings = new Store<Settings>({
     collapsedGroups: [],
     newGroups: [],
     projects: [],
-    selectedGroups: [],
     themeSource: 'system',
     windowBounds: {
       height: 600,

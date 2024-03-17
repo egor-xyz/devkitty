@@ -8,23 +8,12 @@ type State = {
 };
 
 type Actions = {
-  addGroup: (projectId: string, groupId: string) => void;
   addGroupId: (id: string, groupId?: string) => void;
   addProject: () => void;
   removeProject: (id: string) => void;
 };
 
 export const useProjects = create<State & Actions>((set, get) => ({
-  addGroup: async (projectId: string, groupId: string) => {
-    const project = get().projects.find((project) => project.id === projectId);
-    if (!project) return;
-
-    project.group = groupId;
-
-    await window.bridge.projects.update(project);
-    const projects = await window.bridge.settings.get('projects');
-    set({ projects });
-  },
   addGroupId: async (id, groupId) => {
     const project = get().projects.find((project) => project.id === id);
     if (!project) return;
