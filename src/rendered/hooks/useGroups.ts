@@ -56,8 +56,17 @@ export const useGroups = create<State & Actions>((set, get) => ({
 }));
 
 (async () => {
-  const groups: Groups = await window.bridge.settings.get('newGroups');
+  let groups: Groups = await window.bridge.settings.get('newGroups');
+
+  // tmp fix related to ungrouped bug 19.06.2024
+  if (groups.includes(null)) {
+    groups = groups.filter((group) => group !== null);
+    window.bridge.settings.set('newGroups', groups);
+  }
+
   const groupIds = groups.map(({ id }) => id);
+
+  console.log(groups, groupIds);
 
   useGroups.setState({ groupIds, groups });
 })();
