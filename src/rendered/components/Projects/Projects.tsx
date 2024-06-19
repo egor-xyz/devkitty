@@ -23,7 +23,7 @@ export const Projects = () => {
         ({ groupId }) => groupId === group.id || (group.id === 'ungrouped' && (!groupId || !groupIds.includes(groupId)))
       )
     }));
-  }, [groups, projects]);
+  }, [groupIds, groups, projects]);
 
   const withGroups = groups.length > 0 && projects.length > 0 && sortedProjects.length > 1;
 

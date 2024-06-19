@@ -25,6 +25,7 @@ export const GroupCollapse: FC<Props> = ({ group, collapsed, onClick, projects, 
   const { changeOrder } = useGroups();
 
   const ref = useRef<HTMLDivElement>(null);
+
   const [{ handlerId }, drop] = useDrop({
     accept: GROUP,
     collect(monitor) {
@@ -34,6 +35,8 @@ export const GroupCollapse: FC<Props> = ({ group, collapsed, onClick, projects, 
     },
     hover(item: { id: string; index: number }, monitor) {
       if (!ref.current) return;
+
+      if (item.id === 'ungrouped') return;
 
       const dragIndex = item.index;
       const hoverIndex = index;
@@ -61,7 +64,6 @@ export const GroupCollapse: FC<Props> = ({ group, collapsed, onClick, projects, 
       isDragging: monitor.isDragging()
     }),
     item: () => ({ id: group.id, index }),
-
     type: GROUP
   });
 
