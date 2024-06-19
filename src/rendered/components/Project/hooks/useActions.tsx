@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Classes, Tag } from '@blueprintjs/core';
 
 import { GitStatus, Project } from 'types/project';
@@ -17,7 +17,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
     gitHubActions: { all, inProgress }
   } = useAppSettings();
 
-  const getActions = async () => {
+  const getActions = useCallback(async () => {
     const savedOrigin = localStorage.getItem(`GitResetModal:origin-${project.id}`);
     const filterBy = [gitStatus.branchSummary.current];
     if (savedOrigin) filterBy.push(savedOrigin);
@@ -31,7 +31,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
 
     setIsEmpty(false);
     setRuns(res.runs ?? []);
-  };
+  }, [gitStatus, project.id]);
 
   const toggleActions = async () => {
     if (!showActions && !gitHubToken) {
@@ -47,7 +47,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
   useEffect(() => {
     if (!showActions || !gitStatus?.branchSummary.current || !project.id) return;
     getActions();
-  }, [gitStatus, project, showActions]);
+  }, [getActions, gitStatus, project, showActions]);
 
   const Actions = useMemo(
     () =>

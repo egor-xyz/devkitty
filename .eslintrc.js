@@ -7,6 +7,7 @@ module.exports = {
   extends: ['eslint:recommended', 'plugin:import/electron', '@egor.xyz', 'prettier'],
   rules: {
     'import/no-unresolved': 'off',
-    'react/react-in-jsx-scope': 'off'
+    'react/react-in-jsx-scope': 'off',
+    'react-refresh/only-export-components': 'off'
   }
 };
