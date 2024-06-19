@@ -66,8 +66,6 @@ export const useGroups = create<State & Actions>((set, get) => ({
 
   const groupIds = groups.map(({ id }) => id);
 
-  console.log(groups, groupIds);
-
   useGroups.setState({ groupIds, groups });
 })();
 
