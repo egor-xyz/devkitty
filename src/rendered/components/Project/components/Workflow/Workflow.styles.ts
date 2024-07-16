@@ -29,7 +29,7 @@ export const MainBlock = styled.div`
   justify-content: start;
   gap: 15px;
   align-items: center;
-  width: 430px;
+  /* width: 430px; */
 `;
 
 export const Title = styled.div`
@@ -52,20 +52,6 @@ export const TitleDescription = styled.div`
   margin-top: -2px;
   font-size: 11px;
   font-weight: 300;
-
-  @media (prefers-color-scheme: dark) {
-    color: ${Colors.GRAY3};
-  }
-`;
-
-export const Event = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 5px;
-  font-size: 11px;
-  margin-left: 10px;
-  font-weight: 300;
-  width: 200px;
 
   @media (prefers-color-scheme: dark) {
     color: ${Colors.GRAY3};
