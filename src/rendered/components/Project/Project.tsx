@@ -14,6 +14,7 @@ import { Error } from './components/Error';
 import { ProjectMenu } from './components/ProjectMenu';
 import { QuickActions } from './components/QuickActions';
 import { useActions } from './hooks/useActions';
+import { usePulls } from './hooks/usePulls';
 
 type Props = {
   project: IProject;
@@ -25,11 +26,9 @@ export const Project: FC<Props> = ({ project }) => {
   const [pullLoading, setPullLoading] = useState(false);
 
   const { Actions, showActions, toggleActions, getActions } = useActions(gitStatus, project);
-  const [showPulls, setPulls] = useState(false);
+  const { Pulls, showPulls, togglePulls } = usePulls(gitStatus, project);
 
   const { id, name, groupId } = project;
-
-  const togglePulls = () => setPulls(!showPulls);
 
   const updateProject = () => {
     showActions && getActions();
@@ -143,6 +142,7 @@ export const Project: FC<Props> = ({ project }) => {
       </Root>
 
       {Actions}
+      {Pulls}
     </>
   );
 };

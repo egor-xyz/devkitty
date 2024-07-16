@@ -5,7 +5,7 @@ import { GitStatus, Project } from 'types/project';
 import { appToaster } from 'rendered/utils/appToaster';
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 
-import { Workflow } from '../components/Workflow';
+import { Workflow } from '../../components/Workflow';
 import { Empty } from './useActions.styles';
 
 export const useActions = (gitStatus: GitStatus, project: Project) => {
