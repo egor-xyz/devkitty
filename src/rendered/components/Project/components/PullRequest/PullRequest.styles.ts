@@ -20,8 +20,6 @@ export const Root = styled.div`
   }
 `;
 
-export const Status = styled.div``;
-
 export const MainBlock = styled.div`
   overflow: hidden;
   display: flex;

@@ -90,3 +90,22 @@ ipcMain.handle('git:api:getAction', async (_, id: string, filterBy: string[]) =>
     return { message: e.message, success: false };
   }
 });
+
+ipcMain.handle('git:api:getPulls', async (_, id: string) => {
+  try {
+    const { owner, repo } = await getRepoInfo(id);
+    if (!owner || !repo) throw new Error('Project not found');
+
+    const { data } = await octokit().rest.pulls.list({
+      owner,
+      per_page: 3,
+      repo,
+      state: 'open'
+    });
+
+    return { pulls: data, success: true };
+  } catch (e) {
+    log.error(e);
+    return { message: e.message, success: false };
+  }
+});

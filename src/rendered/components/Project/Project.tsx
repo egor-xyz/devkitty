@@ -26,7 +26,7 @@ export const Project: FC<Props> = ({ project }) => {
   const [pullLoading, setPullLoading] = useState(false);
 
   const { Actions, showActions, toggleActions, getActions } = useActions(gitStatus, project);
-  const { Pulls, showPulls, togglePulls } = usePulls(gitStatus, project);
+  const { Pulls, showPulls, togglePulls } = usePulls(project);
 
   const { id, name, groupId } = project;
 

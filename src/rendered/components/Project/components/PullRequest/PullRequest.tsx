@@ -1,40 +1,36 @@
 import { Button } from '@blueprintjs/core';
 import { FC } from 'react';
 
-import { getStatusIcon } from 'rendered/assets/gitHubIcons';
-import { Run } from 'types/gitHub';
+import { Pull } from 'types/gitHub';
 
-import { MainBlock, Root, Status, Title, TitleDescription, TitleMain } from './PullRequest.styles';
+import { MainBlock, Root, Title, TitleDescription, TitleMain } from './PullRequest.styles';
 
 type Props = {
-  run: Run;
+  pull: Pull;
 };
 
-const tagLength = 75;
-
-export const PullRequest: FC<Props> = ({ run }) => {
-  const { name, html_url, head_branch, run_number, event, status, display_title, conclusion } = run;
-  const Icon = getStatusIcon(conclusion || status);
+export const PullRequest: FC<Props> = ({ pull }) => {
+  const { title, html_url, base, head, created_at } = pull;
 
   const openInBrowser = () => {
     window.open(html_url, '_blank');
   };
 
+  const created = new Date(created_at).toLocaleString('en-US', {
+    day: '2-digit',
+    month: '2-digit',
+    year: 'numeric'
+  });
+
   return (
     <Root>
       <MainBlock>
-        <Status title={conclusion || status}>
-          <Icon />
-        </Status>
-
         <Title>
-          <TitleMain>{display_title}</TitleMain>
+          <TitleMain>{title}</TitleMain>
           <TitleDescription>
-            <b>{name}</b> #{run_number}
-            {' | '}
-            {head_branch.length > tagLength ? `${head_branch.slice(0, tagLength)}...` : head_branch}
-            {' | '}
-            {event !== 'workflow_dispatch' ? event : 'manual'}
+            {created}: {head.ref}
+            {' > '}
+            {base.ref}
           </TitleDescription>
         </Title>
       </MainBlock>
