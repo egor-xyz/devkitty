@@ -25,8 +25,11 @@ export const Project: FC<Props> = ({ project }) => {
   const [pullLoading, setPullLoading] = useState(false);
 
   const { Actions, showActions, toggleActions, getActions } = useActions(gitStatus, project);
+  const [showPulls, setPulls] = useState(false);
 
   const { id, name, groupId } = project;
+
+  const togglePulls = () => setPulls(!showPulls);
 
   const updateProject = () => {
     showActions && getActions();
@@ -85,10 +88,12 @@ export const Project: FC<Props> = ({ project }) => {
           />
 
           <QuickActions
-            actions={showActions}
             gitStatus={gitStatus}
             project={project}
+            showActions={showActions}
+            showPulls={showPulls}
             toggleActions={toggleActions}
+            togglePulls={togglePulls}
           />
         </MiddleBlock>
 
