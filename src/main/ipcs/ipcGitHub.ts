@@ -99,8 +99,7 @@ ipcMain.handle('git:api:getPulls', async (_, id: string, pullType: PullType) => 
     if (!owner || !repo) throw new Error('Project not found');
 
     const { data } = await octokit().rest.search.issuesAndPullRequests({
-      q: `repo:${owner}/${repo} is:open is:pr ${pullType}:@me archived:false`,
-      sort: 'updated'
+      q: `repo:${owner}/${repo} is:open is:pr ${pullType}:@me archived:false`
     });
 
     return { pulls: data?.items, success: true };

@@ -1,5 +1,6 @@
 import { Colors } from '@blueprintjs/core';
-import styled from 'styled-components';
+import styled, { css } from 'styled-components';
+import { readableColor } from 'polished';
 
 export const Root = styled.div`
   display: flex;
@@ -13,6 +14,10 @@ export const Root = styled.div`
 
   & + & {
     margin-top: 0;
+  }
+
+  &:first-child {
+    padding-top: 15px;
   }
 
   @media (prefers-color-scheme: dark) {
@@ -38,20 +43,56 @@ export const Title = styled.div`
 `;
 
 export const TitleMain = styled.div`
+  display: flex;
+  align-items: center;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+  margin-bottom: 2px;
+  gap: 8px;
 `;
 
 export const TitleDescription = styled.div`
+  display: flex;
+  align-items: center;
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
-  margin-top: -2px;
-  font-size: 11px;
+  margin-top: -1px;
+  font-size: 12px;
   font-weight: 300;
 
   @media (prefers-color-scheme: dark) {
     color: ${Colors.GRAY3};
   }
+`;
+
+export const BotTag = styled.div`
+  border-radius: 4px;
+  border: 1px solid ${Colors.BLACK};
+  padding: 1px 3px;
+  font-size: 10px;
+  color: ${Colors.BLACK};
+
+  @media (prefers-color-scheme: dark) {
+    color: ${Colors.GRAY3};
+    border: 1px solid ${Colors.GRAY3};
+  }
+`;
+
+export const PullLabel = styled.div<{ $bgColor: string }>(
+  ({ $bgColor }) => css`
+    border-radius: 4px;
+    background-color: #${$bgColor};
+    padding: 1px 4px;
+    font-size: 12px;
+    color: ${readableColor(`#${$bgColor}`)};
+  `
+);
+
+export const Avatar = styled.img`
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  object-fit: cover;
 `;
