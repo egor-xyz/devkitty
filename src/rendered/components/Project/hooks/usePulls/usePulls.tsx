@@ -10,6 +10,13 @@ import { Project } from 'types/project';
 import { PullRequest } from '../../components/PullRequest';
 import { Action, Actions, Empty, Title, WrapBlock } from './usePulls.styles';
 
+const aliases: { [key in PullType]: string } = {
+  assigned: 'Assigned',
+  author: 'Created',
+  mentions: 'Mentioned',
+  'review-requested': 'Review requested'
+};
+
 export const usePulls = (project: Project) => {
   const [pulls, setPulls] = useState<Pull[]>([]);
   const [showPulls, setShowPulls] = useState(false);
@@ -82,7 +89,7 @@ export const usePulls = (project: Project) => {
                 key={type}
                 onClick={() => setPullType(type)}
               >
-                {type}
+                {aliases[type]}
               </Action>
             ))}
           </Actions>
