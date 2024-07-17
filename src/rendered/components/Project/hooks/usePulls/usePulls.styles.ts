@@ -10,7 +10,7 @@ export const Empty = styled.div`
 export const Title = styled.div`
   position: absolute;
   top: -10px;
-  left: 10px;
+  left: 15px;
   background-color: #000;
   border-radius: 11px;
   padding: 2px 8px;
@@ -54,7 +54,7 @@ export const Action = styled.div<{ $active?: boolean }>(
 
 export const WrapBlock = styled.div`
   border: 1px solid #000;
-  margin: 5px 5px;
+  margin: 2px 0;
   position: relative;
 
   &:hover {

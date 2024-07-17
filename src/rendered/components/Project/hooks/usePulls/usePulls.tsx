@@ -55,6 +55,10 @@ export const usePulls = (project: Project) => {
     setShowPulls(!showPulls);
   }, [showPulls, gitHubToken]);
 
+  const refreshPulls = useCallback(() => {
+    getPulls(pullType);
+  }, [pullType, getPulls]);
+
   useEffect(() => {
     if (!showPulls || !project.id) return;
 
@@ -95,12 +99,13 @@ export const usePulls = (project: Project) => {
           </Actions>
         </WrapBlock>
       ),
-    [showPulls, loading, isEmpty, pulls, pullType]
+    [showPulls, isEmpty, pulls, loading, pullType]
   );
 
   return {
     getPulls,
     Pulls,
+    refreshPulls,
     showPulls,
     togglePulls
   };
