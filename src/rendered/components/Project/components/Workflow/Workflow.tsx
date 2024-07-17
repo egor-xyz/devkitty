@@ -1,16 +1,16 @@
-import { Button, CompoundTag } from '@blueprintjs/core';
+import { Button } from '@blueprintjs/core';
 import { FC } from 'react';
 
 import { getStatusIcon } from 'rendered/assets/gitHubIcons';
 import { Run } from 'types/gitHub';
 
-import { Event, Root, Status, MainBlock, TitleDescription, Title, TitleMain } from './Workflow.styles';
+import { MainBlock, Root, Status, Title, TitleDescription, TitleMain } from './Workflow.styles';
 
 type Props = {
   run: Run;
 };
 
-const tagLength = 12;
+const tagLength = 75;
 
 export const Workflow: FC<Props> = ({ run }) => {
   const { name, html_url, head_branch, run_number, event, status, display_title, conclusion } = run;
@@ -31,20 +31,13 @@ export const Workflow: FC<Props> = ({ run }) => {
           <TitleMain>{display_title}</TitleMain>
           <TitleDescription>
             <b>{name}</b> #{run_number}
+            {' | '}
+            {head_branch.length > tagLength ? `${head_branch.slice(0, tagLength)}...` : head_branch}
+            {' | '}
+            {event !== 'workflow_dispatch' ? event : 'manual'}
           </TitleDescription>
         </Title>
       </MainBlock>
-
-      <Event>
-        <CompoundTag
-          minimal
-          round
-          leftContent={head_branch.length > tagLength ? `${head_branch.slice(0, tagLength)}...` : head_branch}
-          title={head_branch.length > tagLength ? head_branch : undefined}
-        >
-          {event !== 'workflow_dispatch' ? event : 'manual'}
-        </CompoundTag>
-      </Event>
 
       <Button
         icon="globe"

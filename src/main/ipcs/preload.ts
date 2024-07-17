@@ -4,6 +4,7 @@ import { ThemeSource } from 'types/Modal';
 import { AppSettings } from 'types/appSettings';
 import { FoundEditor } from 'types/foundEditor';
 import { FoundShell } from 'types/foundShell';
+import { pullTypes } from 'types/gitHub';
 import { GitStatus, Project } from 'types/project';
 import { Settings } from 'types/settings';
 
@@ -22,6 +23,7 @@ const bridge = {
   },
   gitAPI: {
     getAction: (id: string, filterBy: string[]) => ipcRenderer.invoke('git:api:getAction', id, filterBy),
+    getPulls: (id: string, type: (typeof pullTypes)[number]) => ipcRenderer.invoke('git:api:getPulls', id, type),
     reset: (id: string, origin: string, target: string) => ipcRenderer.invoke('git:api:reset', id, origin, target)
   },
   launch: {

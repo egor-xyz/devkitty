@@ -11,14 +11,24 @@ import { StyledFaCopy, StyledFaRegCopy } from './QuickActions.styles';
 const size = 16;
 
 type Props = {
-  actions: boolean;
   gitStatus: GitStatus;
   loading?: boolean;
   project: Project;
+  showActions: boolean;
+  showPulls: boolean;
   toggleActions: () => void;
+  togglePulls: () => void;
 };
 
-export const QuickActions: FC<Props> = ({ project, gitStatus, loading, toggleActions, actions }) => {
+export const QuickActions: FC<Props> = ({
+  project,
+  gitStatus,
+  loading,
+  toggleActions,
+  showActions,
+  showPulls,
+  togglePulls
+}) => {
   const [copyIcon, setCopyIcon] = useState(<StyledFaRegCopy size={size} />);
 
   const copyToClipboard = () => {
@@ -70,10 +80,18 @@ export const QuickActions: FC<Props> = ({ project, gitStatus, loading, toggleAct
       </Popover>
 
       <Button
-        active={actions}
+        active={showPulls}
+        icon={'git-pull'}
+        loading={loading}
+        title="Pull Requests"
+        onClick={togglePulls}
+      />
+
+      <Button
+        active={showActions}
         icon={<ActionsIcon />}
         loading={loading}
-        title="Git actions"
+        title="GitHub Actions"
         onClick={toggleActions}
       />
     </ButtonGroup>

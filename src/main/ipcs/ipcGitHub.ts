@@ -3,6 +3,8 @@ import { ipcMain, safeStorage } from 'electron';
 import log from 'electron-log';
 import { Octokit } from 'octokit';
 
+import { PullType } from 'types/gitHub';
+
 import { getRepoInfo } from '../libs/git';
 import { settings } from '../settings';
 
@@ -85,6 +87,22 @@ ipcMain.handle('git:api:getAction', async (_, id: string, filterBy: string[]) =>
     }
 
     return { runs: runs.slice(0, count), success: true };
+  } catch (e) {
+    log.error(e);
+    return { message: e.message, success: false };
+  }
+});
+
+ipcMain.handle('git:api:getPulls', async (_, id: string, pullType: PullType) => {
+  try {
+    const { owner, repo } = await getRepoInfo(id);
+    if (!owner || !repo) throw new Error('Project not found');
+
+    const { data } = await octokit().rest.search.issuesAndPullRequests({
+      q: `repo:${owner}/${repo} is:open is:pr ${pullType}:@me archived:false`
+    });
+
+    return { pulls: data?.items, success: true };
   } catch (e) {
     log.error(e);
     return { message: e.message, success: false };
