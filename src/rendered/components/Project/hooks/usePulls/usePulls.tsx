@@ -75,7 +75,7 @@ export const usePulls = (project: Project) => {
             </Empty>
           )}
 
-          {pulls.map((pull: any) => (
+          {pulls.map((pull) => (
             <PullRequest
               key={pull.id}
               pull={pull}

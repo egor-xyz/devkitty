@@ -4,6 +4,7 @@ import { Classes, Tag } from '@blueprintjs/core';
 import { GitStatus, Project } from 'types/project';
 import { appToaster } from 'rendered/utils/appToaster';
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
+import { Run } from 'types/gitHub';
 
 import { Workflow } from '../../components/Workflow';
 import { Empty } from './useActions.styles';
@@ -68,7 +69,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
             </Empty>
           )}
 
-          {runs.map((run: any) => (
+          {runs.map((run: Run) => (
             <Workflow
               key={run.id}
               run={run}
