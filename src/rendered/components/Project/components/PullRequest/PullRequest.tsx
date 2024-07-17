@@ -10,7 +10,7 @@ type Props = {
 };
 
 export const PullRequest: FC<Props> = ({ pull }) => {
-  const { title, html_url, base, head, created_at } = pull;
+  const { title, html_url, draft, created_at } = pull;
 
   const openInBrowser = () => {
     window.open(html_url, '_blank');
@@ -26,12 +26,12 @@ export const PullRequest: FC<Props> = ({ pull }) => {
     <Root>
       <MainBlock>
         <Title>
-          <TitleMain>{title}</TitleMain>
-          <TitleDescription>
-            {created}: {head.ref}
-            {' > '}
-            {base.ref}
-          </TitleDescription>
+          <TitleMain>
+            {draft && '[DRAFT] '}
+            {title}
+          </TitleMain>
+
+          <TitleDescription>{created}</TitleDescription>
         </Title>
       </MainBlock>
 

@@ -1,34 +1,43 @@
+import { Classes } from '@blueprintjs/core';
+import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-import { Classes, Tag } from '@blueprintjs/core';
 
-import { Project } from 'types/project';
-import { appToaster } from 'rendered/utils/appToaster';
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
-import { Pull } from 'types/gitHub';
+import { appToaster } from 'rendered/utils/appToaster';
+import { Pull, PullType, pullTypes } from 'types/gitHub';
+import { Project } from 'types/project';
 
 import { PullRequest } from '../../components/PullRequest';
-import { Empty } from './usePulls.styles';
+import { Action, Actions, Empty, Title, WrapBlock } from './usePulls.styles';
 
 export const usePulls = (project: Project) => {
   const [pulls, setPulls] = useState<Pull[]>([]);
   const [showPulls, setShowPulls] = useState(false);
-  const [isEmpty, setIsEmpty] = useState(false);
+  const [isEmpty, setIsEmpty] = useState(true);
   const { gitHubToken } = useAppSettings();
+  const [pullType, setPullType] = useState<(typeof pullTypes)[number]>(pullTypes[0]);
+  const [loading, setLoading] = useState(true);
 
-  const getPulls = useCallback(async () => {
-    console.log('getPulls', project.id);
-    const res = await window.bridge.gitAPI.getPulls(project.id);
-
-    if (!res.success) {
+  const getPulls = useCallback(
+    async (type: PullType) => {
       setIsEmpty(true);
-      return;
-    }
+      setPulls([]);
+      setLoading(true);
 
-    setIsEmpty(false);
-    setPulls(res.pulls ?? []);
-  }, [project.id]);
+      const res = await window.bridge.gitAPI.getPulls(project.id, type);
+      if (!res.success || !res.pulls.length) {
+        setLoading(false);
+        return;
+      }
 
-  const togglePulls = async () => {
+      setPulls(res.pulls ?? []);
+      setLoading(false);
+      setIsEmpty(false);
+    },
+    [project.id]
+  );
+
+  const togglePulls = useCallback(async () => {
     if (!showPulls && !gitHubToken) {
       (await appToaster).show({
         intent: 'warning',
@@ -37,22 +46,21 @@ export const usePulls = (project: Project) => {
       return;
     }
     setShowPulls(!showPulls);
-  };
+  }, [showPulls, gitHubToken]);
 
   useEffect(() => {
     if (!showPulls || !project.id) return;
 
-    getPulls();
-  }, [getPulls, project, showPulls]);
+    getPulls(pullType);
+  }, [showPulls, pullType, project.id, getPulls]);
 
   const Pulls = useMemo(
     () =>
       showPulls && (
-        <>
+        <WrapBlock>
           {isEmpty && pulls.length < 1 && (
-            <Empty className={Classes.TEXT_MUTED}>
+            <Empty className={clsx(Classes.TEXT_MUTED, loading && Classes.SKELETON)}>
               <span>No pull request were found</span>
-              <Tag minimal>watcher is active</Tag>
             </Empty>
           )}
 
@@ -62,9 +70,25 @@ export const usePulls = (project: Project) => {
               pull={pull}
             />
           ))}
-        </>
+
+          <Title>
+            <span>Pull requests ({pullType})</span>
+          </Title>
+
+          <Actions>
+            {pullTypes.map((type) => (
+              <Action
+                $active={type === pullType}
+                key={type}
+                onClick={() => setPullType(type)}
+              >
+                {type}
+              </Action>
+            ))}
+          </Actions>
+        </WrapBlock>
       ),
-    [pulls, showPulls, isEmpty]
+    [showPulls, loading, isEmpty, pulls, pullType]
   );
 
   return {

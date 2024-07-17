@@ -7,4 +7,7 @@ export type Run = GetResponseDataTypeFromEndpointMethod<
   typeof octokit.rest.actions.listWorkflowRunsForRepo
 >['workflow_runs'][0];
 
-export type Pull = GetResponseDataTypeFromEndpointMethod<typeof octokit.rest.pulls.list>[0];
+export type Pull = GetResponseDataTypeFromEndpointMethod<typeof octokit.rest.search.issuesAndPullRequests>['items'][0];
+
+export const pullTypes = ['mentions', 'assigned', 'author', 'review-requested'] as const;
+export type PullType = (typeof pullTypes)[number];

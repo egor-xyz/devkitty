@@ -3,6 +3,8 @@ import { ipcMain, safeStorage } from 'electron';
 import log from 'electron-log';
 import { Octokit } from 'octokit';
 
+import { pullTypes } from 'types/gitHub';
+
 import { getRepoInfo } from '../libs/git';
 import { settings } from '../settings';
 
@@ -91,19 +93,23 @@ ipcMain.handle('git:api:getAction', async (_, id: string, filterBy: string[]) =>
   }
 });
 
-ipcMain.handle('git:api:getPulls', async (_, id: string) => {
+ipcMain.handle('git:api:getPulls', async (_, id: string, pullType: (typeof pullTypes)[number]) => {
   try {
     const { owner, repo } = await getRepoInfo(id);
     if (!owner || !repo) throw new Error('Project not found');
 
-    const { data } = await octokit().rest.pulls.list({
-      owner,
-      per_page: 3,
-      repo,
-      state: 'open'
+    const q = `repo:${owner}/${repo} is:open is:pr ${pullType}:@me archived:false`;
+    console.log(q);
+
+    // q: `repo:${owner}/${repo} is:pr (author:${name} OR assignee:${name} OR mentions:${name} OR review-requested:${name})`
+    // q: `repo:${owner}/${repo} is:open is:pr author:${name},review-requested:${name} archived:false`
+
+    const { data } = await octokit().rest.search.issuesAndPullRequests({
+      q,
+      sort: 'updated'
     });
 
-    return { pulls: data, success: true };
+    return { pulls: data?.items, success: true };
   } catch (e) {
     log.error(e);
     return { message: e.message, success: false };

@@ -29,7 +29,6 @@ export const MainBlock = styled.div`
   justify-content: start;
   gap: 15px;
   align-items: center;
-  /* width: 430px; */
 `;
 
 export const Title = styled.div`
