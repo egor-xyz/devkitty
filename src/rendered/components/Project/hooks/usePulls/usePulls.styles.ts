@@ -56,8 +56,8 @@ export const Action = styled.div<{ $active?: boolean }>(
 );
 
 export const WrapBlock = styled.div`
-  border: 1px solid ${Colors.LIGHT_GRAY2};
-  margin: 2px 0;
+  border-top: 1px solid ${Colors.LIGHT_GRAY2};
+  margin-top: 2px;
   position: relative;
 
   &:hover {

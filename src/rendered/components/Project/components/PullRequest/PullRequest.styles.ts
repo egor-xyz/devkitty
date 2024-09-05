@@ -17,7 +17,7 @@ export const Root = styled.div`
   }
 
   &:first-child {
-    padding-top: 15px;
+    padding-top: 10px;
   }
 
   @media (prefers-color-scheme: dark) {
