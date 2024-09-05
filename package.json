@@ -1,7 +1,7 @@
 {
   "name": "devkitty",
   "productName": "Devkitty",
-  "version": "2.11.0",
+  "version": "2.11.1",
   "description": "Your Daily GitHub Desktop Assistant",
   "main": ".vite/build/app.js",
   "scripts": {
