@@ -45,7 +45,7 @@
     "zustand": "^4.5.2"
   },
   "devDependencies": {
-    "@egor.xyz/eslint-config": "2.1.0",
+    "@egor.xyz/eslint-config": "3.0.0",
     "@electron-forge/cli": "^7.4.0",
     "@electron-forge/maker-deb": "^7.4.0",
     "@electron-forge/maker-dmg": "^7.4.0",
@@ -67,7 +67,6 @@
     "dotenv": "^16.4.5",
     "electron": "^31.0.1",
     "electron-devtools-installer": "^3.2.0",
-    "eslint": "^8.57.0",
     "ts-node": "^10.9.2",
     "typescript": "^5.4.5",
     "vite": "^5.3.1",
