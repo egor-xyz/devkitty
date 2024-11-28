@@ -1,6 +1,6 @@
 import { BlueprintProvider } from '@blueprintjs/core';
 import { ComponentProps, ComponentType, FC, ReactNode } from 'react';
-import { HashRouter } from 'react-router-dom';
+import { HashRouter } from 'react-router';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { DndProvider } from 'react-dnd';
 

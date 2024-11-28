@@ -1,5 +1,5 @@
 import { Tabs } from '@blueprintjs/core';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router';
 
 import { Root, StyledActionsIcon } from './Settings.styles';
 import { SettingsAppearance } from '../SettingsAppearance';

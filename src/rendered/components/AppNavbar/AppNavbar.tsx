@@ -1,6 +1,6 @@
 import { Button, ButtonGroup, Classes, Icon, Navbar } from '@blueprintjs/core';
 import clsx from 'clsx';
-import { NavLink } from 'react-router-dom';
+import { NavLink } from 'react-router';
 
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { useDarkMode } from 'rendered/hooks/useDarkMode';
