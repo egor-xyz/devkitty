@@ -45,18 +45,18 @@ const forgeConfig: ForgeConfig = {
       // If you are familiar with Vite configuration, it will look really familiar.
       build: [
         {
-          config: 'vite.main.config.mts',
+          config: 'vite.main.config.ts',
           // `entry` is just an alias for `build.lib.entry` in the corresponding file of `config`.
           entry: 'src/main/app.ts'
         },
         {
-          config: 'vite.preload.config.mts',
+          config: 'vite.preload.config.ts',
           entry: 'src/main/ipcs/preload.ts'
         }
       ],
       renderer: [
         {
-          config: 'vite.renderer.config.mts',
+          config: 'vite.renderer.config.ts',
           name: 'main_window'
         }
       ]
