@@ -7,6 +7,7 @@ import { GitMergeModal, GitMergeModalProps } from 'rendered/components/Modals/Gi
 import { RemoveAlert } from 'rendered/components/Project/components/RemoveAlert';
 import { RemoveAlertProps } from 'rendered/components/Project/components/RemoveAlert/RemoveAlert';
 import { GroupModal, GroupModalProps } from 'rendered/components/Modals/GroupModal/GroupModal';
+import { TrayStickerModal } from 'rendered/components/Modals/TrayStickerModal';
 import {
   RemoveGroupAlert,
   RemoveGroupAlertProps
@@ -36,6 +37,10 @@ type ActiveModal = ModalProps &
         name: 'remove:group';
         props: RemoveGroupAlertProps;
       }
+    | {
+        name: 'sticker:add';
+        props: ModalProps;
+      }
   );
 
 type State = {
@@ -47,9 +52,10 @@ type State = {
 const Modals: Record<ActiveModal['name'], FC<ActiveModal['props']>> = {
   'git:merge': GitMergeModal,
   'git:reset': GitResetModal,
-  group: GroupModal,
   'remove:group': RemoveGroupAlert,
-  'remove:project': RemoveAlert
+  'remove:project': RemoveAlert,
+  'sticker:add': TrayStickerModal,
+  group: GroupModal
 };
 
 export const useModal = create<State>()((set, get) => ({
