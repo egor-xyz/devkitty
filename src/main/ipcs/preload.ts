@@ -42,6 +42,9 @@ const bridge = {
       ipcRenderer.on('settings:updated', callback),
     set: <K extends keyof Settings>(key: K, value: Partial<Settings[K]>, safe?: boolean) =>
       ipcRenderer.invoke('settings:set', key, value, safe)
+  },
+  sticker: {
+    add: (text: string) => ipcRenderer.invoke('sticker:add', text)
   }
 };
 
