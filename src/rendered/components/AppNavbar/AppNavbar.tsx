@@ -7,11 +7,20 @@ import { useDarkMode } from 'rendered/hooks/useDarkMode';
 import { useProjects } from 'rendered/hooks/useProjects';
 
 import { LeftGroup, Logo, RightGroup, StyledNavbar, Shadow, ShadowContainer, Title } from './AppNavbar.styles';
+import { useModal } from 'rendered/hooks/useModal';
 
 export const AppNavbar = () => {
   const { themeSource, toggleDarkMode } = useDarkMode();
   const { showLogo } = useAppSettings();
   const { addProject } = useProjects();
+  const { openModal } = useModal();
+
+  const addSticker = () => {
+    openModal({
+      name: 'sticker:add',
+      props: {}
+    });
+  };
 
   const refresh = () => {
     window.location.reload();
@@ -58,6 +67,12 @@ export const AppNavbar = () => {
               onClick={toggleDarkMode}
             />
           )}
+
+          <Button
+            minimal
+            icon="pin"
+            onClick={addSticker}
+          />
 
           <NavLink
             className={({ isActive }) => clsx(Classes.BUTTON, Classes.MINIMAL, isActive && Classes.ACTIVE)}
