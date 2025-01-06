@@ -83,7 +83,7 @@ export const usePulls = (project: Project) => {
           ))}
 
           <Title>
-            <span>Pull requests ({pullType})</span>
+            <span>Pull requests ({aliases[pullType]})</span>
           </Title>
 
           <Actions>
