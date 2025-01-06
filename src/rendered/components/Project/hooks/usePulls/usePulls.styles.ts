@@ -9,6 +9,7 @@ export const Empty = styled.div`
 `;
 
 export const Title = styled.div`
+  opacity: 0;
   position: absolute;
   top: -10px;
   left: 15px;
@@ -62,6 +63,10 @@ export const WrapBlock = styled.div`
 
   &:hover {
     ${Actions} {
+      opacity: 1;
+    }
+
+    ${Title} {
       opacity: 1;
     }
   }
