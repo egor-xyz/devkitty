@@ -28,14 +28,17 @@ export const Workflow: FC<Props> = ({ run }) => {
         </Status>
 
         <Title>
-          <TitleMain>{display_title}</TitleMain>
-          <TitleDescription>
-            <b>{name}</b> #{run_number}
-            {' | '}
-            {head_branch.length > tagLength ? `${head_branch.slice(0, tagLength)}...` : head_branch}
-            {' | '}
+          <TitleMain>
+            <b>{name}</b>
+            {': '}
             {event !== 'workflow_dispatch' ? event : 'manual'}
-          </TitleDescription>
+            {' » '}
+            {head_branch.length > tagLength ? `${head_branch.slice(0, tagLength)}...` : head_branch}
+            {' (#'}
+            {run_number}
+            {')'}
+          </TitleMain>
+          <TitleDescription>{display_title}</TitleDescription>
         </Title>
       </MainBlock>
 
