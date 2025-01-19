@@ -1,23 +1,17 @@
-import { Root } from "./ShinyText.styles";
+import type { FC } from 'react';
+import { Root } from './ShinyText.styles';
 
-interface ShinyTextProps {
+type Props = {
   text: string;
-  disabled?: boolean;
   speed?: number;
   className?: string;
-}
-
-const ShinyText: React.FC<ShinyTextProps> = ({ text, disabled = false, speed = 5, className = '' }) => {
-  const animationDuration = `${speed}s`;
-
-  return (
-    <Root
-      className={`shiny-text ${disabled ? 'disabled' : ''} ${className}`}
-      style={{ animationDuration }}
-    >
-      {text}
-    </Root>
-  );
 };
 
-export default ShinyText;
+export const ShinyText: FC<Props> = ({ text, speed = 5, className }) => (
+  <Root
+    speed={speed}
+    className={className}
+  >
+    {text}
+  </Root>
+);

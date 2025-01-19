@@ -9,7 +9,7 @@ const shine = keyframes`
   }
 `;
 
-export const Root = styled.span`
+export const Root = styled.span<{ speed: number }>`
   color: #b5b5b5a4;
   display: inline-block;
   background: linear-gradient(
@@ -22,6 +22,7 @@ export const Root = styled.span`
   -webkit-background-clip: text;
   background-clip: text;
   animation: ${shine} 5s linear infinite;
+  animation-duration: ${({ speed }) => `${speed}s`};
 
   @media (prefers-color-scheme: light) {
     display: none;
