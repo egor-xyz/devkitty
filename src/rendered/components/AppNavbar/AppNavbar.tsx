@@ -8,6 +8,7 @@ import { useProjects } from 'rendered/hooks/useProjects';
 
 import { LeftGroup, Logo, RightGroup, StyledNavbar, Shadow, ShadowContainer, Title } from './AppNavbar.styles';
 import { useModal } from 'rendered/hooks/useModal';
+import ShinyText from '../ShinyText/ShinyText';
 
 export const AppNavbar = () => {
   const { themeSource, toggleDarkMode } = useDarkMode();
@@ -39,7 +40,9 @@ export const AppNavbar = () => {
           <Shadow />
         </ShadowContainer>
 
-        <Title>Devkitty</Title>
+        <Title>
+          <ShinyText text="devkitty" />
+        </Title>
       </LeftGroup>
 
       <RightGroup align="right">
