@@ -24,7 +24,7 @@ export const LeftGroup = styled(Navbar.Group)`
 export const Title = styled.div`
   -webkit-app-region: drag;
   margin-left: 5px;
-  font-size: 20px;
+  font-size: 18px;
   user-select: none;
   pointer-events: none;
 
