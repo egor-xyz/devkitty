@@ -35,6 +35,10 @@ const shells: Shell[] = [
   {
     bundleIdentifiers: ['com.github.wez.wezterm'],
     name: 'WezTerm'
+  },
+  {
+    bundleIdentifiers: ['com.mitchellh.ghostty'],
+    name: 'Ghostty'
   }
 ];
 

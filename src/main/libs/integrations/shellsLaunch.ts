@@ -5,6 +5,7 @@ import { assertNever } from './fatal-error';
 
 export enum Shell {
   Alacritty = 'Alacritty',
+  Ghostty = 'Ghostty',
   Hyper = 'Hyper',
   iTerm2 = 'iTerm2',
   Kitty = 'Kitty',
@@ -42,6 +43,9 @@ export function launch(foundShell: IFoundShell<Shell>, path: string): ChildProce
     // It uses the subcommand `start`, followed by the option `--cwd` to set
     // the working directory, followed by the path.
     return spawn(foundShell.path, ['start', '--cwd', path]);
+  } else if (foundShell.shell === Shell.Ghostty) {
+    // Use 'open -a' to launch Ghostty.app with working directory
+    return spawn('open', ['-b', 'com.mitchellh.ghostty', path]);
   } else {
     const bundleID = getBundleID(foundShell.shell);
     return spawn('open', ['-b', bundleID, path]);
@@ -52,6 +56,8 @@ function getBundleID(shell: Shell): string {
   switch (shell) {
     case Shell.Alacritty:
       return 'io.alacritty';
+    case Shell.Ghostty:
+      return 'com.mitchellh.ghostty';
     case Shell.Hyper:
       return 'co.zeit.hyper';
     case Shell.iTerm2:
