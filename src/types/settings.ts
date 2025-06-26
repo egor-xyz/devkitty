@@ -1,9 +1,8 @@
-import { Rectangle, nativeTheme } from 'electron';
+import { type nativeTheme, type Rectangle } from 'electron';
+import { type Group, type Groups } from 'types/Group';
 
-import { Group, Groups } from 'types/Group';
-
-import { AppSettings } from './appSettings';
-import { Projects } from './project';
+import { type AppSettings } from './appSettings';
+import { type Projects } from './project';
 
 export type Settings = {
   appSettings: AppSettings;

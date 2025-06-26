@@ -1,33 +1,30 @@
+/* eslint-disable react/jsx-props-no-spreading */
 import type { FC, JSX } from 'react';
-import { create } from 'zustand';
 
+import { GitMergeModal, type GitMergeModalProps } from 'rendered/components/Modals/GitMergeModal';
 import { GitResetModal, type GitResetModalProps } from 'rendered/components/Modals/GitResetModal';
-import { ModalProps } from 'types/Modal';
-import { GitMergeModal, GitMergeModalProps } from 'rendered/components/Modals/GitMergeModal';
-import { RemoveAlert } from 'rendered/components/Project/components/RemoveAlert';
-import { RemoveAlertProps } from 'rendered/components/Project/components/RemoveAlert/RemoveAlert';
-import { GroupModal, GroupModalProps } from 'rendered/components/Modals/GroupModal/GroupModal';
+import { GroupModal, type GroupModalProps } from 'rendered/components/Modals/GroupModal/GroupModal';
 import { TrayStickerModal } from 'rendered/components/Modals/TrayStickerModal';
+import { RemoveAlert } from 'rendered/components/Project/components/RemoveAlert';
+import { type RemoveAlertProps } from 'rendered/components/Project/components/RemoveAlert/RemoveAlert';
 import {
   RemoveGroupAlert,
-  RemoveGroupAlertProps
+  type RemoveGroupAlertProps
 } from 'rendered/components/Project/components/RemoveGroupAlert/RemoveGroupAlert';
+import { type ModalProps } from 'types/Modal';
+import { create } from 'zustand';
 
 import { useDarkModeStore } from './useDarkMode';
 
 type ActiveModal = ModalProps &
   (
     | {
-        name: 'git:reset';
-        props: GitResetModalProps;
-      }
-    | {
         name: 'git:merge';
         props: GitMergeModalProps;
       }
     | {
-        name: 'remove:project';
-        props: RemoveAlertProps;
+        name: 'git:reset';
+        props: GitResetModalProps;
       }
     | {
         name: 'group';
@@ -38,30 +35,34 @@ type ActiveModal = ModalProps &
         props: RemoveGroupAlertProps;
       }
     | {
+        name: 'remove:project';
+        props: RemoveAlertProps;
+      }
+    | {
         name: 'sticker:add';
         props: ModalProps;
       }
   );
 
 type State = {
-  Modal: () => JSX.Element | null;
   activeModal?: ActiveModal;
+  Modal: () => JSX.Element | null;
   openModal: (modal: ActiveModal) => void;
 };
 
 const Modals: Record<ActiveModal['name'], FC<ActiveModal['props']>> = {
   'git:merge': GitMergeModal,
   'git:reset': GitResetModal,
+  group: GroupModal,
   'remove:group': RemoveGroupAlert,
   'remove:project': RemoveAlert,
-  'sticker:add': TrayStickerModal,
-  group: GroupModal
+  'sticker:add': TrayStickerModal
 };
 
 export const useModal = create<State>()((set, get) => ({
   activeModal: undefined,
   Modal: () => {
-    const { name, props, isOpen = true } = get().activeModal ?? {};
+    const { isOpen = true, name, props } = get().activeModal ?? {};
     const { darkMode } = useDarkModeStore.getState();
 
     const onClose = () => {

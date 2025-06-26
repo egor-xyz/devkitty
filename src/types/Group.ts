@@ -1,4 +1,4 @@
-import { IconName } from '@blueprintjs/icons';
+import { type IconName } from '@blueprintjs/icons';
 
 export type Group = {
   fullName?: string;

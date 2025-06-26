@@ -1,12 +1,12 @@
 import { useDarkMode } from 'rendered/hooks/useDarkMode';
 
+import themeAuto from './assets/img/theme-auto.png';
 import themeDark from './assets/img/theme-dark.png';
 import themeLight from './assets/img/theme-light.png';
-import themeAuto from './assets/img/theme-auto.png';
 import { Root, ThemeButton } from './ThemeSelector.styles';
 
 export const ThemeSelector = () => {
-  const { themeSource, setTheme } = useDarkMode();
+  const { setTheme, themeSource } = useDarkMode();
 
   return (
     <Root>

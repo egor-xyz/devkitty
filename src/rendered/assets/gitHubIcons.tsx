@@ -1,15 +1,11 @@
 import { Colors } from '@blueprintjs/core';
 import styled, { keyframes } from 'styled-components';
 
-import { Run } from 'types/gitHub';
-
+import actionCanceled from './gitHub/action-canceled.svg?react';
 import actionDone from './gitHub/action-done.svg?react';
 import actionFailed from './gitHub/action-failed.svg?react';
-import actionCanceled from './gitHub/action-canceled.svg?react';
 import actionInProgressIcon from './gitHub/action-in-progress.svg?react';
 import actionPendingIcon from './gitHub/action-pending.svg?react';
-import ActionQueuedIcon from './gitHub/action-queued.svg?react';
-import ActionSkippedIcon from './gitHub/action-skipped.svg?react';
 import actions from './gitHub/actions.svg?react';
 
 export const ActionsIcon = styled(actions)`
@@ -71,26 +67,3 @@ export const ActionPendingIcon = styled(actionPendingIcon)`
   animation: ${blink} 1.5s linear infinite;
   height: 16px;
 `;
-
-export const getStatusIcon = (status: Run['status']) => {
-  switch (status) {
-    case 'completed':
-    case 'success':
-      return ActionDoneIcon;
-    case 'failed':
-    case 'failure':
-      return ActionFailedIcon;
-    case 'cancelled':
-      return ActionsCanceledIcon;
-    case 'in_progress':
-      return ActionInProgressIcon;
-    case 'queued':
-      return ActionQueuedIcon;
-    case 'skipped':
-      return ActionSkippedIcon;
-    case 'pending':
-      return ActionPendingIcon;
-    default:
-      return ActionsIcon;
-  }
-};

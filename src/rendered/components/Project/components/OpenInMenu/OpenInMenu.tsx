@@ -1,10 +1,9 @@
-import { IconName, MaybeElement, Menu, MenuDivider, MenuItem } from '@blueprintjs/core';
-import { FC } from 'react';
+import { type IconName, type MaybeElement, Menu, MenuDivider, MenuItem } from '@blueprintjs/core';
+import { type FC } from 'react';
 import { FaGithub } from 'react-icons/fa';
-
-import { useAppSettings } from 'rendered/hooks/useAppSettings';
-import { GitStatus, Project } from 'types/project';
 import { ActionsIcon } from 'rendered/assets/gitHubIcons';
+import { useAppSettings } from 'rendered/hooks/useAppSettings';
+import { type GitStatus, type Project } from 'types/project';
 
 import VSCode from '../../assets/VSCode.svg?react';
 import Warp from '../../assets/Warp.svg?react';
@@ -15,7 +14,7 @@ type Props = {
   project: Project;
 };
 
-export const OpenInMenu: FC<Props> = ({ project, gitStatus }) => {
+export const OpenInMenu: FC<Props> = ({ gitStatus, project }) => {
   const { selectedEditor, selectedShell } = useAppSettings();
 
   const openInEditor = () => {
@@ -30,7 +29,7 @@ export const OpenInMenu: FC<Props> = ({ project, gitStatus }) => {
   const editorIcon: IconName | MaybeElement =
     selectedEditor?.editor === 'Visual Studio Code' ? <VSCode height={15} /> : 'code';
 
-  const openInGitHub = (path: string = '') => {
+  const openInGitHub = (path = '') => {
     window.open(`https://github.com/${gitStatus.organization}/${project.name}${path}`, '_blank');
   };
 
@@ -41,16 +40,16 @@ export const OpenInMenu: FC<Props> = ({ project, gitStatus }) => {
       {selectedShell && (
         <MenuItem
           icon={shellIcon}
-          text={`Open in ${selectedShell?.shell}`}
           onClick={openInShell}
+          text={`Open in ${selectedShell?.shell}`}
         />
       )}
 
       {selectedEditor && (
         <MenuItem
           icon={editorIcon}
-          text={`Open in ${selectedEditor?.editor}`}
           onClick={openInEditor}
+          text={`Open in ${selectedEditor?.editor}`}
         />
       )}
 
@@ -61,20 +60,23 @@ export const OpenInMenu: FC<Props> = ({ project, gitStatus }) => {
           </Title>
         }
       />
+
       <MenuItem
         icon={'code'}
-        text={`Project`}
         onClick={() => openInGitHub('/')}
+        text={`Project`}
       />
+
       <MenuItem
         icon={<ActionsIcon />}
-        text={`Actions`}
         onClick={() => openInGitHub('/actions')}
+        text={`Actions`}
       />
+
       <MenuItem
         icon={'git-pull'}
-        text={`Pull requests`}
         onClick={() => openInGitHub('/pulls')}
+        text={`Pull requests`}
       />
     </Menu>
   );

@@ -1,15 +1,14 @@
 import { Alert, Classes } from '@blueprintjs/core';
-import { FC } from 'react';
-
+import { type FC } from 'react';
 import { useGroups } from 'rendered/hooks/useGroups';
-import { Group } from 'types/Group';
-import { ModalProps } from 'types/Modal';
+import { type Group } from 'types/Group';
+import { type ModalProps } from 'types/Modal';
 
 export type RemoveGroupAlertProps = {
   group: Group;
 };
 
-export const RemoveGroupAlert: FC<RemoveGroupAlertProps & ModalProps> = ({ isOpen, group, darkMode, onClose }) => {
+export const RemoveGroupAlert: FC<ModalProps & RemoveGroupAlertProps> = ({ darkMode, group, isOpen, onClose }) => {
   const { deleteGroup } = useGroups();
 
   const remove = () => {

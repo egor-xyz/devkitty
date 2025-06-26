@@ -1,6 +1,13 @@
-import { BranchSummary, StatusResult } from 'simple-git';
+import { type BranchSummary, type StatusResult } from 'simple-git';
 
-type Status = Omit<StatusResult, 'isClean'> & { isClean: boolean };
+export type GitStatus = {
+  branchSummary?: BranchSummary;
+  message?: string;
+  organization?: string;
+  origin?: string;
+  status?: Status;
+  success: boolean;
+};
 
 export type Project = {
   filePath: string;
@@ -11,11 +18,4 @@ export type Project = {
 
 export type Projects = Project[];
 
-export type GitStatus = {
-  branchSummary?: BranchSummary;
-  message?: string;
-  organization?: string;
-  origin?: string;
-  status?: Status;
-  success: boolean;
-};
+type Status = Omit<StatusResult, 'isClean'> & { isClean: boolean };

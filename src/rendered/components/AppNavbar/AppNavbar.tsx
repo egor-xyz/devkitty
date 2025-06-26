@@ -1,14 +1,13 @@
 import { Button, ButtonGroup, Classes, Icon, Navbar } from '@blueprintjs/core';
 import clsx from 'clsx';
 import { NavLink } from 'react-router';
-
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { useDarkMode } from 'rendered/hooks/useDarkMode';
+import { useModal } from 'rendered/hooks/useModal';
 import { useProjects } from 'rendered/hooks/useProjects';
 
-import { LeftGroup, Logo, RightGroup, StyledNavbar, Shadow, ShadowContainer, Title } from './AppNavbar.styles';
-import { useModal } from 'rendered/hooks/useModal';
 import { ShinyText } from '../ShinyText';
+import { LeftGroup, Logo, RightGroup, Shadow, ShadowContainer, StyledNavbar, Title } from './AppNavbar.styles';
 
 export const AppNavbar = () => {
   const { themeSource, toggleDarkMode } = useDarkMode();
@@ -31,8 +30,8 @@ export const AppNavbar = () => {
     <StyledNavbar>
       <LeftGroup>
         <Button
-          minimal
           icon="plus"
+          minimal
           onClick={addProject}
         />
 
@@ -47,8 +46,8 @@ export const AppNavbar = () => {
 
       <RightGroup align="right">
         <Button
-          minimal
           icon="refresh"
+          minimal
           onClick={refresh}
         />
 
@@ -72,8 +71,8 @@ export const AppNavbar = () => {
           )}
 
           <Button
-            minimal
             icon="pin"
+            minimal
             onClick={addSticker}
           />
 

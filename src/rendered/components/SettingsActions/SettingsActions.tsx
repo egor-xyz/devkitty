@@ -1,5 +1,4 @@
 import { Divider, Label, NumericInput, Switch } from '@blueprintjs/core';
-
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 
 import { Root } from './SettingsActions.styles';
@@ -18,8 +17,8 @@ export const SettingsActions = () => {
         <NumericInput
           max={5}
           min={1}
-          value={count}
           onValueChange={(value) => set({ gitHubActions: { ...gitHubActions, count: value } })}
+          value={count}
         />
       </Label>
 

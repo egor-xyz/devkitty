@@ -1,12 +1,5 @@
+import { type Group, type Groups } from 'types/Group';
 import { create } from 'zustand';
-
-import { Group, Groups } from 'types/Group';
-
-type State = {
-  collapsedGroups: Group['id'][];
-  groupIds: string[];
-  groups: Groups;
-};
 
 type Actions = {
   addGroup: (group: Group) => void;
@@ -16,7 +9,13 @@ type Actions = {
   unselectCollapsed: () => void;
 };
 
-export const useGroups = create<State & Actions>((set, get) => ({
+type State = {
+  collapsedGroups: Group['id'][];
+  groupIds: string[];
+  groups: Groups;
+};
+
+export const useGroups = create<Actions & State>((set, get) => ({
   addGroup: (group: Group) => {
     set((state) => ({
       groups: [...state.groups, group]
