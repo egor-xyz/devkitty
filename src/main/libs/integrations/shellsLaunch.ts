@@ -1,43 +1,19 @@
-import { spawn, ChildProcess } from 'child_process';
+import { type ChildProcess, spawn } from 'child_process';
 
-import { FoundShell as IFoundShell } from '../../../types/foundShell';
+import { type FoundShell as IFoundShell } from '../../../types/foundShell';
 import { assertNever } from './fatal-error';
 
 export enum Shell {
   Alacritty = 'Alacritty',
+  Ghostty = 'Ghostty',
   Hyper = 'Hyper',
+  iTerm2 = 'iTerm2',
   Kitty = 'Kitty',
   PowerShellCore = 'PowerShell Core',
   Tabby = 'Tabby',
   Terminal = 'Terminal',
   Warp = 'Warp',
-  WezTerm = 'WezTerm',
-  iTerm2 = 'iTerm2'
-}
-
-function getBundleID(shell: Shell): string {
-  switch (shell) {
-    case Shell.Terminal:
-      return 'com.apple.Terminal';
-    case Shell.iTerm2:
-      return 'com.googlecode.iterm2';
-    case Shell.Hyper:
-      return 'co.zeit.hyper';
-    case Shell.PowerShellCore:
-      return 'com.microsoft.powershell';
-    case Shell.Kitty:
-      return 'net.kovidgoyal.kitty';
-    case Shell.Alacritty:
-      return 'io.alacritty';
-    case Shell.Tabby:
-      return 'org.tabby';
-    case Shell.WezTerm:
-      return 'com.github.wez.wezterm';
-    case Shell.Warp:
-      return 'dev.warp.Warp-Stable';
-    default:
-      return assertNever(shell, `Unknown shell: ${shell}`);
-  }
+  WezTerm = 'WezTerm'
 }
 
 export function launch(foundShell: IFoundShell<Shell>, path: string): ChildProcess {
@@ -67,8 +43,38 @@ export function launch(foundShell: IFoundShell<Shell>, path: string): ChildProce
     // It uses the subcommand `start`, followed by the option `--cwd` to set
     // the working directory, followed by the path.
     return spawn(foundShell.path, ['start', '--cwd', path]);
+  } else if (foundShell.shell === Shell.Ghostty) {
+    // Use 'open -a' to launch Ghostty.app with working directory
+    return spawn('open', ['-b', 'com.mitchellh.ghostty', path]);
   } else {
     const bundleID = getBundleID(foundShell.shell);
     return spawn('open', ['-b', bundleID, path]);
+  }
+}
+
+function getBundleID(shell: Shell): string {
+  switch (shell) {
+    case Shell.Alacritty:
+      return 'io.alacritty';
+    case Shell.Ghostty:
+      return 'com.mitchellh.ghostty';
+    case Shell.Hyper:
+      return 'co.zeit.hyper';
+    case Shell.iTerm2:
+      return 'com.googlecode.iterm2';
+    case Shell.Kitty:
+      return 'net.kovidgoyal.kitty';
+    case Shell.PowerShellCore:
+      return 'com.microsoft.powershell';
+    case Shell.Tabby:
+      return 'org.tabby';
+    case Shell.Terminal:
+      return 'com.apple.Terminal';
+    case Shell.Warp:
+      return 'dev.warp.Warp-Stable';
+    case Shell.WezTerm:
+      return 'com.github.wez.wezterm';
+    default:
+      return assertNever(shell, `Unknown shell: ${shell}`);
   }
 }

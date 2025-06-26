@@ -1,8 +1,7 @@
 import { Button, ButtonGroup, Classes, Popover } from '@blueprintjs/core';
-import { FC, useState } from 'react';
-
-import { GitStatus, Project } from 'types/project';
+import { type FC, useState } from 'react';
 import { ActionsIcon } from 'rendered/assets/gitHubIcons';
+import { type GitStatus, type Project } from 'types/project';
 
 import { GitMenu } from '../GitMenu';
 import { OpenInMenu } from '../OpenInMenu';
@@ -21,12 +20,12 @@ type Props = {
 };
 
 export const QuickActions: FC<Props> = ({
-  project,
   gitStatus,
   loading,
-  toggleActions,
+  project,
   showActions,
   showPulls,
+  toggleActions,
   togglePulls
 }) => {
   const [copyIcon, setCopyIcon] = useState(<StyledFaRegCopy size={size} />);
@@ -43,8 +42,8 @@ export const QuickActions: FC<Props> = ({
       <Button
         icon={copyIcon}
         loading={loading}
-        title={'Copy the branch name to clipboard'}
         onClick={copyToClipboard}
+        title={'Copy the branch name to clipboard'}
       />
 
       <Popover
@@ -83,16 +82,16 @@ export const QuickActions: FC<Props> = ({
         active={showPulls}
         icon={'git-pull'}
         loading={loading}
-        title="Pull Requests"
         onClick={togglePulls}
+        title="Pull Requests"
       />
 
       <Button
         active={showActions}
         icon={<ActionsIcon />}
         loading={loading}
-        title="GitHub Actions"
         onClick={toggleActions}
+        title="GitHub Actions"
       />
     </ButtonGroup>
   );

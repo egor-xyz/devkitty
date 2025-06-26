@@ -1,11 +1,15 @@
-import { Button, Classes, Dialog, DialogFooter, Intent, Switch } from '@blueprintjs/core';
-import { FC, useState } from 'react';
-
+import { Button, Classes, Dialog, DialogFooter, type Intent, Switch } from '@blueprintjs/core';
+import { type FC, useState } from 'react';
 import { appToaster } from 'rendered/utils/appToaster';
-import { ModalProps } from 'types/Modal';
-import { GitStatus } from 'types/project';
+import { type ModalProps } from 'types/Modal';
+import { type GitStatus } from 'types/project';
 
-import { StyledBranchSelect, StyledDialogBody, Row, Options } from './GitResetModal.styles';
+import { Options, Row, StyledBranchSelect, StyledDialogBody } from './GitResetModal.styles';
+
+enum storageKeys {
+  origin = 'GitResetModal:origin-',
+  remoteMode = 'GitResetModal:remoteMode-'
+}
 
 export type GitResetModalProps = {
   gitStatus: GitStatus;
@@ -13,13 +17,8 @@ export type GitResetModalProps = {
   name: string;
 };
 
-enum storageKeys {
-  origin = 'GitResetModal:origin-',
-  remoteMode = 'GitResetModal:remoteMode-'
-}
-
-export const GitResetModal: FC<ModalProps & GitResetModalProps> = (props) => {
-  const { id, name, gitStatus, isOpen, onClose, darkMode } = props;
+export const GitResetModal: FC<GitResetModalProps & ModalProps> = (props) => {
+  const { darkMode, gitStatus, id, isOpen, name, onClose } = props;
 
   const all = gitStatus?.branchSummary.all;
 
@@ -114,8 +113,8 @@ export const GitResetModal: FC<ModalProps & GitResetModalProps> = (props) => {
       className={darkMode && Classes.DARK}
       icon="reset"
       isOpen={isOpen}
-      title={actionText}
       onClose={onClose}
+      title={actionText}
     >
       <StyledDialogBody>
         <Options>
@@ -137,10 +136,11 @@ export const GitResetModal: FC<ModalProps & GitResetModalProps> = (props) => {
         {remoteMode && (
           <Row>
             <div>Remote Branch</div>
+
             <StyledBranchSelect
-              fill
               currentBranch={origin}
               disabled={loading}
+              fill
               gitStatus={gitStatus}
               onSelect={selectOrigin}
             />
@@ -149,10 +149,11 @@ export const GitResetModal: FC<ModalProps & GitResetModalProps> = (props) => {
 
         <Row>
           <span>Reset to</span>
+
           <StyledBranchSelect
-            fill
             currentBranch={target}
             disabled={loading}
+            fill
             gitStatus={gitStatus}
             onSelect={selectTarget}
           />
@@ -165,8 +166,8 @@ export const GitResetModal: FC<ModalProps & GitResetModalProps> = (props) => {
             icon="reset"
             intent={actionIntent}
             loading={loading}
-            text={actionText}
             onClick={resetBranch}
+            text={actionText}
           />
         }
       />

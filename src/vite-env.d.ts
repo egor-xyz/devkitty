@@ -1,10 +1,10 @@
 /// <reference types="vite/client" />
 /// <reference types="vite-plugin-svgr/client" />
 
-interface ImportMetaEnv {
-  readonly VITE_PUBLIC_URL: string;
+type ImportMeta = {
+  readonly env: ImportMetaEnv;
 }
 
-interface ImportMeta {
-  readonly env: ImportMetaEnv;
+type ImportMetaEnv = {
+  readonly VITE_PUBLIC_URL: string;
 }

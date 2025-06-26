@@ -1,6 +1,5 @@
+import { type ThemeSource } from 'types/Modal';
 import { create } from 'zustand';
-
-import { ThemeSource } from 'types/Modal';
 
 type Store = {
   darkMode: boolean;
@@ -26,7 +25,7 @@ export const useDarkModeStore = create<Store>()((set) => ({
 })();
 
 export const useDarkMode = () => {
-  const { themeSource, setThemeSource, darkMode } = useDarkModeStore();
+  const { darkMode, setThemeSource, themeSource } = useDarkModeStore();
 
   const setTheme = async (theme: Store['themeSource']) => {
     if (theme === themeSource) return;

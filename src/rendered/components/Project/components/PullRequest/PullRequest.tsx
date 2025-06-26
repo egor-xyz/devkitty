@@ -1,8 +1,7 @@
 import { Button } from '@blueprintjs/core';
-import { FC } from 'react';
-
+import { type FC } from 'react';
 import { timeAgo } from 'rendered/utils/timeAgo';
-import { Pull } from 'types/gitHub';
+import { type Pull } from 'types/gitHub';
 
 import { Avatar, BotTag, MainBlock, PullLabel, Root, Title, TitleDescription, TitleMain } from './PullRequest.styles';
 
@@ -11,7 +10,7 @@ type Props = {
 };
 
 export const PullRequest: FC<Props> = ({ pull }) => {
-  const { title, html_url, draft, created_at, labels, number, user } = pull;
+  const { created_at, draft, html_url, labels, number, title, user } = pull;
 
   const openInBrowser = () => {
     window.open(html_url, '_blank');
@@ -28,9 +27,7 @@ export const PullRequest: FC<Props> = ({ pull }) => {
         <Title>
           <TitleMain>
             {draft && '[DRAFT] '}
-
             {user.type === 'Bot' && <BotTag>bot</BotTag>}
-
             {title}
 
             {labels.map((label) => (

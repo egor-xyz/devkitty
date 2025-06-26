@@ -1,8 +1,7 @@
-import styled from 'styled-components';
 import { Colors } from '@blueprintjs/colors';
 import { Classes } from '@blueprintjs/core';
-
 import { ActionsIcon } from 'rendered/assets/gitHubIcons';
+import styled from 'styled-components';
 
 export const Root = styled.div`
   height: calc(100vh - 50px);

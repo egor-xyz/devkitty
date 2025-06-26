@@ -1,12 +1,11 @@
 import { Button, Classes, DialogBody, InputGroup } from '@blueprintjs/core';
-import { ChangeEventHandler, FC, useState } from 'react';
-import { v4 } from 'uuid';
-
+import { type ChangeEventHandler, type FC, useState } from 'react';
 import { useGroups } from 'rendered/hooks/useGroups';
-import { Group } from 'types/Group';
-import { ModalProps } from 'types/Modal';
 import { useProjects } from 'rendered/hooks/useProjects';
 import { appToaster } from 'rendered/utils/appToaster';
+import { type Group } from 'types/Group';
+import { type ModalProps } from 'types/Modal';
+import { v4 } from 'uuid';
 
 import { Actions, Error, StyledDialog } from './GroupModal.styles';
 
@@ -15,8 +14,8 @@ export type GroupModalProps = {
   projectId?: string;
 };
 
-export const GroupModal: FC<ModalProps & GroupModalProps> = ({ isOpen, onClose, darkMode, groupId, projectId }) => {
-  const { groups, addGroup } = useGroups();
+export const GroupModal: FC<GroupModalProps & ModalProps> = ({ darkMode, groupId, isOpen, onClose, projectId }) => {
+  const { addGroup, groups } = useGroups();
   const [name, setName] = useState<Group['name']>('');
   const [error, setError] = useState<string>();
   const { addGroupId } = useProjects();
@@ -49,7 +48,9 @@ export const GroupModal: FC<ModalProps & GroupModalProps> = ({ isOpen, onClose, 
     };
 
     addGroup(newGroup);
-    projectId && addGroupId(projectId, newGroup.id);
+    if (projectId) {
+      addGroupId(projectId, newGroup.id);
+    }
 
     (await appToaster).show({
       intent: 'success',
@@ -64,23 +65,23 @@ export const GroupModal: FC<ModalProps & GroupModalProps> = ({ isOpen, onClose, 
       className={darkMode && Classes.DARK}
       icon="group-item"
       isOpen={isOpen}
-      title={title}
       onClose={onClose}
+      title={title}
     >
       <DialogBody>
         <InputGroup
           autoFocus
           intent={error ? 'danger' : 'none'}
+          onChange={handleChange}
           placeholder="group name..."
           value={name}
-          onChange={handleChange}
         />
 
         <Actions>
           <Button
             intent="warning"
-            text={actionText}
             onClick={handleSave}
+            text={actionText}
           />
 
           {error && <Error>{error}</Error>}

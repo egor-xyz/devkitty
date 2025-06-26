@@ -1,7 +1,6 @@
-import styled from 'styled-components';
 import { DialogBody } from '@blueprintjs/core';
-
 import { BranchSelect } from 'rendered/components/BranchSelect';
+import styled from 'styled-components';
 
 export const StyledDialogBody = styled(DialogBody)`
   user-select: none;

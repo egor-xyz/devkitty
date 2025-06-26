@@ -1,8 +1,7 @@
 import { Button } from '@blueprintjs/core';
-import { FC } from 'react';
-
-import { getStatusIcon } from 'rendered/assets/gitHubIcons';
-import { Run } from 'types/gitHub';
+import { type FC } from 'react';
+import { getStatusIcon } from 'rendered/assets/gitHubStatusUtils';
+import { type Run } from 'types/gitHub';
 
 import { MainBlock, Root, Status, Title, TitleDescription, TitleMain } from './Workflow.styles';
 
@@ -13,7 +12,7 @@ type Props = {
 const tagLength = 75;
 
 export const Workflow: FC<Props> = ({ run }) => {
-  const { name, html_url, head_branch, run_number, event, status, display_title, conclusion } = run;
+  const { conclusion, display_title, event, head_branch, html_url, name, run_number, status } = run;
   const Icon = getStatusIcon(conclusion || status);
 
   const openInBrowser = () => {
@@ -38,6 +37,7 @@ export const Workflow: FC<Props> = ({ run }) => {
             {run_number}
             {')'}
           </TitleMain>
+
           <TitleDescription>{display_title}</TitleDescription>
         </Title>
       </MainBlock>

@@ -1,7 +1,7 @@
 import { Route, Routes } from 'react-router';
 
-import { Settings } from './components/Settings';
 import { Projects } from './components/Projects/Projects';
+import { Settings } from './components/Settings';
 // add route names here
 export const Routing = () => (
   <Routes>

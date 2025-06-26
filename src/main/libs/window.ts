@@ -1,10 +1,8 @@
-import { screen, type Rectangle, type BrowserWindow } from 'electron';
+import { type BrowserWindow, type Rectangle, screen } from 'electron';
 
 import { settings } from '../../main/settings';
 
-const getArea = (bounds: Rectangle) => {
-  return screen.getDisplayMatching(bounds).workArea;
-};
+const getArea = (bounds: Rectangle) => screen.getDisplayMatching(bounds).workArea;
 
 const isSizeValid = (bounds: Rectangle) => {
   const area = getArea(bounds);

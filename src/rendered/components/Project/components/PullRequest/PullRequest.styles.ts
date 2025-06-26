@@ -1,6 +1,6 @@
 import { Colors } from '@blueprintjs/core';
-import styled, { css } from 'styled-components';
 import { readableColor } from 'polished';
+import styled, { css } from 'styled-components';
 
 export const Root = styled.div`
   display: flex;

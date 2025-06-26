@@ -1,7 +1,7 @@
 import { Button, Tag } from '@blueprintjs/core';
-import { FC } from 'react';
+import { type FC } from 'react';
 
-import { ProjectActions, Info, Root, Title, MiddleBlock } from '../../Project.styles';
+import { Info, MiddleBlock, ProjectActions, Root, Title } from '../../Project.styles';
 
 type Props = {
   name: string;
@@ -16,9 +16,9 @@ export const Error: FC<Props> = ({ name, removeAlert }) => (
 
     <MiddleBlock>
       <Tag
-        minimal
         icon="folder-open"
         intent="warning"
+        minimal
       >
         Git repository not found
       </Tag>
@@ -26,9 +26,9 @@ export const Error: FC<Props> = ({ name, removeAlert }) => (
 
     <ProjectActions>
       <Button
-        large
         icon="trash"
         intent="danger"
+        large
         onClick={removeAlert}
       />
     </ProjectActions>

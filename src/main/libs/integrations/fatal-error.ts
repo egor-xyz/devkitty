@@ -1,8 +1,3 @@
-/** Throw an error. */
-export function fatalError(msg: string): never {
-  throw new Error(msg);
-}
-
 /**
  * Utility function used to achieve exhaustive type checks at compile time.
  *
@@ -25,12 +20,15 @@ export function assertNever(x: never, message: string): never {
  * this will throw. The message should contain the rationale for knowing the
  * value is defined.
  */
-export function forceUnwrap<T>(message: string, x: T | null | undefined): T {
-  if (x == null) {
+export function assertNonNullable<T>(x: T, message: string): asserts x is NonNullable<T> {
+  if (x === null) {
     return fatalError(message);
-  } else {
-    return x;
   }
+}
+
+/** Throw an error. */
+export function fatalError(msg: string): never {
+  throw new Error(msg);
 }
 
 /**
@@ -39,8 +37,10 @@ export function forceUnwrap<T>(message: string, x: T | null | undefined): T {
  * this will throw. The message should contain the rationale for knowing the
  * value is defined.
  */
-export function assertNonNullable<T>(x: T, message: string): asserts x is NonNullable<T> {
-  if (x == null) {
+export function forceUnwrap<T>(message: string, x: null | T | undefined): T {
+  if (x === null) {
     return fatalError(message);
+  } else {
+    return x;
   }
 }

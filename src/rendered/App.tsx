@@ -1,13 +1,12 @@
 import { Classes, FocusStyleManager } from '@blueprintjs/core';
-import { ThemeProvider } from 'styled-components';
-
 import { useDarkMode } from 'rendered/hooks/useDarkMode';
 import { useModal } from 'rendered/hooks/useModal';
+import { ThemeProvider } from 'styled-components';
 
 import { Root } from './App.styles';
-import { Routing } from './Routing';
-import { GlobalStyles, darkTheme, defaultTheme } from './Theme';
 import { AppNavbar } from './components/AppNavbar';
+import { Routing } from './Routing';
+import { darkTheme, defaultTheme, GlobalStyles } from './Theme';
 
 FocusStyleManager.onlyShowFocusOnTabs();
 
@@ -20,6 +19,7 @@ export const App = () => {
   return (
     <ThemeProvider theme={theme}>
       <GlobalStyles />
+
       <Root className={darkMode && Classes.DARK}>
         <AppNavbar />
         <Routing />

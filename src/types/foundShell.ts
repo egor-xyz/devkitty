@@ -1,4 +1,4 @@
-export interface FoundShell<T> {
+export type FoundShell<T> = {
   readonly extraArgs?: string[];
   readonly path: string;
   readonly shell: T;
