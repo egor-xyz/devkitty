@@ -1,8 +1,7 @@
 import { MenuDivider, MenuItem } from '@blueprintjs/core';
-import { FC } from 'react';
-
-import { useModal } from 'rendered/hooks/useModal';
+import { type FC } from 'react';
 import { useGroups } from 'rendered/hooks/useGroups';
+import { useModal } from 'rendered/hooks/useModal';
 import { useProjects } from 'rendered/hooks/useProjects';
 
 type Props = {
@@ -26,32 +25,31 @@ export const GroupsSelect: FC<Props> = ({ groupId, id }) => {
     >
       <MenuItem
         icon="plus"
-        text="Add group"
         onClick={addGroup}
+        text="Add group"
       />
 
       {groupId && <MenuDivider />}
 
       {groupId && (
-        <>
-          <MenuItem
-            icon="small-cross"
-            intent="warning"
-            key="blank"
-            text={`Remove from ${name}`}
-            onClick={() => addGroupId(id, undefined)}
-          />
-        </>
+        <MenuItem
+          icon="small-cross"
+          intent="warning"
+          key="blank"
+          onClick={() => addGroupId(id, undefined)}
+          text={`Remove from ${name}`}
+        />
       )}
 
       {Boolean(groups.length) && <MenuDivider />}
-      {groups.map(({ fullName, id: _groupId, icon }) => (
+
+      {groups.map(({ fullName, icon, id: _groupId }) => (
         <MenuItem
           disabled={_groupId === groupId}
           icon={icon}
           key={_groupId}
-          text={fullName}
           onClick={() => addGroupId(id, _groupId)}
+          text={fullName}
         />
       ))}
     </MenuItem>

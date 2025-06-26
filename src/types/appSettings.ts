@@ -1,5 +1,5 @@
-import { FoundEditor } from './foundEditor';
-import { FoundShell } from './foundShell';
+import { type FoundEditor } from './foundEditor';
+import { type FoundShell } from './foundShell';
 
 export type AppSettings = {
   editors: FoundEditor[];

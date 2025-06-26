@@ -1,15 +1,14 @@
 import { Menu, MenuDivider, MenuItem } from '@blueprintjs/core';
-import { FC } from 'react';
-
+import { type FC } from 'react';
 import { useModal } from 'rendered/hooks/useModal';
-import { GitStatus, Project } from 'types/project';
+import { type GitStatus, type Project } from 'types/project';
 
 type Props = {
   gitStatus: GitStatus;
   project: Project;
 };
 
-export const GitMenu: FC<Props> = ({ project, gitStatus }) => {
+export const GitMenu: FC<Props> = ({ gitStatus, project }) => {
   const { openModal } = useModal();
 
   const openMerge = () => openModal({ name: 'git:merge', props: { gitStatus, id: project.id, name: project.name } });
@@ -21,14 +20,14 @@ export const GitMenu: FC<Props> = ({ project, gitStatus }) => {
 
       <MenuItem
         icon="refresh"
-        text="git reset"
         onClick={openReset}
+        text="git reset"
       />
 
       <MenuItem
         icon={'git-merge'}
-        text="git merge"
         onClick={openMerge}
+        text="git merge"
       />
     </Menu>
   );

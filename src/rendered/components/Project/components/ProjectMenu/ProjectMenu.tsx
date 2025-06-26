@@ -1,8 +1,7 @@
 import { Menu, MenuDivider, MenuItem } from '@blueprintjs/core';
-import { FC } from 'react';
-
+import { type FC } from 'react';
 import { useModal } from 'rendered/hooks/useModal';
-import { GitStatus } from 'types/project';
+import { type GitStatus } from 'types/project';
 
 import { GroupsSelect } from '../GroupsSelect';
 
@@ -16,31 +15,34 @@ type Props = {
   removeProject: () => void;
 };
 
-export const ProjectMenu: FC<Props> = ({ getStatus, name, id, gitStatus, removeProject, pull, groupId }) => {
+export const ProjectMenu: FC<Props> = ({ getStatus, gitStatus, groupId, id, name, pull, removeProject }) => {
   const { openModal } = useModal();
 
   return (
     <Menu>
       <MenuItem
         icon="refresh"
-        text="Refresh"
         onClick={getStatus}
+        text="Refresh"
       />
+
       <MenuItem
         icon="git-pull"
-        text="Pull"
         onClick={pull}
+        text="Pull"
       />
+
       <MenuItem
         icon="git-merge"
-        text="Merge"
         onClick={() => openModal({ name: 'git:merge', props: { gitStatus, id, name } })}
+        text="Merge"
       />
+
       <MenuItem
         icon="reset"
         intent="warning"
-        text="Reset branch"
         onClick={() => openModal({ name: 'git:reset', props: { gitStatus, id, name } })}
+        text="Reset branch"
       />
 
       <MenuDivider />
@@ -55,8 +57,8 @@ export const ProjectMenu: FC<Props> = ({ getStatus, name, id, gitStatus, removeP
       <MenuItem
         icon="trash"
         intent="danger"
-        text="Remove"
         onClick={removeProject}
+        text="Remove"
       />
     </Menu>
   );

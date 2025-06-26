@@ -1,5 +1,5 @@
 import { Colors } from '@blueprintjs/colors';
-import { createGlobalStyle, DefaultTheme } from 'styled-components';
+import { createGlobalStyle, type DefaultTheme } from 'styled-components';
 
 // placeholder for app colors
 export const defaultTheme: DefaultTheme = {

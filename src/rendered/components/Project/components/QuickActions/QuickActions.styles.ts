@@ -1,6 +1,6 @@
-import styled from 'styled-components';
-import { FaRegCopy, FaCopy } from 'react-icons/fa';
 import { Colors } from '@blueprintjs/core';
+import { FaCopy, FaRegCopy } from 'react-icons/fa';
+import styled from 'styled-components';
 
 export const StyledFaRegCopy = styled(FaRegCopy)`
   color: ${Colors.GRAY1};

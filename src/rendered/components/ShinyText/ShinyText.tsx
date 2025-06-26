@@ -1,16 +1,17 @@
 import type { FC } from 'react';
+
 import { Root } from './ShinyText.styles';
 
 type Props = {
-  text: string;
-  speed?: number;
   className?: string;
+  speed?: number;
+  text: string;
 };
 
-export const ShinyText: FC<Props> = ({ text, speed = 5, className }) => (
+export const ShinyText: FC<Props> = ({ className, speed = 5, text }) => (
   <Root
-    speed={speed}
     className={className}
+    speed={speed}
   >
     {text}
   </Root>

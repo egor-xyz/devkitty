@@ -1,8 +1,6 @@
 import { ipcMain } from 'electron';
-
 import { CleanOptions, ResetMode } from 'simple-git';
-
-import { GitStatus } from 'types/project';
+import { type GitStatus } from 'types/project';
 
 import { getGit } from '../libs/git';
 
@@ -21,7 +19,7 @@ ipcMain.handle('git:getStatus', async (_, id: string): Promise<GitStatus> => {
     try {
       const origin = await git.remote(['get-url', 'origin']);
       organization = origin ? origin.split(':')[1].split('/')[0] : undefined;
-    } catch (e) {
+    } catch {
       /* empty */
     }
 
@@ -67,7 +65,9 @@ ipcMain.handle('git:reset', async (_, id: string, target, force) => {
 
     await git.clean(CleanOptions.FORCE);
 
-    force && (await git.push(['-f']));
+    if (force) {
+      await git.push(['-f']);
+    }
 
     return { message: 'Project reset', success: true };
   } catch (e) {

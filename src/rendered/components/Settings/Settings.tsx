@@ -1,10 +1,10 @@
 import { Tabs } from '@blueprintjs/core';
-import { useParams, useNavigate } from 'react-router';
+import { useNavigate, useParams } from 'react-router';
 
-import { Root, StyledActionsIcon } from './Settings.styles';
+import { SettingsActions } from '../SettingsActions';
 import { SettingsAppearance } from '../SettingsAppearance';
 import { SettingsIntegrations } from '../SettingsIntegrations';
-import { SettingsActions } from '../SettingsActions';
+import { Root, StyledActionsIcon } from './Settings.styles';
 
 export const Settings = () => {
   const { id = 'appearance' } = useParams<{ id?: string }>();
@@ -17,9 +17,9 @@ export const Settings = () => {
   return (
     <Root>
       <Tabs
-        vertical
         defaultSelectedTabId={id}
         onChange={handleTabChange}
+        vertical
       >
         <Tabs.Tab
           icon="style"

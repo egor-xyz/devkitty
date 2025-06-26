@@ -1,6 +1,5 @@
-import { FC } from 'react';
-
-import { GitStatus } from 'types/project';
+import { type FC } from 'react';
+import { type GitStatus } from 'types/project';
 
 import { GitStatusBadge } from '../GitStatusBadge';
 import { Root } from './GitStatusGroup.styles';

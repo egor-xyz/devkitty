@@ -1,14 +1,10 @@
 import { dialog, ipcMain } from 'electron';
-
+import { type Projects } from 'types/project';
 import { v5 } from 'uuid';
-
-import { Projects } from 'types/project';
 
 import { settings } from '../settings';
 
-ipcMain.handle('projects:get', () => {
-  return settings.get('projects');
-});
+ipcMain.handle('projects:get', () => settings.get('projects'));
 
 ipcMain.handle('projects:add', async () => {
   const res = await dialog.showOpenDialog({ properties: ['openDirectory', 'multiSelections'] });

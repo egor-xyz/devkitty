@@ -1,15 +1,14 @@
 import { Alert, Classes } from '@blueprintjs/core';
-import { FC } from 'react';
-
+import { type FC } from 'react';
 import { useProjects } from 'rendered/hooks/useProjects';
-import { ModalProps } from 'types/Modal';
+import { type ModalProps } from 'types/Modal';
 
 export type RemoveAlertProps = {
   id: string;
   name: string;
 };
 
-export const RemoveAlert: FC<RemoveAlertProps & ModalProps> = ({ isOpen, name, darkMode, id, onClose }) => {
+export const RemoveAlert: FC<ModalProps & RemoveAlertProps> = ({ darkMode, id, isOpen, name, onClose }) => {
   const { removeProject } = useProjects();
 
   const remove = () => {

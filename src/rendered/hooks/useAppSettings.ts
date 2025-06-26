@@ -1,12 +1,11 @@
+import { type AppSettings } from 'types/appSettings';
 import { create } from 'zustand';
-
-import { AppSettings } from 'types/appSettings';
 
 type Actions = {
   set: (settings: Partial<AppSettings>, safe?: boolean) => void;
 };
 
-export const useAppSettings = create<AppSettings & Actions>((set) => ({
+export const useAppSettings = create<Actions & AppSettings>((set) => ({
   editors: [],
   fetchInterval: 10000,
   gitHubActions: {

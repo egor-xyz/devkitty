@@ -1,9 +1,8 @@
 import { MenuItem } from '@blueprintjs/core';
 import { Select } from '@blueprintjs/select';
 import clsx from 'clsx';
-import { FC, useState } from 'react';
-
-import { GitStatus } from 'types/project';
+import { type FC, useState } from 'react';
+import { type GitStatus } from 'types/project';
 
 import { GlobalStyles, SelectButton, StyledMenuItem } from './BranchSelect.styles';
 
@@ -21,13 +20,13 @@ type Props = {
 const LIMIT = 5;
 
 export const BranchSelect: FC<Props> = ({
-  gitStatus,
-  onSelect,
-  loading,
-  currentBranch,
-  fill = false,
   className,
-  disabled
+  currentBranch,
+  disabled,
+  fill = false,
+  gitStatus,
+  loading,
+  onSelect
 }) => {
   const [query, setQuery] = useState('');
 
@@ -41,11 +40,12 @@ export const BranchSelect: FC<Props> = ({
   return (
     <>
       <GlobalStyles />
+
       <Select<string>
         className={className}
         disabled={disabled}
         inputProps={{ placeholder: 'Search...' }}
-        itemRenderer={(name, { index, modifiers: { active }, handleClick }) => (
+        itemRenderer={(name, { handleClick, index, modifiers: { active } }) => (
           <StyledMenuItem
             active={active}
             className={clsx({
@@ -54,30 +54,30 @@ export const BranchSelect: FC<Props> = ({
             })}
             icon={(name === currentBranch && 'selection') || 'circle'}
             key={index}
-            text={name}
             onClick={handleClick}
+            text={name}
           />
         )}
         items={items}
         noResults={
           <MenuItem
-            disabled={true}
+            disabled
             roleStructure="listoption"
             text="No results."
           />
         }
-        popoverContentProps={{ className: 'branchSelectPopoverList' }}
-        popoverProps={{ placement: 'bottom-start' }}
-        resetOnSelect={true}
         onItemSelect={onSelect}
         onQueryChange={setQuery}
+        popoverContentProps={{ className: 'branchSelectPopoverList' }}
+        popoverProps={{ placement: 'bottom-start' }}
+        resetOnSelect
       >
         <SelectButton
-          small
           disabled={disabled}
           fill={fill}
           loading={loading}
           rightIcon="double-caret-vertical"
+          small
           text={currentBranch}
         />
       </Select>

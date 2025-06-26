@@ -1,7 +1,6 @@
-import { ipcMain, Menu, Tray, nativeImage, BrowserWindow } from 'electron';
-import log from 'electron-log';
+import { ipcMain, nativeImage, Tray } from 'electron';
 
-let tray: Tray | null = null;
+let tray: null | Tray = null;
 
 ipcMain.handle('sticker:add', async (_, text: string): Promise<void> => {
   if (tray) tray.destroy();

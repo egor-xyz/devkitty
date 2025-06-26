@@ -3,7 +3,9 @@ import { simpleGit } from 'simple-git';
 import { settings } from '../settings';
 
 export const getGit = async (id: string) => {
+  // @ts-ignore tmp
   const projects = settings.get('projects');
+  // @ts-ignore tmp
   const project = projects.find((project) => project.id === id);
 
   if (!project) new Error('Project not found');
@@ -28,7 +30,7 @@ export const getRepoInfo = async (id: string) => {
       owner: repository.split('/')[0],
       repo: repository.split('/')[1]
     };
-  } catch (_) {
+  } catch {
     return {};
   }
 };

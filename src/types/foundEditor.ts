@@ -1,4 +1,4 @@
-export interface FoundEditor {
+export type FoundEditor = {
   readonly editor: string;
   readonly path: string;
   readonly usesShell?: boolean;
@@ -6,7 +6,7 @@ export interface FoundEditor {
 
 export type LaunchEditor = { editor: FoundEditor; fullPath: string };
 
-interface IErrorMetadata {
+type IErrorMetadata = {
   /** The error dialog should direct the user to open Preferences */
   openPreferences?: boolean;
 

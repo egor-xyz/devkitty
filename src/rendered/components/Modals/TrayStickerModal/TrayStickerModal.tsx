@@ -1,12 +1,11 @@
 import { Button, Classes, DialogBody, InputGroup } from '@blueprintjs/core';
-import { ChangeEventHandler, FC, useState } from 'react';
-
+import { type ChangeEventHandler, type FC, useState } from 'react';
 import { appToaster } from 'rendered/utils/appToaster';
-import { ModalProps } from 'types/Modal';
+import { type ModalProps } from 'types/Modal';
 
 import { Actions, Error, StyledDialog } from './TrayStickerModal.styles';
 
-export const TrayStickerModal: FC<ModalProps> = ({ onClose, darkMode, isOpen }) => {
+export const TrayStickerModal: FC<ModalProps> = ({ darkMode, isOpen, onClose }) => {
   const [text, setText] = useState<string>('');
   const [error, setError] = useState<string | undefined>();
 
@@ -37,23 +36,23 @@ export const TrayStickerModal: FC<ModalProps> = ({ onClose, darkMode, isOpen }) 
       className={darkMode && Classes.DARK}
       icon="pin"
       isOpen={isOpen}
-      title={'Add Tray Sticker'}
       onClose={onClose}
+      title={'Add Tray Sticker'}
     >
       <DialogBody>
         <InputGroup
           autoFocus
           intent={error ? 'danger' : 'none'}
+          onChange={handleChange}
           placeholder="sticker text..."
           value={text}
-          onChange={handleChange}
         />
 
         <Actions>
           <Button
             intent="warning"
-            text={'Add'}
             onClick={handleSave}
+            text={'Add'}
           />
 
           {error && <Error>{error}</Error>}

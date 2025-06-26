@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
-
-import { GitStatus } from 'types/project';
 import { appToaster } from 'rendered/utils/appToaster';
+import { type GitStatus } from 'types/project';
 
 import { useAppSettings } from './useAppSettings';
 import { useProjects } from './useProjects';
@@ -91,12 +90,10 @@ export const useGit = () => {
     }
   };
 
-  useEffect(() => {
-    return () => {
+  useEffect(() => () => {
       unmounted.current = true;
       window.clearInterval(intervalId.current);
-    };
-  }, []);
+    }, []);
 
   return { checkout, getStatus, gitStatus, loading, mergeTo, pull };
 };

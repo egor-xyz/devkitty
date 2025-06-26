@@ -1,16 +1,15 @@
-import { Divider, MenuItem, Button, InputGroup } from '@blueprintjs/core';
+import { Button, Divider, InputGroup, MenuItem } from '@blueprintjs/core';
 import { Select } from '@blueprintjs/select';
 import { useState } from 'react';
-
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
-import { FoundEditor } from 'types/foundEditor';
-import { FoundShell } from 'types/foundShell';
 import { appToaster } from 'rendered/utils/appToaster';
+import { type FoundEditor } from 'types/foundEditor';
+import { type FoundShell } from 'types/foundShell';
 
 import { Root, Row, TokenWrapper } from './SettingsIntegrations.styles';
 
 export const SettingsIntegrations = () => {
-  const { editors, shells, selectedEditor, selectedShell, set, gitHubToken } = useAppSettings();
+  const { editors, gitHubToken, selectedEditor, selectedShell, set, shells } = useAppSettings();
   const [token, setToken] = useState(gitHubToken);
 
   const saveToken = async () => {
@@ -27,36 +26,38 @@ export const SettingsIntegrations = () => {
     <Root>
       <h2>Integrations</h2>
       <Divider />
-
       <h3>GitHub Token</h3>
+
       <TokenWrapper>
         <InputGroup
           inputMode="text"
+          onChange={({ target: { value } }) => setToken(value)}
           placeholder="GitHub Token"
           type="password"
           value={token}
-          onChange={({ target: { value } }) => setToken(value)}
         />
+
         <Button
-          small
           intent="warning"
-          text={'Set GitHub Token'}
           onClick={saveToken}
+          small
+          text={'Set GitHub Token'}
         />
       </TokenWrapper>
 
       {editors.length !== 0 && Boolean(selectedEditor) && (
         <>
           <h3>Editor</h3>
+
           <Row>
             <Select<FoundEditor>
               filterable={false}
-              itemRenderer={(editor, { index, handleClick }) => (
+              itemRenderer={(editor, { handleClick, index }) => (
                 <MenuItem
                   disabled={editor.editor === selectedEditor?.editor}
                   key={index}
-                  text={editor.editor}
                   onClick={handleClick}
+                  text={editor.editor}
                 />
               )}
               items={editors}
@@ -71,15 +72,16 @@ export const SettingsIntegrations = () => {
       {shells.length !== 0 && Boolean(selectedShell) && (
         <>
           <h3>Shell</h3>
+
           <Row>
             <Select<FoundShell<string>>
               filterable={false}
-              itemRenderer={(shell, { index, handleClick }) => (
+              itemRenderer={(shell, { handleClick, index }) => (
                 <MenuItem
                   disabled={shell.shell === selectedShell?.shell}
                   key={index}
-                  text={shell.shell}
                   onClick={handleClick}
+                  text={shell.shell}
                 />
               )}
               items={shells}

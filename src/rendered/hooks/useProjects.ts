@@ -1,11 +1,6 @@
-import { create } from 'zustand';
-
 import { appToaster } from 'rendered/utils/appToaster';
-import { Projects } from 'types/project';
-
-type State = {
-  projects: Projects;
-};
+import { type Projects } from 'types/project';
+import { create } from 'zustand';
 
 type Actions = {
   addGroupId: (id: string, groupId?: string) => void;
@@ -13,7 +8,11 @@ type Actions = {
   removeProject: (id: string) => void;
 };
 
-export const useProjects = create<State & Actions>((set, get) => ({
+type State = {
+  projects: Projects;
+};
+
+export const useProjects = create<Actions & State>((set, get) => ({
   addGroupId: async (id, groupId) => {
     const project = get().projects.find((project) => project.id === id);
     if (!project) return;

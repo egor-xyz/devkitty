@@ -1,12 +1,11 @@
-import { contextBridge, ipcRenderer, IpcRendererEvent } from 'electron';
-
-import { ThemeSource } from 'types/Modal';
-import { AppSettings } from 'types/appSettings';
-import { FoundEditor } from 'types/foundEditor';
-import { FoundShell } from 'types/foundShell';
-import { pullTypes } from 'types/gitHub';
-import { GitStatus, Project } from 'types/project';
-import { Settings } from 'types/settings';
+import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
+import { type AppSettings } from 'types/appSettings';
+import { type FoundEditor } from 'types/foundEditor';
+import { type FoundShell } from 'types/foundShell';
+import { type pullTypes } from 'types/gitHub';
+import { type ThemeSource } from 'types/Modal';
+import { type GitStatus, type Project } from 'types/project';
+import { type Settings } from 'types/settings';
 
 const bridge = {
   darkMode: {

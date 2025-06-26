@@ -1,11 +1,9 @@
-import { BrowserWindow } from 'electron';
-import os from 'os';
-
+import { type BrowserWindow } from 'electron';
 import { isEqual } from 'lodash';
+import os from 'os';
+import { type FoundShell } from 'types/foundShell';
 
-import { FoundShell } from 'types/foundShell';
-
-import { FoundEditor } from '../../../types/foundEditor';
+import { type FoundEditor } from '../../../types/foundEditor';
 import { settings } from '../../settings';
 import { editorNames } from './editors';
 import { getInstalledApps } from './getInstalledApps';

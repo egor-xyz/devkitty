@@ -1,7 +1,6 @@
 import { exec } from 'child_process';
 
-export const execAsync = (command: string) => {
-  return new Promise((resolve, reject) => {
+export const execAsync = (command: string) => new Promise((resolve, reject) => {
     exec(command, (error, stdout) => {
       if (error) {
         reject(error);
@@ -10,4 +9,3 @@ export const execAsync = (command: string) => {
       resolve(stdout.trim());
     });
   });
-};

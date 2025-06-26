@@ -1,8 +1,7 @@
 import { app, BrowserWindow, nativeTheme, shell } from 'electron';
-import path from 'path';
-
 import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
 import log from 'electron-log';
+import path from 'path';
 import { updateElectronApp } from 'update-electron-app';
 
 import './ipcs';

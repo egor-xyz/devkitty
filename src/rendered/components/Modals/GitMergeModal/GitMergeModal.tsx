@@ -1,11 +1,10 @@
 import { Button, Classes, Dialog, DialogBody, DialogFooter, Icon } from '@blueprintjs/core';
-import { FC, useState } from 'react';
-
-import { ModalProps } from 'types/Modal';
-import { GitStatus } from 'types/project';
+import { type FC, useState } from 'react';
 import { useGit } from 'rendered/hooks/useGit';
+import { type ModalProps } from 'types/Modal';
+import { type GitStatus } from 'types/project';
 
-import { CurrentBranch, LightText, RepoInfo, MergeTo, StyledBranchSelect } from './GitMergeModal.styles';
+import { CurrentBranch, LightText, MergeTo, RepoInfo, StyledBranchSelect } from './GitMergeModal.styles';
 
 export type GitMergeModalProps = {
   gitStatus: GitStatus;
@@ -13,8 +12,8 @@ export type GitMergeModalProps = {
   name: string;
 };
 
-export const GitMergeModal: FC<ModalProps & GitMergeModalProps> = (props) => {
-  const { id, name, gitStatus, isOpen, onClose, darkMode } = props;
+export const GitMergeModal: FC<GitMergeModalProps & ModalProps> = (props) => {
+  const { darkMode, gitStatus, id, isOpen, name, onClose } = props;
 
   const savedTarget: string = localStorage.getItem(`git:mergeTo-${id}`);
   const all = gitStatus?.branchSummary.all;
@@ -45,8 +44,8 @@ export const GitMergeModal: FC<ModalProps & GitMergeModalProps> = (props) => {
       className={darkMode && Classes.DARK}
       icon="git-merge"
       isOpen={isOpen}
-      title="Merge branch"
       onClose={onClose}
+      title="Merge branch"
     >
       <DialogBody>
         <RepoInfo>
@@ -57,6 +56,7 @@ export const GitMergeModal: FC<ModalProps & GitMergeModalProps> = (props) => {
 
           <div>
             <LightText>Branch: </LightText>
+
             <CurrentBranch
               as="span"
               title={gitStatus?.status?.current}
@@ -68,25 +68,25 @@ export const GitMergeModal: FC<ModalProps & GitMergeModalProps> = (props) => {
 
         <MergeTo>
           <span>merge to</span>
-
           <Icon icon="arrow-right" />
 
           <StyledBranchSelect
-            fill
             currentBranch={target}
+            fill
             gitStatus={gitStatus}
             onSelect={setTargetAndSave}
           />
         </MergeTo>
       </DialogBody>
+
       <DialogFooter
         actions={
           <Button
             icon="git-merge"
             intent="primary"
             loading={loading}
-            text="Merge"
             onClick={merge}
+            text="Merge"
           />
         }
       />

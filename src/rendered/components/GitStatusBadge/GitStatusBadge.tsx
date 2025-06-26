@@ -1,5 +1,5 @@
-import { FC, JSX } from 'react';
-import { Icon, Tooltip, IconName, Intent } from '@blueprintjs/core';
+import { Icon, type IconName, type Intent, Tooltip } from '@blueprintjs/core';
+import { type FC, type JSX } from 'react';
 
 import { Count, Wrapper } from './GitStatusBadge.styles';
 
@@ -11,7 +11,7 @@ type Props = {
   tooltip?: JSX.Element;
 };
 
-export const GitStatusBadge: FC<Props> = ({ show, tooltip, count, icon, intent }) => {
+export const GitStatusBadge: FC<Props> = ({ count, icon, intent, show, tooltip }) => {
   if (!show) return null;
   return (
     <Tooltip
@@ -24,6 +24,7 @@ export const GitStatusBadge: FC<Props> = ({ show, tooltip, count, icon, intent }
           icon={icon}
           intent={intent}
         />
+
         <Count>{count}</Count>
       </Wrapper>
     </Tooltip>

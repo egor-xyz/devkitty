@@ -1,38 +1,36 @@
-/* eslint-disable react/jsx-max-depth */
 import { Button, ButtonGroup, Classes, Colors, Popover } from '@blueprintjs/core';
-import { FC, useState } from 'react';
-
+import { type FC, useState } from 'react';
 import { useGit } from 'rendered/hooks/useGit';
 import { useModal } from 'rendered/hooks/useModal';
 import { useMountEffect } from 'rendered/hooks/useMountEffect';
-import { Project as IProject } from 'types/project';
+import { type Project as IProject } from 'types/project';
 
 import { GitStatusGroup } from '../GitStatusGroup';
-import { Info, InfoText, MiddleBlock, ProjectActions, RepoInfo, Root, StyledSpinner, Title } from './Project.styles';
 import { CheckoutBranch } from './components/CheckoutBranch';
 import { Error } from './components/Error';
 import { ProjectMenu } from './components/ProjectMenu';
 import { QuickActions } from './components/QuickActions';
 import { useActions } from './hooks/useActions';
 import { usePulls } from './hooks/usePulls';
+import { Info, InfoText, MiddleBlock, ProjectActions, RepoInfo, Root, StyledSpinner, Title } from './Project.styles';
 
 type Props = {
   project: IProject;
 };
 
 export const Project: FC<Props> = ({ project }) => {
-  const { gitStatus, getStatus, loading, pull } = useGit();
+  const { getStatus, gitStatus, loading, pull } = useGit();
   const { openModal } = useModal();
   const [pullLoading, setPullLoading] = useState(false);
 
-  const { Actions, showActions, toggleActions, getActions } = useActions(gitStatus, project);
-  const { Pulls, showPulls, togglePulls, refreshPulls } = usePulls(project);
+  const { Actions, getActions, showActions, toggleActions } = useActions(gitStatus, project);
+  const { Pulls, refreshPulls, showPulls, togglePulls } = usePulls(project);
 
-  const { id, name, groupId } = project;
+  const { groupId, id, name } = project;
 
   const updateProject = () => {
-    showActions && getActions();
-    showPulls && refreshPulls();
+    if (showActions) getActions();
+    if (showPulls) refreshPulls();
     getStatus(id);
   };
 
@@ -105,6 +103,7 @@ export const Project: FC<Props> = ({ project }) => {
                 onClick={updateProject}
               />
             )}
+
             {Boolean(behind) && (
               <Button
                 icon="arrow-down"
@@ -113,6 +112,7 @@ export const Project: FC<Props> = ({ project }) => {
                 onClick={runPull}
               />
             )}
+
             <Popover
               content={
                 <ProjectMenu

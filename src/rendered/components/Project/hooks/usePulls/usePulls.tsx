@@ -1,11 +1,10 @@
 import { Classes } from '@blueprintjs/core';
 import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useState } from 'react';
-
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { appToaster } from 'rendered/utils/appToaster';
-import { Pull, PullType, pullTypes } from 'types/gitHub';
-import { Project } from 'types/project';
+import { type Pull, type PullType, pullTypes } from 'types/gitHub';
+import { type Project } from 'types/project';
 
 import { PullRequest } from '../../components/PullRequest';
 import { Action, Actions, Empty, Title, WrapBlock } from './usePulls.styles';

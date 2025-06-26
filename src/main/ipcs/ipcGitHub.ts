@@ -1,9 +1,7 @@
 import { ipcMain, safeStorage } from 'electron';
-
 import log from 'electron-log';
 import { Octokit } from 'octokit';
-
-import { PullType } from 'types/gitHub';
+import { type PullType } from 'types/gitHub';
 
 import { getRepoInfo } from '../libs/git';
 import { settings } from '../settings';

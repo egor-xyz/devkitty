@@ -1,4 +1,5 @@
-import { Bridge } from '../main/ipcs/preload';
+/* eslint-disable @typescript-eslint/consistent-type-definitions */
+import { type Bridge } from '../main/ipcs/preload';
 
 export declare global {
   interface Window {

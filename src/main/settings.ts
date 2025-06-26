@@ -1,9 +1,7 @@
 import { app, nativeTheme } from 'electron';
-import path from 'path';
-
 import Store from 'electron-store';
-
-import { Settings } from 'types/settings';
+import path from 'path';
+import { type Settings } from 'types/settings';
 
 const isDev = process.env.NODE_ENV === 'development';
 

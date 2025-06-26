@@ -1,10 +1,9 @@
 import { Classes, Tag } from '@blueprintjs/core';
-import { FC, useState } from 'react';
-
-import { useGit } from 'rendered/hooks/useGit';
-import { GitStatus } from 'types/project';
+import { type FC, useState } from 'react';
 import { BranchSelect } from 'rendered/components/BranchSelect';
+import { useGit } from 'rendered/hooks/useGit';
 import { appToaster } from 'rendered/utils/appToaster';
+import { type GitStatus } from 'types/project';
 
 import { BranchLabel, Root } from './CheckoutBranch.styles';
 
@@ -15,7 +14,7 @@ type Props = {
   name: string;
 };
 
-export const CheckoutBranch: FC<Props> = ({ gitStatus, id, getStatus, name }) => {
+export const CheckoutBranch: FC<Props> = ({ getStatus, gitStatus, id, name }) => {
   const { checkout } = useGit();
 
   const [loading, setLoading] = useState(false);
@@ -33,14 +32,16 @@ export const CheckoutBranch: FC<Props> = ({ gitStatus, id, getStatus, name }) =>
 
     setLoading(false);
 
-    res.success
-      ? setTmpCurrent(cleanBranch)
-      : (await appToaster).show({
-          icon: 'info-sign',
-          intent: 'warning',
-          message: `${name} checkout ${res.message}`,
-          timeout: 0
-        });
+    if (res.success) {
+      setTmpCurrent(cleanBranch);
+    } else {
+      (await appToaster).show({
+        icon: 'info-sign',
+        intent: 'warning',
+        message: `${name} checkout ${res.message}`,
+        timeout: 0
+      });
+    }
 
     await getStatus();
     setTmpCurrent(undefined);
@@ -52,9 +53,9 @@ export const CheckoutBranch: FC<Props> = ({ gitStatus, id, getStatus, name }) =>
     return (
       <Root className={!gitStatus && Classes.SKELETON}>
         <Tag
-          minimal
           icon="git-commit"
           intent="warning"
+          minimal
         >
           No commits yet
         </Tag>

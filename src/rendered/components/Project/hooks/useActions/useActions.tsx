@@ -1,10 +1,9 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Classes, Tag } from '@blueprintjs/core';
-
-import { GitStatus, Project } from 'types/project';
-import { appToaster } from 'rendered/utils/appToaster';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
-import { Run } from 'types/gitHub';
+import { appToaster } from 'rendered/utils/appToaster';
+import { type Run } from 'types/gitHub';
+import { type GitStatus, type Project } from 'types/project';
 
 import { Workflow } from '../../components/Workflow';
 import { Empty } from './useActions.styles';
@@ -14,8 +13,8 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
   const [showActions, setShowActions] = useState(false);
   const [isEmpty, setIsEmpty] = useState(false);
   const {
-    gitHubToken,
-    gitHubActions: { all, inProgress }
+    gitHubActions: { all, inProgress },
+    gitHubToken
   } = useAppSettings();
 
   const getActions = useCallback(async () => {
@@ -58,13 +57,16 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
             <Empty className={Classes.TEXT_MUTED}>
               <span>
                 No actions {inProgress && 'in progress'} were found
+
                 {!all && (
                   <>
                     &nbsp;for the&nbsp;<b>{gitStatus.branchSummary?.current}</b>&nbsp;branch
                   </>
                 )}
+
                 &nbsp;in the last {inProgress ? '30 minutes' : '24 hours'}
               </span>
+
               <Tag minimal>watcher is active</Tag>
             </Empty>
           )}

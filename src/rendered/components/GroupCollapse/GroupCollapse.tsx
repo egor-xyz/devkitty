@@ -1,11 +1,10 @@
 import { Classes, Icon } from '@blueprintjs/core';
-import { useRef, type FC } from 'react';
+import { type FC, useRef } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
-
-import { Group } from 'types/Group';
-import { Projects } from 'types/project';
-import { useModal } from 'rendered/hooks/useModal';
 import { useGroups } from 'rendered/hooks/useGroups';
+import { useModal } from 'rendered/hooks/useModal';
+import { type Group } from 'types/Group';
+import { type Projects } from 'types/project';
 
 import { Project } from '../Project';
 import { GroupBody, GroupTitle, Root } from './GroupCollapse.styles';
@@ -20,7 +19,7 @@ type Props = {
   projects: Projects;
 };
 
-export const GroupCollapse: FC<Props> = ({ group, collapsed, onClick, projects, index }) => {
+export const GroupCollapse: FC<Props> = ({ collapsed, group, index, onClick, projects }) => {
   const { openModal } = useModal();
   const { changeOrder } = useGroups();
 
@@ -90,11 +89,12 @@ export const GroupCollapse: FC<Props> = ({ group, collapsed, onClick, projects, 
       ref={group.id === 'ungrouped' ? null : ref}
     >
       <GroupTitle
-        ref={drag}
         onClick={() => !isEmpty && onClick()}
+        ref={drag}
       >
         <div className={Classes.ALIGN_LEFT}>
           <Icon icon={group.icon} />{' '}
+
           <span>
             {group.fullName} ({projects.length})
           </span>
@@ -104,8 +104,8 @@ export const GroupCollapse: FC<Props> = ({ group, collapsed, onClick, projects, 
           {isEmpty && (
             <Icon
               icon="trash"
-              size={14}
               onClick={removeGroup}
+              size={14}
             />
           )}
 
@@ -118,6 +118,7 @@ export const GroupCollapse: FC<Props> = ({ group, collapsed, onClick, projects, 
           )}
         </div>
       </GroupTitle>
+
       <GroupBody
         $collapsed={collapsed}
         $length={projects.length}
