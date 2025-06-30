@@ -1,10 +1,21 @@
 @import 'normalize.css';
 @import '@blueprintjs/core/lib/css/blueprint.css';
 @import '@blueprintjs/icons/lib/css/blueprint-icons.css';
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@theme {
+  --color-blueprint-light-gray2: #F5F8FA;
+  --color-blueprint-light-gray4: #CED9E0;
+  --color-blueprint-light-gray5: #A7B6C2;
+  --color-blueprint-dark-gray1: #182026;
+  --color-blueprint-dark-gray2: #202B33;
+  --color-blueprint-gray3: #5C7080;
+  --color-blueprint-blue3: #137CBD;
+  
+  --spacing-7_5: 30px;
+  
+  --animate-spin-custom: spin 0.5s linear infinite;
+}
 
 @layer base {
   body {
@@ -13,6 +24,15 @@
 }
 
 @layer components {
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  
+  .scrollbar-none::-webkit-scrollbar {
+    width: 0;
+    height: 0;
+  }
+
   .app-loader {
     --code-gray: #091921;
     --linear-gradient: linear-gradient(#14ffe9, #ffeb3b, #ff00e0);

@@ -9,7 +9,7 @@
     "sourceMap": true,
     "baseUrl": "./src",
     "outDir": "dist",
-    "moduleResolution": "node",
+    "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "jsx": "react-jsx"
   }
