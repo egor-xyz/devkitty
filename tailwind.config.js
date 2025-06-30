@@ -17,6 +17,9 @@ module.exports = {
         'blueprint-gray3': '#5C7080',
         'blueprint-blue3': '#137CBD',
       },
+      spacing: {
+        '7.5': '30px',
+      },
       animation: {
         'spin-custom': 'spin 0.5s linear infinite',
       }

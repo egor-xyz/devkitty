@@ -3,8 +3,6 @@ import { type FC } from 'react';
 import { getStatusIcon } from 'rendered/assets/gitHubStatusUtils';
 import { type Run } from 'types/gitHub';
 
-import { MainBlock, Root, Status, Title, TitleDescription, TitleMain } from './Workflow.styles';
-
 type Props = {
   run: Run;
 };
@@ -20,14 +18,14 @@ export const Workflow: FC<Props> = ({ run }) => {
   };
 
   return (
-    <Root>
-      <MainBlock>
-        <Status title={conclusion || status}>
+    <div className="flex relative items-center justify-between min-h-5 py-1.5 px-5 pl-5 bg-blueprint-light-gray4 dark:bg-blueprint-dark-gray2 my-0.5 [&+&]:mt-0">
+      <div className="overflow-hidden flex text-left justify-start gap-4 items-center">
+        <div title={conclusion || status}>
           <Icon />
-        </Status>
+        </div>
 
-        <Title>
-          <TitleMain>
+        <div className="overflow-hidden text-sm flex flex-col">
+          <div className="overflow-hidden text-ellipsis whitespace-nowrap">
             <b>{name}</b>
             {': '}
             {event !== 'workflow_dispatch' ? event : 'manual'}
@@ -36,16 +34,18 @@ export const Workflow: FC<Props> = ({ run }) => {
             {' (#'}
             {run_number}
             {')'}
-          </TitleMain>
+          </div>
 
-          <TitleDescription>{display_title}</TitleDescription>
-        </Title>
-      </MainBlock>
+          <div className="overflow-hidden whitespace-nowrap text-ellipsis -mt-0.5 text-xs font-light dark:text-blueprint-gray3">
+            {display_title}
+          </div>
+        </div>
+      </div>
 
       <Button
         icon="globe"
         onClick={openInBrowser}
       />
-    </Root>
+    </div>
   );
 };

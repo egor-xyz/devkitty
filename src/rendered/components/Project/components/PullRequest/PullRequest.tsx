@@ -1,9 +1,8 @@
 import { Button } from '@blueprintjs/core';
+import { readableColor } from 'polished';
 import { type FC } from 'react';
 import { timeAgo } from 'rendered/utils/timeAgo';
 import { type Pull } from 'types/gitHub';
-
-import { Avatar, BotTag, MainBlock, PullLabel, Root, Title, TitleDescription, TitleMain } from './PullRequest.styles';
 
 type Props = {
   pull: Pull;
@@ -17,39 +16,50 @@ export const PullRequest: FC<Props> = ({ pull }) => {
   };
 
   return (
-    <Root>
-      <MainBlock>
-        <Avatar
+    <div className="flex relative items-center justify-between min-h-5 py-1.5 px-5 pl-5 bg-blueprint-light-gray4 dark:bg-blueprint-dark-gray2 my-0.5 [&+&]:mt-0 first:pt-2.5">
+      <div className="overflow-hidden flex text-left justify-start gap-4 items-center">
+        <img
           alt={user.login}
+          className="w-7.5 h-7.5 rounded-full object-cover"
           src={user.avatar_url}
         />
 
-        <Title>
-          <TitleMain>
+        <div className="overflow-hidden text-sm flex flex-col">
+          <div className="flex items-center overflow-hidden text-ellipsis whitespace-nowrap mb-0.5 gap-2">
             {draft && '[DRAFT] '}
-            {user.type === 'Bot' && <BotTag>bot</BotTag>}
+
+            {user.type === 'Bot' && (
+              <div className="rounded border border-black px-1 py-0.5 text-xs text-black dark:text-blueprint-gray3 dark:border-blueprint-gray3">
+                bot
+              </div>
+            )}
+
             {title}
 
             {labels.map((label) => (
-              <PullLabel
-                $bgColor={label.color}
+              <div
+                className="rounded px-1 py-0.5 text-xs"
                 key={label.id}
+                style={{
+                  backgroundColor: `#${label.color}`,
+                  color: readableColor(`#${label.color}`)
+                }}
               >
                 {label.name}
-              </PullLabel>
+              </div>
             ))}
-          </TitleMain>
+          </div>
 
-          <TitleDescription>
+          <div className="flex items-center overflow-hidden whitespace-nowrap text-ellipsis -mt-0.5 text-xs font-light dark:text-blueprint-gray3">
             #{number} opened {timeAgo(created_at)} by {user.login.replace('[bot]', '')}
-          </TitleDescription>
-        </Title>
-      </MainBlock>
+          </div>
+        </div>
+      </div>
 
       <Button
         icon="globe"
         onClick={openInBrowser}
       />
-    </Root>
+    </div>
   );
 };

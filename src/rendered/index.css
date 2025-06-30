@@ -11,3 +11,41 @@
     @apply bg-blueprint-light-gray5 dark:bg-blueprint-dark-gray1;
   }
 }
+
+@layer components {
+  .app-loader {
+    --code-gray: #091921;
+    --linear-gradient: linear-gradient(#14ffe9, #ffeb3b, #ff00e0);
+    --mardi-grass: #240229;
+    
+    @apply fixed w-[150px] h-[150px] animate-spin-custom rounded-full;
+    top: calc(50% - 75px + 25px);
+    left: calc(50% - 75px);
+    background: var(--linear-gradient);
+  }
+  
+  .app-loader::before {
+    content: '';
+    @apply absolute z-10 rounded-full;
+    inset: 1.56rem;
+    background-color: var(--code-gray);
+  }
+  
+  .app-loader span {
+    @apply absolute w-full h-full rounded-full;
+    background: var(--linear-gradient);
+    filter: blur(5px);
+  }
+  
+  .app-loader span:nth-child(2) {
+    filter: blur(10px);
+  }
+  
+  .app-loader span:nth-child(3) {
+    filter: blur(25px);
+  }
+  
+  .app-loader span:last-child {
+    filter: blur(50px);
+  }
+}
