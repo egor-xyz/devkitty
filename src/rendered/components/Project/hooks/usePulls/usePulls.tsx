@@ -7,7 +7,6 @@ import { type Pull, type PullType, pullTypes } from 'types/gitHub';
 import { type Project } from 'types/project';
 
 import { PullRequest } from '../../components/PullRequest';
-import { Action, Actions, Empty, Title, WrapBlock } from './usePulls.styles';
 
 const aliases: { [key in PullType]: string } = {
   assigned: 'Assigned',
@@ -67,11 +66,11 @@ export const usePulls = (project: Project) => {
   const Pulls = useMemo(
     () =>
       showPulls && (
-        <WrapBlock>
+        <div className="border-t border-blueprint-light-gray2 dark:border-black mt-0.5 relative group">
           {isEmpty && pulls.length < 1 && (
-            <Empty className={clsx(Classes.TEXT_MUTED, loading && Classes.SKELETON)}>
+            <div className={clsx("py-2.5 px-4 flex justify-between items-center", Classes.TEXT_MUTED, loading && Classes.SKELETON)}>
               <span>No pull request were found</span>
-            </Empty>
+            </div>
           )}
 
           {pulls.map((pull) => (
@@ -81,22 +80,22 @@ export const usePulls = (project: Project) => {
             />
           ))}
 
-          <Title>
+          <div className="opacity-0 absolute -top-2.5 left-4 bg-blueprint-light-gray2 dark:bg-black rounded-xl py-0.5 px-2 text-xs text-black dark:text-white group-hover:opacity-100 transition-opacity duration-200">
             <span>Pull requests ({aliases[pullType]})</span>
-          </Title>
+          </div>
 
-          <Actions>
+          <div className="flex absolute -top-2.5 right-4 bg-blueprint-light-gray2 dark:bg-black rounded-xl py-0.5 px-2 text-xs gap-2.5 opacity-0 transition-opacity duration-200 text-black dark:text-white group-hover:opacity-100">
             {pullTypes.map((type) => (
-              <Action
-                $active={type === pullType}
+              <div
+                className={`cursor-pointer ${type === pullType ? 'font-bold' : ''}`}
                 key={type}
                 onClick={() => setPullType(type)}
               >
                 {aliases[type]}
-              </Action>
+              </div>
             ))}
-          </Actions>
-        </WrapBlock>
+          </div>
+        </div>
       ),
     [showPulls, isEmpty, pulls, loading, pullType]
   );

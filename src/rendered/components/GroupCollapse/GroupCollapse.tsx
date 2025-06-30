@@ -7,7 +7,6 @@ import { type Group } from 'types/Group';
 import { type Projects } from 'types/project';
 
 import { Project } from '../Project';
-import { GroupBody, GroupTitle, Root } from './GroupCollapse.styles';
 
 const GROUP = 'group';
 
@@ -81,14 +80,18 @@ export const GroupCollapse: FC<Props> = ({ collapsed, group, index, onClick, pro
     return null;
   }
 
+  // Calculate dynamic height for the group body
+  const bodyHeight = projects.length * 40 + (projects.length - 1) * 2;
+
   return (
-    <Root
-      $isDragging={isDragging}
+    <div
+      className={`flex flex-col bg-blueprint-light-gray5 dark:bg-blueprint-dark-gray1 transition-opacity duration-300 ease-in-out ${isDragging ? 'opacity-30' : ''}`}
       data-handler-id={handlerId}
       key={group.id}
       ref={group.id === 'ungrouped' ? null : ref}
     >
-      <GroupTitle
+      <div
+        className="flex items-start justify-between w-full py-1 px-5 pl-5 text-sm font-light uppercase cursor-pointer select-none gap-x-2.5 dark:text-gray-400"
         onClick={() => !isEmpty && onClick()}
         ref={drag}
       >
@@ -117,11 +120,18 @@ export const GroupCollapse: FC<Props> = ({ collapsed, group, index, onClick, pro
             />
           )}
         </div>
-      </GroupTitle>
+      </div>
 
-      <GroupBody
-        $collapsed={collapsed}
-        $length={projects.length}
+      <div
+        className={`flex flex-col w-full py-1 overflow-hidden transition-all duration-300 ease-in-out ${
+          collapsed 
+            ? 'min-h-0 max-h-0 overflow-hidden' 
+            : 'overflow-y-visible'
+        }`}
+        style={!collapsed ? { 
+          maxHeight: '100%',
+          minHeight: `${bodyHeight}px`
+        } : {}}
       >
         {!collapsed &&
           projects.map((project) => (
@@ -130,7 +140,7 @@ export const GroupCollapse: FC<Props> = ({ collapsed, group, index, onClick, pro
               project={project}
             />
           ))}
-      </GroupBody>
-    </Root>
+      </div>
+    </div>
   );
 };

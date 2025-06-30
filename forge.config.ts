@@ -5,8 +5,7 @@ import { VitePlugin } from '@electron-forge/plugin-vite';
 import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import { config } from 'dotenv';
-
-import { version } from './package.json';
+import packageJson from './package.json' with { type: 'json' };
 
 config();
 
@@ -18,7 +17,7 @@ const forgeConfig: ForgeConfig = {
     appBundleId: 'app.devkitty',
     appCategoryType: 'public.app-category.developer-tools',
     appCopyright: 'Copyright © 2024 Devkitty',
-    appVersion: version,
+    appVersion: packageJson.version,
     asar: true,
     executableName: 'Devkitty',
     icon: './icons/icon',
