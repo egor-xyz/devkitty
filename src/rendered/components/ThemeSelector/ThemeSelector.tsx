@@ -3,36 +3,53 @@ import { useDarkMode } from 'rendered/hooks/useDarkMode';
 import themeAuto from './assets/img/theme-auto.png';
 import themeDark from './assets/img/theme-dark.png';
 import themeLight from './assets/img/theme-light.png';
-import { Root, ThemeButton } from './ThemeSelector.styles';
 
 export const ThemeSelector = () => {
   const { setTheme, themeSource } = useDarkMode();
 
   return (
-    <Root>
-      <ThemeButton
-        $active={themeSource === 'system'}
+    <div className="w-[420px] flex justify-between mx-auto mb-5">
+      <div
+        className="text-center cursor-pointer flex flex-col justify-between gap-1 text-sm"
         onClick={() => setTheme('system')}
       >
-        <img src={themeAuto} />
-        <div>Auto</div>
-      </ThemeButton>
+        <img 
+          className={`overflow-hidden block rounded-xl w-[120px] border-3 object-cover ${
+            themeSource === 'system' ? 'border-blueprint-blue3' : 'border-transparent'
+          }`} 
+          src={themeAuto}
+        />
 
-      <ThemeButton
-        $active={themeSource === 'dark'}
+        <div>Auto</div>
+      </div>
+
+      <div
+        className="text-center cursor-pointer flex flex-col justify-between gap-1 text-sm"
         onClick={() => setTheme('dark')}
       >
-        <img src={themeDark} />
-        <div>Dark</div>
-      </ThemeButton>
+        <img 
+          className={`overflow-hidden block rounded-xl w-[120px] border-3 object-cover ${
+            themeSource === 'dark' ? 'border-blueprint-blue3' : 'border-transparent'
+          }`} 
+          src={themeDark}
+        />
 
-      <ThemeButton
-        $active={themeSource === 'light'}
+        <div>Dark</div>
+      </div>
+
+      <div
+        className="text-center cursor-pointer flex flex-col justify-between gap-1 text-sm"
         onClick={() => setTheme('light')}
       >
-        <img src={themeLight} />
+        <img 
+          className={`overflow-hidden block rounded-xl w-[120px] border-3 object-cover ${
+            themeSource === 'light' ? 'border-blueprint-blue3' : 'border-transparent'
+          }`} 
+          src={themeLight}
+        />
+
         <div>Light</div>
-      </ThemeButton>
-    </Root>
+      </div>
+    </div>
   );
 };

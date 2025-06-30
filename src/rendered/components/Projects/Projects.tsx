@@ -7,7 +7,6 @@ import { type Group } from 'types/Group';
 
 import { GroupCollapse } from '../GroupCollapse';
 import { Project } from '../Project';
-import { ProjectsWrapper, Root } from './Projects.styles';
 
 const others: Group = { fullName: 'Ungrouped', icon: 'folder-open', id: 'ungrouped', name: 'Ungrouped' };
 
@@ -25,8 +24,8 @@ export const Projects = () => {
   const withGroups = groups.length > 0 && projects.length > 0 && sortedProjects.length > 1;
 
   return (
-    <Root>
-      <ProjectsWrapper>
+    <div className="flex relative flex-col h-[calc(100vh-50px)] bg-blueprint-light-gray2 dark:bg-transparent">
+      <div className="flex flex-col content-end h-full pb-1 overflow-y-auto scrollbar-none scroll-smooth">
         {!projects.length && (
           <NonIdealState
             action={
@@ -62,7 +61,7 @@ export const Projects = () => {
               projects={group.projects}
             />
           ))}
-      </ProjectsWrapper>
-    </Root>
+      </div>
+    </div>
   );
 };
