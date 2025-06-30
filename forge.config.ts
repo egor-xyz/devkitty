@@ -6,7 +6,7 @@ import { FusesPlugin } from '@electron-forge/plugin-fuses';
 import { FuseV1Options, FuseVersion } from '@electron/fuses';
 import { config } from 'dotenv';
 
-import { version } from './package.json';
+const { version } = require('./package.json');
 
 config();
 
