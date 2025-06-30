@@ -8,8 +8,6 @@ type Store = {
   themeSource: ThemeSource;
 };
 
-import { useDarkMode } from 'rendered/hooks/useDarkMode';
-
 export const useDarkModeStore = create<Store>()((set) => ({
   darkMode: window.matchMedia('(prefers-color-scheme: dark)').matches,
   setDarkMode: (darkMode) => set({ darkMode }),

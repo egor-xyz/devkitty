@@ -36,7 +36,7 @@ export const PullRequest: FC<Props> = ({ pull }) => {
 
             {title}
 
-            {labels.map((label) => (
+            {labels.map((label: any) => (
               <div
                 className="rounded px-1 py-0.5 text-xs"
                 key={label.id}
