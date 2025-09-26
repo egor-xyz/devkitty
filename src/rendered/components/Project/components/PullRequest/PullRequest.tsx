@@ -10,7 +10,8 @@ type Props = {
 };
 
 export const PullRequest: FC<Props> = ({ pull }) => {
-  const { created_at, draft, html_url, labels, number, title, user } = pull;
+  const { created_at, draft, html_url, labels, number, title, user } = pull as Partial<typeof pull>;
+  const safeLabels = Array.isArray(labels) ? labels : [];
 
   const openInBrowser = () => {
     window.open(html_url, '_blank');
@@ -30,7 +31,7 @@ export const PullRequest: FC<Props> = ({ pull }) => {
             {user.type === 'Bot' && <BotTag>bot</BotTag>}
             {title}
 
-            {labels.map((label) => (
+            {safeLabels.map((label) => (
               <PullLabel
                 $bgColor={label.color}
                 key={label.id}
@@ -41,7 +42,7 @@ export const PullRequest: FC<Props> = ({ pull }) => {
           </TitleMain>
 
           <TitleDescription>
-            #{number} opened {timeAgo(created_at)} by {user.login.replace('[bot]', '')}
+            #{number} opened {timeAgo(created_at)} by {user && user.login ? user.login.replace('[bot]', '') : 'unknown'}
           </TitleDescription>
         </Title>
       </MainBlock>

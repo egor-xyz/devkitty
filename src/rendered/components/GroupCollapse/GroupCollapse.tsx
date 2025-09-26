@@ -66,7 +66,7 @@ export const GroupCollapse: FC<Props> = ({ collapsed, group, index, onClick, pro
     type: GROUP
   });
 
-  drop(ref);
+  drag(drop(ref));
 
   const removeGroup = () => {
     openModal({
@@ -90,11 +90,10 @@ export const GroupCollapse: FC<Props> = ({ collapsed, group, index, onClick, pro
     >
       <GroupTitle
         onClick={() => !isEmpty && onClick()}
-        ref={drag}
+        ref={group.id === 'ungrouped' ? null : ref}
       >
         <div className={Classes.ALIGN_LEFT}>
           <Icon icon={group.icon} />{' '}
-
           <span>
             {group.fullName} ({projects.length})
           </span>

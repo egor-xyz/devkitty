@@ -11,7 +11,7 @@ export const useGit = () => {
   const [gitStatus, setGitStatus] = useState<GitStatus>();
   const [loading, setLoading] = useState(false);
 
-  const intervalId = useRef<number>();
+  const intervalId = useRef<number | undefined>(undefined);
   const unmounted = useRef(false);
 
   const getStatus = async (id: string, polling = true) => {
@@ -90,10 +90,13 @@ export const useGit = () => {
     }
   };
 
-  useEffect(() => () => {
+  useEffect(
+    () => () => {
       unmounted.current = true;
       window.clearInterval(intervalId.current);
-    }, []);
+    },
+    []
+  );
 
   return { checkout, getStatus, gitStatus, loading, mergeTo, pull };
 };

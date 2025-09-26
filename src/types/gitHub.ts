@@ -1,13 +1,8 @@
-import { type GetResponseDataTypeFromEndpointMethod } from '@octokit/types';
-import { type Octokit } from 'octokit';
+import type { Endpoints } from '@octokit/types';
 
-export type Pull = GetResponseDataTypeFromEndpointMethod<
-  typeof Octokit.prototype.rest.search.issuesAndPullRequests
->['items'][0];
+export type Pull = Endpoints['GET /search/issues']['response']['data']['items'][0];
 
-export type Run = GetResponseDataTypeFromEndpointMethod<
-  typeof Octokit.prototype.rest.actions.listWorkflowRunsForRepo
->['workflow_runs'][0];
+export type Run = Endpoints['GET /repos/{owner}/{repo}/actions/runs']['response']['data']['workflow_runs'][0];
 
 export const pullTypes = ['author', 'review-requested', 'mentions', 'assigned'] as const;
 export type PullType = (typeof pullTypes)[number];
