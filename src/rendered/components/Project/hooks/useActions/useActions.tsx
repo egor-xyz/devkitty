@@ -80,6 +80,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
             <Empty className={Classes.TEXT_MUTED}>
               <span>
                 No actions {inProgress && 'in progress'} were found
+
                 {!all && (
                   <span>
                     {' '}
@@ -88,17 +89,24 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
                 )}{' '}
                 in the last {inProgress ? '30 minutes' : '24 hours'}
               </span>
+
               <Tag minimal>watcher is active</Tag>
             </Empty>
           )}
 
-          {runs.map((run: Run) => (
-            <Workflow
-              key={run.id}
-              project={project}
-              run={run}
-            />
-          ))}
+          {[...runs]
+            .sort((a: Run, b: Run) => {
+              const timeA = new Date(a.created_at).getTime();
+              const timeB = new Date(b.created_at).getTime();
+              return timeB - timeA;
+            })
+            .map((run: Run) => (
+              <Workflow
+                key={run.id}
+                project={project}
+                run={run}
+              />
+            ))}
         </>
       ),
     [runs, showActions, isEmpty, all, inProgress, gitStatus, project]
