@@ -1,5 +1,5 @@
 import { Classes, Tag } from '@blueprintjs/core';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { appToaster } from 'rendered/utils/appToaster';
 import { type Run } from 'types/gitHub';
@@ -16,9 +16,12 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
   });
   const [isEmpty, setIsEmpty] = useState(false);
   const {
+    fetchInterval,
     gitHubActions: { all, inProgress },
     gitHubToken
   } = useAppSettings();
+
+  const intervalId = useRef<null | number>(null);
 
   const getActions = useCallback(async () => {
     const savedOrigin = localStorage.getItem(`GitResetModal:origin-${project.id}`);
@@ -44,7 +47,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
       });
       return;
     }
-    setShowActions((prev) => {
+    setShowActions((prev: boolean) => {
       const newValue = !prev;
       localStorage.setItem(`showActions:${project.id}`, JSON.stringify(newValue));
       return newValue;
@@ -54,7 +57,20 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
   useEffect(() => {
     if (!showActions || !gitStatus?.branchSummary.current || !project.id) return;
     getActions();
-  }, [getActions, gitStatus, project, showActions]);
+
+    if (!intervalId.current && fetchInterval > 2000) {
+      intervalId.current = window.setInterval(() => {
+        getActions();
+      }, fetchInterval);
+    }
+
+    return () => {
+      if (intervalId.current) {
+        window.clearInterval(intervalId.current);
+        intervalId.current = undefined;
+      }
+    };
+  }, [fetchInterval, getActions, gitStatus, project, showActions]);
 
   const Actions = useMemo(
     () =>
@@ -64,16 +80,14 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
             <Empty className={Classes.TEXT_MUTED}>
               <span>
                 No actions {inProgress && 'in progress'} were found
-
                 {!all && (
-                  <>
-                    &nbsp;for the&nbsp;<b>{gitStatus.branchSummary?.current}</b>&nbsp;branch
-                  </>
-                )}
-
-                &nbsp;in the last {inProgress ? '30 minutes' : '24 hours'}
+                  <span>
+                    {' '}
+                    for the <b>{gitStatus.branchSummary?.current}</b> branch
+                  </span>
+                )}{' '}
+                in the last {inProgress ? '30 minutes' : '24 hours'}
               </span>
-
               <Tag minimal>watcher is active</Tag>
             </Empty>
           )}
@@ -87,7 +101,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
           ))}
         </>
       ),
-    [runs, showActions, isEmpty, all, inProgress, gitStatus]
+    [runs, showActions, isEmpty, all, inProgress, gitStatus, project]
   );
 
   return {
