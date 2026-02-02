@@ -10,7 +10,10 @@ import { Empty } from './useActions.styles';
 
 export const useActions = (gitStatus: GitStatus, project: Project) => {
   const [runs, setRuns] = useState([]);
-  const [showActions, setShowActions] = useState(false);
+  const [showActions, setShowActions] = useState(() => {
+    const saved = localStorage.getItem(`showActions:${project.id}`);
+    return saved ? JSON.parse(saved) : false;
+  });
   const [isEmpty, setIsEmpty] = useState(false);
   const {
     gitHubActions: { all, inProgress },
@@ -41,7 +44,11 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
       });
       return;
     }
-    setShowActions(!showActions);
+    setShowActions((prev) => {
+      const newValue = !prev;
+      localStorage.setItem(`showActions:${project.id}`, JSON.stringify(newValue));
+      return newValue;
+    });
   };
 
   useEffect(() => {
@@ -74,6 +81,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
           {runs.map((run: Run) => (
             <Workflow
               key={run.id}
+              project={project}
               run={run}
             />
           ))}

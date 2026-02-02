@@ -10,6 +10,10 @@ export const Root = styled.div`
   padding: 6px 15px 6px 20px;
   background-color: ${Colors.LIGHT_GRAY4};
   margin: 2px 0px;
+  gap: 8px;
+  width: 100%;
+  box-sizing: border-box;
+  flex-shrink: 0;
 
   & + & {
     margin-top: 0;
@@ -18,6 +22,12 @@ export const Root = styled.div`
   @media (prefers-color-scheme: dark) {
     background-color: ${Colors.DARK_GRAY2};
   }
+`;
+
+export const ButtonGroup = styled.div`
+  display: flex;
+  gap: 4px;
+  align-items: center;
 `;
 
 export const Status = styled.div``;
@@ -29,6 +39,8 @@ export const MainBlock = styled.div`
   justify-content: start;
   gap: 15px;
   align-items: center;
+  flex: 1;
+  min-width: 0;
 `;
 
 export const Title = styled.div`
@@ -54,5 +66,66 @@ export const TitleDescription = styled.div`
 
   @media (prefers-color-scheme: dark) {
     color: ${Colors.GRAY3};
+  }
+`;
+
+export const JobsList = styled.div`
+  padding: 8px 15px 8px 20px;
+  background-color: ${Colors.LIGHT_GRAY5};
+  width: 100%;
+  box-sizing: border-box;
+
+  @media (prefers-color-scheme: dark) {
+    background-color: ${Colors.DARK_GRAY1};
+  }
+`;
+
+export const JobItem = styled.div`
+  padding: 0;
+  margin: 0;
+  background-color: transparent;
+  font-size: 12px;
+`;
+
+export const JobHeader = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 10px;
+  cursor: pointer;
+  background-color: ${Colors.WHITE};
+  border-radius: 4px;
+  margin: 4px 0;
+  user-select: none;
+
+  &:hover {
+    opacity: 0.8;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    background-color: ${Colors.DARK_GRAY3};
+  }
+`;
+
+export const JobStep = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px 6px 36px;
+  font-size: 11px;
+  font-weight: 300;
+  background-color: ${Colors.WHITE};
+  margin: 2px 0;
+  border-radius: 3px;
+
+  svg {
+    width: 12px;
+    height: 12px;
+    flex-shrink: 0;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    background-color: ${Colors.DARK_GRAY3};
+    color: ${Colors.GRAY4};
   }
 `;
