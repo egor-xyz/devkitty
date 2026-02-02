@@ -8,5 +8,8 @@
   "i18n-ally.localesPaths": ["src/locales"],
   "stylelint.enable": true,
   "stylelint.validate": ["css", "javascript", "scss", "typescript"],
-  "cSpell.words": ["blueprintjs", "Devkitty"]
+  "cSpell.words": ["blueprintjs", "Devkitty"],
+  "chat.tools.terminal.autoApprove": {
+    "npm install": true
+  }
 }
