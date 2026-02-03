@@ -16,7 +16,10 @@ type PullWithTags = {
 
 export const usePulls = (project: Project) => {
   const [pulls, setPulls] = useState<PullWithTags[]>([]);
-  const [showPulls, setShowPulls] = useState(false);
+  const [showPulls, setShowPulls] = useState(() => {
+    const saved = localStorage.getItem(`showPulls:${project.id}`);
+    return saved ? JSON.parse(saved) : false;
+  });
   const [isEmpty, setIsEmpty] = useState(true);
   const { gitHubToken } = useAppSettings();
   const [loading, setLoading] = useState(true);
@@ -65,8 +68,12 @@ export const usePulls = (project: Project) => {
       });
       return;
     }
-    setShowPulls(!showPulls);
-  }, [showPulls, gitHubToken]);
+    setShowPulls((prev) => {
+      const newValue = !prev;
+      localStorage.setItem(`showPulls:${project.id}`, JSON.stringify(newValue));
+      return newValue;
+    });
+  }, [gitHubToken, project.id, showPulls]);
 
   const refreshPulls = useCallback(() => {
     getPulls();
