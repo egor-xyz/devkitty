@@ -1,6 +1,6 @@
 import { Classes } from '@blueprintjs/core';
 import clsx from 'clsx';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { appToaster } from 'rendered/utils/appToaster';
 import { type Pull } from 'types/gitHub';
@@ -21,8 +21,9 @@ export const usePulls = (project: Project) => {
     return saved ? JSON.parse(saved) : false;
   });
   const [isEmpty, setIsEmpty] = useState(true);
-  const { gitHubToken } = useAppSettings();
+  const { gitHubPulls, gitHubToken } = useAppSettings();
   const [loading, setLoading] = useState(true);
+  const intervalId = useRef<null | number>(null);
 
   const getPulls = useCallback(async () => {
     setIsEmpty(true);
@@ -83,7 +84,20 @@ export const usePulls = (project: Project) => {
     if (!showPulls || !project.id) return;
 
     getPulls();
-  }, [showPulls, project.id, getPulls]);
+
+    if (!intervalId.current) {
+      intervalId.current = window.setInterval(() => {
+        getPulls();
+      }, gitHubPulls.pollInterval);
+    }
+
+    return () => {
+      if (intervalId.current) {
+        window.clearInterval(intervalId.current);
+        intervalId.current = null;
+      }
+    };
+  }, [showPulls, project.id, getPulls, gitHubPulls.pollInterval]);
 
   const Pulls = useMemo(
     () =>

@@ -17,7 +17,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
   const [isEmpty, setIsEmpty] = useState(false);
   const {
     fetchInterval,
-    gitHubActions: { all, inProgress },
+    gitHubActions: { all, ignoreDependabot, inProgress },
     gitHubToken
   } = useAppSettings();
 
@@ -36,8 +36,15 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
     }
 
     setIsEmpty(false);
-    setRuns(res.runs ?? []);
-  }, [gitStatus, project.id]);
+    const nextRuns = res.runs ?? [];
+    const filteredRuns = ignoreDependabot
+      ? nextRuns.filter((run: Run) => {
+          const login = run.actor?.login?.toLowerCase();
+          return !login?.includes('dependabot');
+        })
+      : nextRuns;
+    setRuns(filteredRuns);
+  }, [gitStatus, project.id, ignoreDependabot]);
 
   const toggleActions = async () => {
     if (!showActions && !gitHubToken) {
