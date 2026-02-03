@@ -3,45 +3,59 @@ import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { appToaster } from 'rendered/utils/appToaster';
-import { type Pull, type PullType, pullTypes } from 'types/gitHub';
+import { type Pull } from 'types/gitHub';
 import { type Project } from 'types/project';
 
 import { PullRequest } from '../../components/PullRequest';
-import { Action, Actions, Empty, Title, WrapBlock } from './usePulls.styles';
+import { Empty, WrapBlock } from './usePulls.styles';
 
-const aliases: { [key in PullType]: string } = {
-  assigned: 'Assigned',
-  author: 'Created',
-  mentions: 'Mentioned',
-  'review-requested': 'Review requested'
+type PullWithTags = {
+  pull: Pull;
+  tags: string[];
 };
 
 export const usePulls = (project: Project) => {
-  const [pulls, setPulls] = useState<Pull[]>([]);
+  const [pulls, setPulls] = useState<PullWithTags[]>([]);
   const [showPulls, setShowPulls] = useState(false);
   const [isEmpty, setIsEmpty] = useState(true);
   const { gitHubToken } = useAppSettings();
-  const [pullType, setPullType] = useState<(typeof pullTypes)[number]>(pullTypes[0]);
   const [loading, setLoading] = useState(true);
 
-  const getPulls = useCallback(
-    async (type: PullType) => {
-      setIsEmpty(true);
-      setPulls([]);
-      setLoading(true);
+  const getPulls = useCallback(async () => {
+    setIsEmpty(true);
+    setPulls([]);
+    setLoading(true);
 
-      const res = await window.bridge.gitAPI.getPulls(project.id, type);
-      if (!res.success || !res.pulls.length) {
-        setLoading(false);
-        return;
-      }
+    const [authorRes, reviewRes] = await Promise.all([
+      window.bridge.gitAPI.getPulls(project.id, 'author'),
+      window.bridge.gitAPI.getPulls(project.id, 'review-requested')
+    ]);
 
-      setPulls(res.pulls ?? []);
-      setLoading(false);
-      setIsEmpty(false);
-    },
-    [project.id]
-  );
+    const map = new Map<number, PullWithTags>();
+
+    const addPulls = (items: Pull[] | undefined, tag: string) => {
+      if (!items) return;
+      items.forEach((pull) => {
+        const existing = map.get(pull.id);
+        if (existing) {
+          if (!existing.tags.includes(tag)) existing.tags.push(tag);
+        } else {
+          map.set(pull.id, { pull, tags: [tag] });
+        }
+      });
+    };
+
+    if (authorRes.success) addPulls(authorRes.pulls, 'My');
+    if (reviewRes.success) addPulls(reviewRes.pulls, 'Review requested');
+
+    const merged = Array.from(map.values()).sort(
+      (a, b) => new Date(b.pull.created_at).getTime() - new Date(a.pull.created_at).getTime()
+    );
+
+    setPulls(merged);
+    setLoading(false);
+    setIsEmpty(merged.length === 0);
+  }, [project.id]);
 
   const togglePulls = useCallback(async () => {
     if (!showPulls && !gitHubToken) {
@@ -55,14 +69,14 @@ export const usePulls = (project: Project) => {
   }, [showPulls, gitHubToken]);
 
   const refreshPulls = useCallback(() => {
-    getPulls(pullType);
-  }, [pullType, getPulls]);
+    getPulls();
+  }, [getPulls]);
 
   useEffect(() => {
     if (!showPulls || !project.id) return;
 
-    getPulls(pullType);
-  }, [showPulls, pullType, project.id, getPulls]);
+    getPulls();
+  }, [showPulls, project.id, getPulls]);
 
   const Pulls = useMemo(
     () =>
@@ -74,31 +88,16 @@ export const usePulls = (project: Project) => {
             </Empty>
           )}
 
-          {pulls.map((pull) => (
+          {pulls.map(({ pull, tags }) => (
             <PullRequest
               key={pull.id}
               pull={pull}
+              tags={tags}
             />
           ))}
-
-          <Title>
-            <span>Pull requests ({aliases[pullType]})</span>
-          </Title>
-
-          <Actions>
-            {pullTypes.map((type) => (
-              <Action
-                $active={type === pullType}
-                key={type}
-                onClick={() => setPullType(type)}
-              >
-                {aliases[type]}
-              </Action>
-            ))}
-          </Actions>
         </WrapBlock>
       ),
-    [showPulls, isEmpty, pulls, loading, pullType]
+    [showPulls, isEmpty, pulls, loading]
   );
 
   return {

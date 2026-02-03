@@ -91,6 +91,24 @@ ipcMain.handle('git:api:getAction', async (_, id: string, filterBy: string[]) =>
   }
 });
 
+ipcMain.handle('git:api:getJobs', async (_, id: string, runId: number) => {
+  try {
+    const { owner, repo } = await getRepoInfo(id);
+    if (!owner || !repo) throw new Error('Project not found');
+
+    const { data } = await octokit().rest.actions.listJobsForWorkflowRun({
+      owner,
+      repo,
+      run_id: runId
+    });
+
+    return { jobs: data.jobs, success: true };
+  } catch (e) {
+    log.error(e);
+    return { message: e.message, success: false };
+  }
+});
+
 ipcMain.handle('git:api:getPulls', async (_, id: string, pullType: PullType) => {
   try {
     const { owner, repo } = await getRepoInfo(id);
