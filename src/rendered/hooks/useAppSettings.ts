@@ -13,6 +13,9 @@ export const useAppSettings = create<Actions & AppSettings>((set) => ({
     count: 3,
     inProgress: false
   },
+  gitHubPulls: {
+    pollInterval: 300000
+  },
   set: (newState, safe) => {
     set(() => {
       window.bridge.settings.set('appSettings', newState, safe);

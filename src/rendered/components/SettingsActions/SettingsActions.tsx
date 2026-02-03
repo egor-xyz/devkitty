@@ -4,13 +4,15 @@ import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { Root } from './SettingsActions.styles';
 
 export const SettingsActions = () => {
-  const { gitHubActions, set } = useAppSettings();
+  const { gitHubActions, gitHubPulls, set } = useAppSettings();
   const { all, count, inProgress } = gitHubActions;
+  const pullsIntervalMinutes = Math.max(1, Math.round(gitHubPulls.pollInterval / 60000));
 
   return (
     <Root>
-      <h2>GitHub Actions</h2>
+      <h2>GitHub</h2>
       <Divider />
+      <h3>Actions</h3>
 
       <Label>
         Amount of actions to show under the project
@@ -35,6 +37,21 @@ export const SettingsActions = () => {
         label="Display ongoing actions and those completed within the last 30 minutes"
         onChange={() => set({ gitHubActions: { ...gitHubActions, inProgress: !inProgress } })}
       />
+
+      <Divider />
+      <h3>Pull Requests</h3>
+
+      <Label>
+        Polling interval (minutes)
+        <NumericInput
+          max={60}
+          min={1}
+          onValueChange={(value) =>
+            set({ gitHubPulls: { ...gitHubPulls, pollInterval: value * 60000 } })
+          }
+          value={pullsIntervalMinutes}
+        />
+      </Label>
     </Root>
   );
 };

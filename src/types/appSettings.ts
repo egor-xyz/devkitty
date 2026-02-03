@@ -9,6 +9,9 @@ export type AppSettings = {
     count: number;
     inProgress: boolean;
   };
+  gitHubPulls: {
+    pollInterval: number;
+  };
   gitHubToken?: string;
   selectedEditor?: FoundEditor;
   selectedShell?: FoundShell<string>;
