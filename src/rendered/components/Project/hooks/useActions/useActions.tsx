@@ -99,6 +99,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
             <Empty className={Classes.TEXT_MUTED}>
               <span>
                 No actions {inProgress && 'in progress'} were found
+
                 {!all && (
                   <span>
                     {' '}
