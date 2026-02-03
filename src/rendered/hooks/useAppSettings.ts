@@ -11,6 +11,7 @@ export const useAppSettings = create<Actions & AppSettings>((set) => ({
   gitHubActions: {
     all: true,
     count: 3,
+    ignoreDependabot: false,
     inProgress: false
   },
   gitHubPulls: {

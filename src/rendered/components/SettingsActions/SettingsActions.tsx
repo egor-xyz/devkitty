@@ -5,7 +5,7 @@ import { Root } from './SettingsActions.styles';
 
 export const SettingsActions = () => {
   const { gitHubActions, gitHubPulls, set } = useAppSettings();
-  const { all, count, inProgress } = gitHubActions;
+  const { all, count, ignoreDependabot = false, inProgress } = gitHubActions;
   const pullsIntervalMinutes = Math.max(1, Math.round(gitHubPulls.pollInterval / 60000));
 
   return (
@@ -38,6 +38,12 @@ export const SettingsActions = () => {
         onChange={() => set({ gitHubActions: { ...gitHubActions, inProgress: !inProgress } })}
       />
 
+      <Switch
+        checked={ignoreDependabot}
+        label="Ignore Dependabot"
+        onChange={() => set({ gitHubActions: { ...gitHubActions, ignoreDependabot: !ignoreDependabot } })}
+      />
+
       <Divider />
       <h3>Pull Requests</h3>
 
@@ -46,9 +52,7 @@ export const SettingsActions = () => {
         <NumericInput
           max={60}
           min={1}
-          onValueChange={(value) =>
-            set({ gitHubPulls: { ...gitHubPulls, pollInterval: value * 60000 } })
-          }
+          onValueChange={(value) => set({ gitHubPulls: { ...gitHubPulls, pollInterval: value * 60000 } })}
           value={pullsIntervalMinutes}
         />
       </Label>
