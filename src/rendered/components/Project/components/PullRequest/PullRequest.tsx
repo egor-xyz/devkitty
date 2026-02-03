@@ -3,13 +3,24 @@ import { type FC } from 'react';
 import { timeAgo } from 'rendered/utils/timeAgo';
 import { type Pull } from 'types/gitHub';
 
-import { Avatar, BotTag, MainBlock, PullLabel, Root, Title, TitleDescription, TitleMain } from './PullRequest.styles';
+import {
+  Avatar,
+  BotTag,
+  MainBlock,
+  PullLabel,
+  PullTag,
+  Root,
+  Title,
+  TitleDescription,
+  TitleMain
+} from './PullRequest.styles';
 
 type Props = {
   pull: Pull;
+  tags?: string[];
 };
 
-export const PullRequest: FC<Props> = ({ pull }) => {
+export const PullRequest: FC<Props> = ({ pull, tags = [] }) => {
   const { created_at, draft, html_url, labels, number, title, user } = pull;
 
   const openInBrowser = () => {
@@ -37,6 +48,10 @@ export const PullRequest: FC<Props> = ({ pull }) => {
               >
                 {label.name}
               </PullLabel>
+            ))}
+
+            {tags.map((tag) => (
+              <PullTag key={`${number}-${tag}`}>{tag}</PullTag>
             ))}
           </TitleMain>
 

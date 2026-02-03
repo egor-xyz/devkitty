@@ -16,10 +16,6 @@ export const Root = styled.div`
     margin-top: 0;
   }
 
-  &:first-child {
-    padding-top: 10px;
-  }
-
   @media (prefers-color-scheme: dark) {
     background-color: ${Colors.DARK_GRAY2};
   }
@@ -77,6 +73,21 @@ export const BotTag = styled.div`
   @media (prefers-color-scheme: dark) {
     color: ${Colors.GRAY3};
     border: 1px solid ${Colors.GRAY3};
+  }
+`;
+
+export const PullTag = styled.div`
+  border-radius: 10px;
+  border: 1px solid ${Colors.GRAY2};
+  padding: 1px 6px;
+  font-size: 10px;
+  color: ${Colors.GRAY1};
+  background-color: ${Colors.LIGHT_GRAY5};
+
+  @media (prefers-color-scheme: dark) {
+    color: ${Colors.GRAY4};
+    border: 1px solid ${Colors.GRAY3};
+    background-color: ${Colors.DARK_GRAY4};
   }
 `;
 

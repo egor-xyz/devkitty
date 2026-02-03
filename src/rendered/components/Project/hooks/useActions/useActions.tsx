@@ -1,5 +1,5 @@
 import { Classes, Tag } from '@blueprintjs/core';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { appToaster } from 'rendered/utils/appToaster';
 import { type Run } from 'types/gitHub';
@@ -10,12 +10,18 @@ import { Empty } from './useActions.styles';
 
 export const useActions = (gitStatus: GitStatus, project: Project) => {
   const [runs, setRuns] = useState([]);
-  const [showActions, setShowActions] = useState(false);
+  const [showActions, setShowActions] = useState(() => {
+    const saved = localStorage.getItem(`showActions:${project.id}`);
+    return saved ? JSON.parse(saved) : false;
+  });
   const [isEmpty, setIsEmpty] = useState(false);
   const {
+    fetchInterval,
     gitHubActions: { all, inProgress },
     gitHubToken
   } = useAppSettings();
+
+  const intervalId = useRef<null | number>(null);
 
   const getActions = useCallback(async () => {
     const savedOrigin = localStorage.getItem(`GitResetModal:origin-${project.id}`);
@@ -41,13 +47,49 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
       });
       return;
     }
-    setShowActions(!showActions);
+    setShowActions((prev: boolean) => {
+      const newValue = !prev;
+      localStorage.setItem(`showActions:${project.id}`, JSON.stringify(newValue));
+      return newValue;
+    });
   };
 
   useEffect(() => {
     if (!showActions || !gitStatus?.branchSummary.current || !project.id) return;
     getActions();
-  }, [getActions, gitStatus, project, showActions]);
+
+    const startPolling = () => {
+      if (!intervalId.current && fetchInterval > 2000) {
+        intervalId.current = window.setInterval(() => {
+          getActions();
+        }, fetchInterval);
+      }
+    };
+
+    const stopPolling = () => {
+      if (intervalId.current) {
+        window.clearInterval(intervalId.current);
+        intervalId.current = undefined;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        getActions();
+        startPolling();
+      }
+    };
+
+    startPolling();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [fetchInterval, getActions, gitStatus, project, showActions]);
 
   const Actions = useMemo(
     () =>
@@ -57,29 +99,35 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
             <Empty className={Classes.TEXT_MUTED}>
               <span>
                 No actions {inProgress && 'in progress'} were found
-
                 {!all && (
-                  <>
-                    &nbsp;for the&nbsp;<b>{gitStatus.branchSummary?.current}</b>&nbsp;branch
-                  </>
-                )}
-
-                &nbsp;in the last {inProgress ? '30 minutes' : '24 hours'}
+                  <span>
+                    {' '}
+                    for the <b>{gitStatus.branchSummary?.current}</b> branch
+                  </span>
+                )}{' '}
+                in the last {inProgress ? '30 minutes' : '24 hours'}
               </span>
 
               <Tag minimal>watcher is active</Tag>
             </Empty>
           )}
 
-          {runs.map((run: Run) => (
-            <Workflow
-              key={run.id}
-              run={run}
-            />
-          ))}
+          {[...runs]
+            .sort((a: Run, b: Run) => {
+              const timeA = new Date(a.created_at).getTime();
+              const timeB = new Date(b.created_at).getTime();
+              return timeB - timeA;
+            })
+            .map((run: Run) => (
+              <Workflow
+                key={run.id}
+                project={project}
+                run={run}
+              />
+            ))}
         </>
       ),
-    [runs, showActions, isEmpty, all, inProgress, gitStatus]
+    [runs, showActions, isEmpty, all, inProgress, gitStatus, project]
   );
 
   return {
