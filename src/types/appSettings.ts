@@ -7,7 +7,11 @@ export type AppSettings = {
   gitHubActions: {
     all: boolean;
     count: number;
+    ignoreDependabot: boolean;
     inProgress: boolean;
+  };
+  gitHubPulls: {
+    pollInterval: number;
   };
   gitHubToken?: string;
   selectedEditor?: FoundEditor;

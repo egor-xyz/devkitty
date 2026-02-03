@@ -37,9 +37,9 @@ export const Settings = () => {
 
         <Tabs.Tab
           icon={<StyledActionsIcon />}
-          id="actions"
+          id="github"
           panel={<SettingsActions />}
-          title="Actions"
+          title="GitHub"
         />
       </Tabs>
     </Root>

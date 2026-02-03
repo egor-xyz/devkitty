@@ -7,8 +7,16 @@ import actionFailed from './gitHub/action-failed.svg?react';
 import actionInProgressIcon from './gitHub/action-in-progress.svg?react';
 import actionPendingIcon from './gitHub/action-pending.svg?react';
 import actions from './gitHub/actions.svg?react';
+import github from './gitHub/github.svg?react';
 
 export const ActionsIcon = styled(actions)`
+  fill: ${Colors.GRAY1};
+  @media (prefers-color-scheme: dark) {
+    fill: ${Colors.GRAY4};
+  }
+`;
+
+export const GitHubIcon = styled(github)`
   fill: ${Colors.GRAY1};
   @media (prefers-color-scheme: dark) {
     fill: ${Colors.GRAY4};
