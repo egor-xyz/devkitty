@@ -58,17 +58,36 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
     if (!showActions || !gitStatus?.branchSummary.current || !project.id) return;
     getActions();
 
-    if (!intervalId.current && fetchInterval > 2000) {
-      intervalId.current = window.setInterval(() => {
-        getActions();
-      }, fetchInterval);
-    }
+    const startPolling = () => {
+      if (!intervalId.current && fetchInterval > 2000) {
+        intervalId.current = window.setInterval(() => {
+          getActions();
+        }, fetchInterval);
+      }
+    };
 
-    return () => {
+    const stopPolling = () => {
       if (intervalId.current) {
         window.clearInterval(intervalId.current);
         intervalId.current = undefined;
       }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopPolling();
+      } else {
+        getActions();
+        startPolling();
+      }
+    };
+
+    startPolling();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      stopPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
   }, [fetchInterval, getActions, gitStatus, project, showActions]);
 

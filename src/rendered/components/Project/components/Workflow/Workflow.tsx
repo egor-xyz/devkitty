@@ -102,7 +102,7 @@ export const Workflow: FC<Props> = ({ project, run }) => {
   };
 
   useEffect(() => {
-    if (!isOpen || jobs.length === 0) return;
+    if (!isOpen || jobs.length === 0 || conclusion) return;
 
     const pollJobs = async () => {
       const res = await window.bridge.gitAPI.getJobs(project.id, id);
@@ -111,11 +111,38 @@ export const Workflow: FC<Props> = ({ project, run }) => {
       }
     };
 
-    const jobPollTimer = window.setInterval(pollJobs, 10000);
-    return () => {
-      window.clearInterval(jobPollTimer);
+    let jobPollTimer: null | number = null;
+
+    const startJobPolling = () => {
+      if (!jobPollTimer) {
+        jobPollTimer = window.setInterval(pollJobs, 10000);
+      }
     };
-  }, [isOpen, jobs.length, id, project.id]);
+
+    const stopJobPolling = () => {
+      if (jobPollTimer) {
+        window.clearInterval(jobPollTimer);
+        jobPollTimer = null;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        stopJobPolling();
+      } else {
+        pollJobs();
+        startJobPolling();
+      }
+    };
+
+    startJobPolling();
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      stopJobPolling();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [isOpen, jobs.length, id, project.id, conclusion]);
 
   const toggleJobExpanded = (jobId: number) => {
     const newExpanded = new Set(expandedJobs);
