@@ -1,10 +1,9 @@
-import { Button, Classes, Dialog, DialogFooter, type Intent, Switch } from '@blueprintjs/core';
+import { Button, Classes, Dialog, DialogBody, DialogFooter, type Intent, Switch } from '@blueprintjs/core';
 import { type FC, useState } from 'react';
+import { BranchSelect } from 'rendered/components/BranchSelect';
 import { appToaster } from 'rendered/utils/appToaster';
 import { type ModalProps } from 'types/Modal';
 import { type GitStatus } from 'types/project';
-
-import { Options, Row, StyledBranchSelect, StyledDialogBody } from './GitResetModal.styles';
 
 enum storageKeys {
   origin = 'GitResetModal:origin-',
@@ -116,8 +115,8 @@ export const GitResetModal: FC<GitResetModalProps & ModalProps> = (props) => {
       onClose={onClose}
       title={actionText}
     >
-      <StyledDialogBody>
-        <Options>
+      <DialogBody className="select-none flex flex-col gap-2.5">
+        <div className="flex gap-[30px] items-center">
           <Switch
             checked={remoteMode}
             disabled={loading}
@@ -131,34 +130,36 @@ export const GitResetModal: FC<GitResetModalProps & ModalProps> = (props) => {
             label="Force push"
             onChange={() => setForcePush(!forcePush)}
           />
-        </Options>
+        </div>
 
         {remoteMode && (
-          <Row>
+          <div className="flex justify-between gap-[30px] items-center">
             <div>Remote Branch</div>
 
-            <StyledBranchSelect
+            <BranchSelect
+              className="flex-3 max-w-[300px]"
               currentBranch={origin}
               disabled={loading}
               fill
               gitStatus={gitStatus}
               onSelect={selectOrigin}
             />
-          </Row>
+          </div>
         )}
 
-        <Row>
+        <div className="flex justify-between gap-[30px] items-center">
           <span>Reset to</span>
 
-          <StyledBranchSelect
+          <BranchSelect
+            className="flex-3 max-w-[300px]"
             currentBranch={target}
             disabled={loading}
             fill
             gitStatus={gitStatus}
             onSelect={selectTarget}
           />
-        </Row>
-      </StyledDialogBody>
+        </div>
+      </DialogBody>
 
       <DialogFooter
         actions={

@@ -1,3 +1,233 @@
+@import 'tailwindcss';
 @import 'normalize.css';
 @import '@blueprintjs/core/lib/css/blueprint.css';
 @import '@blueprintjs/icons/lib/css/blueprint-icons.css';
+
+/* Configure dark mode to use class selector */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* Blueprint Colors as CSS variables */
+@theme {
+  --color-bp-light-gray-1: #d3d8de;
+  --color-bp-light-gray-2: #dce0e5;
+  --color-bp-light-gray-3: #e5e8eb;
+  --color-bp-light-gray-4: #edeff2;
+  --color-bp-light-gray-5: #f6f7f9;
+  --color-bp-dark-gray-1: #1c2127;
+  --color-bp-dark-gray-2: #252a31;
+  --color-bp-dark-gray-3: #2f343c;
+  --color-bp-dark-gray-4: #383e47;
+  --color-bp-dark-gray-5: #404854;
+  --color-bp-gray-1: #5f6b7c;
+  --color-bp-gray-2: #738091;
+  --color-bp-gray-3: #8f99a8;
+  --color-bp-gray-4: #abb3bf;
+  --color-bp-gray-5: #c5cbd3;
+  --color-bp-orange-1: #ec9a3c;
+  --color-bp-orange-2: #f0a053;
+}
+
+/* Electron-specific styles */
+.app-region-drag {
+  -webkit-app-region: drag;
+}
+
+.app-region-no-drag {
+  -webkit-app-region: no-drag;
+}
+
+/* Hide scrollbar */
+.scrollbar-none {
+  scrollbar-width: none;
+}
+.scrollbar-none::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+}
+
+/* AppLoader animation */
+@keyframes spin {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes blink {
+  0%, 50% { opacity: 0; }
+  20% { opacity: 1; }
+}
+
+@keyframes shine {
+  0% { background-position: 200%; }
+  100% { background-position: 0%; }
+}
+
+.app-loader {
+  --loader-gradient: linear-gradient(#14ffe9, #ffeb3b, #ff00e0);
+  --loader-bg: #091921;
+  position: fixed;
+  top: calc(50% - 75px + 25px);
+  left: calc(50% - 75px);
+  width: 150px;
+  height: 150px;
+  animation: spin 0.5s linear infinite;
+  border-radius: 50%;
+  background: var(--loader-gradient);
+}
+
+.app-loader::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: 1.56rem;
+  border-radius: 50%;
+  background-color: var(--loader-bg);
+}
+
+.app-loader span {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background: var(--loader-gradient);
+}
+
+.app-loader span:nth-child(1) { filter: blur(5px); }
+.app-loader span:nth-child(2) { filter: blur(10px); }
+.app-loader span:nth-child(3) { filter: blur(25px); }
+.app-loader span:nth-child(4) { filter: blur(50px); }
+
+/* ShinyText animation */
+.shiny-text {
+  background: linear-gradient(120deg, rgba(255, 255, 255, 0) 40%, rgba(255, 255, 255, 0.8) 50%, rgba(255, 255, 255, 0) 60%);
+  background-size: 200% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+
+.shiny-text.animate {
+  animation: shine 3s linear infinite;
+}
+
+/* Navbar shadow effect for dark mode */
+.navbar-shadow-container {
+  overflow: hidden;
+  position: relative;
+  height: 50px;
+  width: 100px;
+  pointer-events: none;
+  margin-left: -25px;
+  z-index: -1;
+}
+
+.navbar-shadow {
+  width: 0;
+  height: 48px;
+  background-color: transparent;
+  border-left: 49px solid transparent;
+  border-bottom: 100px solid #1c2127;
+  filter: drop-shadow(0px 7px 14px rgba(0, 0, 0, 0.9));
+  transform: rotate(180deg);
+}
+
+/* Logo colors */
+.devkitty-logo .cat,
+.devkitty-logo .tail {
+  fill: url(#linear-gradient);
+}
+
+.dark .devkitty-logo .cat,
+.dark .devkitty-logo .tail {
+  fill: #8f99a8 !important;
+}
+
+.dark .devkitty-logo:hover .cat,
+.dark .devkitty-logo:hover .tail {
+  fill: url(#linear-gradient) !important;
+}
+
+/* BranchSelect popover styles */
+.branchSelectPopoverList .bp5-menu {
+  max-height: 295px;
+  overflow: auto;
+}
+
+/* BranchSelect button styles */
+.branch-select-button {
+  display: flex;
+  justify-content: space-between;
+  width: 240px;
+  border-radius: 6px;
+}
+
+.branch-select-button .bp5-button-text {
+  max-width: calc(100% - 10px);
+  margin-left: 2px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Settings page tabs styling */
+.settings-root .bp5-tabs {
+  height: 100%;
+}
+
+.settings-root .bp5-tab-list {
+  padding-top: 14px;
+  border-right: 1px solid #e5e8eb;
+}
+
+.settings-root .bp5-tab-panel {
+  width: 100%;
+  padding: 14px 20px 20px 20px;
+  background-color: #f6f7f9;
+}
+
+.settings-root .bp5-tab-panel .bp5-divider {
+  margin: 10px 0;
+}
+
+/* Dark mode settings */
+.bp5-dark.settings-root .bp5-tab-list,
+.bp5-dark .settings-root .bp5-tab-list {
+  border-right: 1px solid #2f343c;
+}
+
+.bp5-dark.settings-root .bp5-tab-panel,
+.bp5-dark .settings-root .bp5-tab-panel {
+  background-color: #252a31;
+}
+
+/* GitHub action icons */
+@keyframes action-rotate {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+@keyframes action-blink {
+  0% { opacity: 0.2; }
+  50% { opacity: 1; }
+  100% { opacity: 0.2; }
+}
+
+.action-in-progress {
+  animation: action-rotate 1s linear infinite;
+  height: 16px;
+  width: 16px;
+}
+
+.action-pending {
+  animation: action-blink 1.5s linear infinite;
+  height: 16px;
+}
+
+/* Global body background - must be at end to override other styles */
+body {
+  background-color: #dce0e5 !important;
+}
+
+@media (prefers-color-scheme: dark) {
+  body {
+    background-color: #1c2127 !important;
+  }
+}

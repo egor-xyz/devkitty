@@ -1,8 +1,9 @@
-import { Button, ButtonGroup, Classes, Colors, Popover } from '@blueprintjs/core';
+import { Button, ButtonGroup, Classes, Colors, Icon, Popover } from '@blueprintjs/core';
 import { type FC, useState } from 'react';
 import { useGit } from 'rendered/hooks/useGit';
 import { useModal } from 'rendered/hooks/useModal';
 import { useMountEffect } from 'rendered/hooks/useMountEffect';
+import { cn } from 'rendered/utils/cn';
 import { type Project as IProject } from 'types/project';
 
 import { GitStatusGroup } from '../GitStatusGroup';
@@ -12,7 +13,6 @@ import { ProjectMenu } from './components/ProjectMenu';
 import { QuickActions } from './components/QuickActions';
 import { useActions } from './hooks/useActions';
 import { usePulls } from './hooks/usePulls';
-import { Info, InfoText, MiddleBlock, ProjectActions, RepoInfo, Root, StyledSpinner, Title } from './Project.styles';
 
 type Props = {
   project: IProject;
@@ -64,20 +64,29 @@ export const Project: FC<Props> = ({ project }) => {
 
   return (
     <>
-      <Root>
-        <Info>
-          <InfoText className={loading && !gitStatus && Classes.SKELETON}>
-            <Title>{name}</Title>
-            <RepoInfo>{gitStatus?.organization ?? 'Local git'}</RepoInfo>
-          </InfoText>
+      <div
+        className={cn(
+          'flex relative items-center justify-between min-h-[55px] py-0.5 pl-5 pr-4',
+          'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
+          '[&+&]:mt-0.5'
+        )}
+      >
+        <div className="flex flex-1 items-center justify-between w-full pr-2.5 gap-2.5">
+          <div className={cn('flex flex-col', loading && !gitStatus && Classes.SKELETON)}>
+            <div className="font-medium">{name}</div>
+
+            <div className="text-[11px] font-light -mt-0.5 dark:text-bp-gray-3">
+              {gitStatus?.organization ?? 'Local git'}
+            </div>
+          </div>
 
           <GitStatusGroup
             gitStatus={gitStatus}
             name={name}
           />
-        </Info>
+        </div>
 
-        <MiddleBlock>
+        <div className="flex flex-2 items-center min-w-[395px] gap-2.5">
           <CheckoutBranch
             getStatus={updateProject}
             gitStatus={gitStatus}
@@ -93,9 +102,9 @@ export const Project: FC<Props> = ({ project }) => {
             toggleActions={toggleActions}
             togglePulls={togglePulls}
           />
-        </MiddleBlock>
+        </div>
 
-        <ProjectActions className={!gitStatus && Classes.SKELETON}>
+        <div className={cn('flex relative flex-row-reverse min-w-[79px] ml-auto select-none', !gitStatus && Classes.SKELETON)}>
           <ButtonGroup large>
             {!behind && (
               <Button
@@ -134,13 +143,16 @@ export const Project: FC<Props> = ({ project }) => {
             </Popover>
           </ButtonGroup>
 
-          <StyledSpinner
+          <Icon
+            className={cn(
+              'absolute top-1/2 -left-[22px] mr-2.5 -translate-y-1/2 origin-center opacity-0',
+              loading && 'animate-[blink_3s_infinite]'
+            )}
             color={Colors.ORANGE1}
             icon="dot"
-            loading={loading}
           />
-        </ProjectActions>
-      </Root>
+        </div>
+      </div>
 
       {Actions}
       {Pulls}

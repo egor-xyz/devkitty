@@ -1,19 +1,9 @@
 import { Button } from '@blueprintjs/core';
+import { readableColor } from 'polished';
 import { type FC } from 'react';
+import { cn } from 'rendered/utils/cn';
 import { timeAgo } from 'rendered/utils/timeAgo';
 import { type Pull } from 'types/gitHub';
-
-import {
-  Avatar,
-  BotTag,
-  MainBlock,
-  PullLabel,
-  PullTag,
-  Root,
-  Title,
-  TitleDescription,
-  TitleMain
-} from './PullRequest.styles';
 
 type Props = {
   pull: Pull;
@@ -28,43 +18,68 @@ export const PullRequest: FC<Props> = ({ pull, tags = [] }) => {
   };
 
   return (
-    <Root>
-      <MainBlock>
-        <Avatar
+    <div
+      className={cn(
+        'flex relative items-center justify-between min-h-5 py-1.5 pl-5 pr-4 my-0.5',
+        'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
+        '[&+&]:mt-0'
+      )}
+    >
+      <div className="overflow-hidden flex text-left justify-start gap-4 items-center">
+        <img
           alt={user.login}
+          className="w-[30px] h-[30px] rounded-full object-cover"
           src={user.avatar_url}
         />
 
-        <Title>
-          <TitleMain>
+        <div className="overflow-hidden text-[13px] flex flex-col">
+          <div className="flex items-center overflow-hidden text-ellipsis whitespace-nowrap mb-0.5 gap-2">
             {draft && '[DRAFT] '}
-            {user.type === 'Bot' && <BotTag>bot</BotTag>}
+
+            {user.type === 'Bot' && (
+              <div className="rounded border border-black dark:border-bp-gray-3 px-1 py-px text-[10px] text-black dark:text-bp-gray-3">
+                bot
+              </div>
+            )}
+
             {title}
 
             {labels.map((label) => (
-              <PullLabel
-                $bgColor={label.color}
+              <div
+                className="rounded px-1 py-px text-xs"
                 key={label.id}
+                style={{
+                  backgroundColor: `#${label.color}`,
+                  color: readableColor(`#${label.color}`)
+                }}
               >
                 {label.name}
-              </PullLabel>
+              </div>
             ))}
 
             {tags.map((tag) => (
-              <PullTag key={`${number}-${tag}`}>{tag}</PullTag>
+              <div
+                className={cn(
+                  'rounded-full border border-bp-gray-2 dark:border-bp-gray-3 px-1.5 py-px text-[10px]',
+                  'text-bp-gray-1 dark:text-bp-gray-4 bg-bp-light-gray-5 dark:bg-bp-dark-gray-4'
+                )}
+                key={`${number}-${tag}`}
+              >
+                {tag}
+              </div>
             ))}
-          </TitleMain>
+          </div>
 
-          <TitleDescription>
+          <div className="flex items-center overflow-hidden whitespace-nowrap text-ellipsis -mt-px text-xs font-light dark:text-bp-gray-3">
             #{number} opened {timeAgo(created_at)} by {user.login.replace('[bot]', '')}
-          </TitleDescription>
-        </Title>
-      </MainBlock>
+          </div>
+        </div>
+      </div>
 
       <Button
         icon="globe"
         onClick={openInBrowser}
       />
-    </Root>
+    </div>
   );
 };

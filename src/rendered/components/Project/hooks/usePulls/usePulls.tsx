@@ -1,13 +1,12 @@
 import { Classes } from '@blueprintjs/core';
-import clsx from 'clsx';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 import { appToaster } from 'rendered/utils/appToaster';
+import { cn } from 'rendered/utils/cn';
 import { type Pull } from 'types/gitHub';
 import { type Project } from 'types/project';
 
 import { PullRequest } from '../../components/PullRequest';
-import { Empty, WrapBlock } from './usePulls.styles';
 
 type PullWithTags = {
   pull: Pull;
@@ -102,11 +101,11 @@ export const usePulls = (project: Project) => {
   const Pulls = useMemo(
     () =>
       showPulls && (
-        <WrapBlock>
+        <div className="relative mt-0.5 border-t border-bp-light-gray-2 dark:border-black">
           {isEmpty && pulls.length < 1 && (
-            <Empty className={clsx(Classes.TEXT_MUTED, loading && Classes.SKELETON)}>
+            <div className={cn('flex justify-between items-center py-2.5 px-4', Classes.TEXT_MUTED, loading && Classes.SKELETON)}>
               <span>No pull request were found</span>
-            </Empty>
+            </div>
           )}
 
           {pulls.map(({ pull, tags }) => (
@@ -116,7 +115,7 @@ export const usePulls = (project: Project) => {
               tags={tags}
             />
           ))}
-        </WrapBlock>
+        </div>
       ),
     [showPulls, isEmpty, pulls, loading]
   );

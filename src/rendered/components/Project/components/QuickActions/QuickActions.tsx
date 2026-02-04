@@ -1,11 +1,12 @@
-import { Button, ButtonGroup, Classes, Popover } from '@blueprintjs/core';
+import { Button, ButtonGroup, Classes } from '@blueprintjs/core';
+import { Popover } from '@blueprintjs/core';
 import { type FC, useState } from 'react';
+import { FaCopy, FaRegCopy } from 'react-icons/fa';
 import { ActionsIcon } from 'rendered/assets/gitHubIcons';
 import { type GitStatus, type Project } from 'types/project';
 
 import { GitMenu } from '../GitMenu';
 import { OpenInMenu } from '../OpenInMenu';
-import { StyledFaCopy, StyledFaRegCopy } from './QuickActions.styles';
 
 const size = 16;
 
@@ -28,11 +29,30 @@ export const QuickActions: FC<Props> = ({
   toggleActions,
   togglePulls
 }) => {
-  const [copyIcon, setCopyIcon] = useState(<StyledFaRegCopy size={size} />);
+  const [copyIcon, setCopyIcon] = useState(
+    <FaRegCopy
+      className="text-bp-gray-1 dark:text-bp-gray-4"
+      size={size}
+    />
+  );
 
   const copyToClipboard = () => {
-    setCopyIcon(<StyledFaCopy size={size} />);
-    setTimeout(() => setCopyIcon(<StyledFaRegCopy size={size} />), 1000);
+    setCopyIcon(
+      <FaCopy
+        className="text-bp-gray-1 dark:text-bp-gray-4"
+        size={size}
+      />
+    );
+    setTimeout(
+      () =>
+        setCopyIcon(
+          <FaRegCopy
+            className="text-bp-gray-1 dark:text-bp-gray-4"
+            size={size}
+          />
+        ),
+      1000
+    );
 
     navigator.clipboard.writeText(gitStatus?.branchSummary?.current);
   };
