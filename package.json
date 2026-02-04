@@ -25,6 +25,7 @@
   "dependencies": {
     "@blueprintjs/core": "^6.7.0",
     "@blueprintjs/select": "^6.0.14",
+    "@tailwindcss/vite": "^4.1.18",
     "clsx": "^2.1.1",
     "electron-log": "^5.4.3",
     "electron-store": "^11.0.2",
@@ -40,6 +41,7 @@
     "react-router": "^7.13.0",
     "simple-git": "^3.30.0",
     "styled-components": "^6.3.8",
+    "tailwindcss": "^4.1.18",
     "update-electron-app": "^3.1.2",
     "uuid": "^13.0.0",
     "zustand": "^5.0.11"
