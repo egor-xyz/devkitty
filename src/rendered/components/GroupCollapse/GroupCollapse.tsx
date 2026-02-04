@@ -3,11 +3,11 @@ import { type FC, useRef } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
 import { useGroups } from 'rendered/hooks/useGroups';
 import { useModal } from 'rendered/hooks/useModal';
+import { cn } from 'rendered/utils/cn';
 import { type Group } from 'types/Group';
 import { type Projects } from 'types/project';
 
 import { Project } from '../Project';
-import { GroupBody, GroupTitle, Root } from './GroupCollapse.styles';
 
 const GROUP = 'group';
 
@@ -82,13 +82,21 @@ export const GroupCollapse: FC<Props> = ({ collapsed, group, index, onClick, pro
   }
 
   return (
-    <Root
-      $isDragging={isDragging}
+    <div
+      className={cn(
+        'flex flex-col bg-bp-light-gray-5 dark:bg-bp-dark-gray-1 transition-opacity duration-300 ease-in-out',
+        isDragging && 'opacity-30'
+      )}
       data-handler-id={handlerId}
       key={group.id}
       ref={group.id === 'ungrouped' ? null : ref}
     >
-      <GroupTitle
+      <div
+        className={cn(
+          'flex items-start justify-between w-full py-1 pl-5 pr-4',
+          'text-sm font-light uppercase cursor-pointer select-none gap-x-2.5',
+          'dark:text-bp-dark-gray-5'
+        )}
         onClick={() => !isEmpty && onClick()}
         ref={drag}
       >
@@ -117,11 +125,14 @@ export const GroupCollapse: FC<Props> = ({ collapsed, group, index, onClick, pro
             />
           )}
         </div>
-      </GroupTitle>
+      </div>
 
-      <GroupBody
-        $collapsed={collapsed}
-        $length={projects.length}
+      <div
+        className={cn(
+          'flex flex-col w-full max-h-full py-1 overflow-hidden overflow-y-visible transition-all duration-300 ease-in-out',
+          collapsed && 'min-h-0 max-h-0 overflow-hidden'
+        )}
+        style={{ minHeight: collapsed ? 0 : `${projects.length * 40 + (projects.length - 1) * 2}px` }}
       >
         {!collapsed &&
           projects.map((project) => (
@@ -130,7 +141,7 @@ export const GroupCollapse: FC<Props> = ({ collapsed, group, index, onClick, pro
               project={project}
             />
           ))}
-      </GroupBody>
-    </Root>
+      </div>
+    </div>
   );
 };

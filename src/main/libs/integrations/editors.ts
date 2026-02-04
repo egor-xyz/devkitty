@@ -148,6 +148,10 @@ const editors: Editor[] = [
   {
     bundleIdentifiers: ['dev.zed.Zed'],
     name: 'Zed'
+  },
+  {
+    bundleIdentifiers: ['com.todesktop.230313mzl4w4u92'],
+    name: 'Cursor'
   }
 ];
 

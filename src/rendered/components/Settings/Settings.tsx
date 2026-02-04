@@ -1,10 +1,10 @@
 import { Tabs } from '@blueprintjs/core';
 import { useNavigate, useParams } from 'react-router';
+import { GitHubIcon } from 'rendered/assets/gitHubIcons';
 
 import { SettingsActions } from '../SettingsActions';
 import { SettingsAppearance } from '../SettingsAppearance';
 import { SettingsIntegrations } from '../SettingsIntegrations';
-import { Root, StyledActionsIcon } from './Settings.styles';
 
 export const Settings = () => {
   const { id = 'appearance' } = useParams<{ id?: string }>();
@@ -15,7 +15,7 @@ export const Settings = () => {
   };
 
   return (
-    <Root>
+    <div className="h-[calc(100vh-50px)] settings-root">
       <Tabs
         defaultSelectedTabId={id}
         onChange={handleTabChange}
@@ -36,12 +36,12 @@ export const Settings = () => {
         />
 
         <Tabs.Tab
-          icon={<StyledActionsIcon />}
+          icon={<GitHubIcon className="mr-1.5 w-4 h-4" />}
           id="github"
           panel={<SettingsActions />}
           title="GitHub"
         />
       </Tabs>
-    </Root>
+    </div>
   );
 };

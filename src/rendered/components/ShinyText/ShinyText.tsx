@@ -1,6 +1,6 @@
 import type { FC } from 'react';
 
-import { Root } from './ShinyText.styles';
+import { cn } from 'rendered/utils/cn';
 
 type Props = {
   className?: string;
@@ -9,10 +9,10 @@ type Props = {
 };
 
 export const ShinyText: FC<Props> = ({ className, speed = 5, text }) => (
-  <Root
-    className={className}
-    speed={speed}
+  <span
+    className={cn('hidden dark:inline-block text-[#b5b5b5a4] shiny-text animate', className)}
+    style={{ animationDuration: `${speed}s` }}
   >
     {text}
-  </Root>
+  </span>
 );

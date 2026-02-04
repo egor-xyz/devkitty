@@ -1,9 +1,7 @@
-import { Button, Classes, DialogBody, InputGroup } from '@blueprintjs/core';
+import { Button, Classes, Dialog, DialogBody, InputGroup } from '@blueprintjs/core';
 import { type ChangeEventHandler, type FC, useState } from 'react';
 import { appToaster } from 'rendered/utils/appToaster';
 import { type ModalProps } from 'types/Modal';
-
-import { Actions, Error, StyledDialog } from './TrayStickerModal.styles';
 
 export const TrayStickerModal: FC<ModalProps> = ({ darkMode, isOpen, onClose }) => {
   const [text, setText] = useState<string>('');
@@ -32,8 +30,8 @@ export const TrayStickerModal: FC<ModalProps> = ({ darkMode, isOpen, onClose }) 
   };
 
   return (
-    <StyledDialog
-      className={darkMode && Classes.DARK}
+    <Dialog
+      className={`max-w-[250px] ${darkMode && Classes.DARK}`}
       icon="pin"
       isOpen={isOpen}
       onClose={onClose}
@@ -48,16 +46,16 @@ export const TrayStickerModal: FC<ModalProps> = ({ darkMode, isOpen, onClose }) 
           value={text}
         />
 
-        <Actions>
+        <div className="flex items-center mt-2.5 justify-between flex-row-reverse">
           <Button
             intent="warning"
             onClick={handleSave}
             text={'Add'}
           />
 
-          {error && <Error>{error}</Error>}
-        </Actions>
+          {error && <div className="text-red-500 text-xs">{error}</div>}
+        </div>
       </DialogBody>
-    </StyledDialog>
+    </Dialog>
   );
 };

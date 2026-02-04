@@ -6,7 +6,6 @@ import { type Run } from 'types/gitHub';
 import { type GitStatus, type Project } from 'types/project';
 
 import { Workflow } from '../../components/Workflow';
-import { Empty } from './useActions.styles';
 
 export const useActions = (gitStatus: GitStatus, project: Project) => {
   const [runs, setRuns] = useState([]);
@@ -103,7 +102,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
       showActions && (
         <>
           {isEmpty && runs.length < 1 && (
-            <Empty className={Classes.TEXT_MUTED}>
+            <div className={`flex justify-between items-center py-2.5 px-4 ${Classes.TEXT_MUTED}`}>
               <span>
                 No actions {inProgress && 'in progress'} were found
 
@@ -117,7 +116,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
               </span>
 
               <Tag minimal>watcher is active</Tag>
-            </Empty>
+            </div>
           )}
 
           {[...runs]

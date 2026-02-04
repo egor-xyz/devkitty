@@ -1,4 +1,4 @@
-import { Button, Classes, DialogBody, InputGroup } from '@blueprintjs/core';
+import { Button, Classes, Dialog, DialogBody, InputGroup } from '@blueprintjs/core';
 import { type ChangeEventHandler, type FC, useState } from 'react';
 import { useGroups } from 'rendered/hooks/useGroups';
 import { useProjects } from 'rendered/hooks/useProjects';
@@ -6,8 +6,6 @@ import { appToaster } from 'rendered/utils/appToaster';
 import { type Group } from 'types/Group';
 import { type ModalProps } from 'types/Modal';
 import { v4 } from 'uuid';
-
-import { Actions, Error, StyledDialog } from './GroupModal.styles';
 
 export type GroupModalProps = {
   groupId?: string;
@@ -61,8 +59,8 @@ export const GroupModal: FC<GroupModalProps & ModalProps> = ({ darkMode, groupId
   };
 
   return (
-    <StyledDialog
-      className={darkMode && Classes.DARK}
+    <Dialog
+      className={`max-w-[250px] ${darkMode && Classes.DARK}`}
       icon="group-item"
       isOpen={isOpen}
       onClose={onClose}
@@ -77,16 +75,16 @@ export const GroupModal: FC<GroupModalProps & ModalProps> = ({ darkMode, groupId
           value={name}
         />
 
-        <Actions>
+        <div className="flex items-center mt-2.5 justify-between flex-row-reverse">
           <Button
             intent="warning"
             onClick={handleSave}
             text={actionText}
           />
 
-          {error && <Error>{error}</Error>}
-        </Actions>
+          {error && <div className="text-red-500 text-xs">{error}</div>}
+        </div>
       </DialogBody>
-    </StyledDialog>
+    </Dialog>
   );
 };

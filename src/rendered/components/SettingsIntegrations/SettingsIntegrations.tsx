@@ -6,8 +6,6 @@ import { appToaster } from 'rendered/utils/appToaster';
 import { type FoundEditor } from 'types/foundEditor';
 import { type FoundShell } from 'types/foundShell';
 
-import { Root, Row, TokenWrapper } from './SettingsIntegrations.styles';
-
 export const SettingsIntegrations = () => {
   const { editors, gitHubToken, selectedEditor, selectedShell, set, shells } = useAppSettings();
   const [token, setToken] = useState(gitHubToken);
@@ -23,12 +21,12 @@ export const SettingsIntegrations = () => {
   };
 
   return (
-    <Root>
-      <h2>Integrations</h2>
+    <div className="select-none p-4">
+      <h2 className="text-xl font-semibold mb-1">Integrations</h2>
       <Divider />
-      <h3>GitHub Token</h3>
+      <h3 className="text-sm font-semibold mt-4 mb-2.5">GitHub Token</h3>
 
-      <TokenWrapper>
+      <div className="flex flex-col gap-2.5 w-[200px]">
         <InputGroup
           inputMode="text"
           onChange={({ target: { value } }) => setToken(value)}
@@ -43,13 +41,13 @@ export const SettingsIntegrations = () => {
           small
           text={'Set GitHub Token'}
         />
-      </TokenWrapper>
+      </div>
 
       {editors.length !== 0 && Boolean(selectedEditor) && (
         <>
-          <h3>Editor</h3>
+          <h3 className="text-sm font-semibold mt-4 mb-2.5">Editor</h3>
 
-          <Row>
+          <div className="flex items-center justify-between">
             <Select<FoundEditor>
               filterable={false}
               itemRenderer={(editor, { handleClick, index }) => (
@@ -65,15 +63,15 @@ export const SettingsIntegrations = () => {
             >
               <Button rightIcon="caret-down">{selectedEditor?.editor}</Button>
             </Select>
-          </Row>
+          </div>
         </>
       )}
 
       {shells.length !== 0 && Boolean(selectedShell) && (
         <>
-          <h3>Shell</h3>
+          <h3 className="text-sm font-semibold mt-4 mb-2.5">Shell</h3>
 
-          <Row>
+          <div className="flex items-center justify-between">
             <Select<FoundShell<string>>
               filterable={false}
               itemRenderer={(shell, { handleClick, index }) => (
@@ -89,9 +87,9 @@ export const SettingsIntegrations = () => {
             >
               <Button rightIcon="caret-down">{selectedShell?.shell}</Button>
             </Select>
-          </Row>
+          </div>
         </>
       )}
-    </Root>
+    </div>
   );
 };

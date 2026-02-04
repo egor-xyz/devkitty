@@ -1,10 +1,8 @@
-import { MenuItem } from '@blueprintjs/core';
+import { Button, MenuItem } from '@blueprintjs/core';
 import { Select } from '@blueprintjs/select';
-import clsx from 'clsx';
 import { type FC, useState } from 'react';
+import { cn } from 'rendered/utils/cn';
 import { type GitStatus } from 'types/project';
-
-import { GlobalStyles, SelectButton, StyledMenuItem } from './BranchSelect.styles';
 
 type Props = {
   className?: string;
@@ -38,49 +36,46 @@ export const BranchSelect: FC<Props> = ({
     .slice(0, LIMIT);
 
   return (
-    <>
-      <GlobalStyles />
-
-      <Select<string>
-        className={className}
-        disabled={disabled}
-        inputProps={{ placeholder: 'Search...' }}
-        itemRenderer={(name, { handleClick, index, modifiers: { active } }) => (
-          <StyledMenuItem
-            active={active}
-            className={clsx({
-              help: index === LIMIT,
-              infoFirst: index === 0
-            })}
-            icon={(name === currentBranch && 'selection') || 'circle'}
-            key={index}
-            onClick={handleClick}
-            text={name}
-          />
-        )}
-        items={items}
-        noResults={
-          <MenuItem
-            disabled
-            roleStructure="listoption"
-            text="No results."
-          />
-        }
-        onItemSelect={onSelect}
-        onQueryChange={setQuery}
-        popoverContentProps={{ className: 'branchSelectPopoverList' }}
-        popoverProps={{ placement: 'bottom-start' }}
-        resetOnSelect
-      >
-        <SelectButton
-          disabled={disabled}
-          fill={fill}
-          loading={loading}
-          rightIcon="double-caret-vertical"
-          small
-          text={currentBranch}
+    <Select<string>
+      className={className}
+      disabled={disabled}
+      inputProps={{ placeholder: 'Search...' }}
+      itemRenderer={(name, { handleClick, index, modifiers: { active } }) => (
+        <MenuItem
+          active={active}
+          className={cn('max-w-[230px]', {
+            help: index === LIMIT,
+            infoFirst: index === 0
+          })}
+          icon={(name === currentBranch && 'selection') || 'circle'}
+          key={index}
+          onClick={handleClick}
+          text={name}
         />
-      </Select>
-    </>
+      )}
+      items={items}
+      noResults={
+        <MenuItem
+          disabled
+          roleStructure="listoption"
+          text="No results."
+        />
+      }
+      onItemSelect={onSelect}
+      onQueryChange={setQuery}
+      popoverContentProps={{ className: 'branchSelectPopoverList' }}
+      popoverProps={{ placement: 'bottom-start' }}
+      resetOnSelect
+    >
+      <Button
+        className="branch-select-button"
+        disabled={disabled}
+        fill={fill}
+        loading={loading}
+        rightIcon="double-caret-vertical"
+        small
+        text={currentBranch}
+      />
+    </Select>
   );
 };

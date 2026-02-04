@@ -1,18 +1,16 @@
 import { Divider, Label, NumericInput, Switch } from '@blueprintjs/core';
 import { useAppSettings } from 'rendered/hooks/useAppSettings';
 
-import { Root } from './SettingsActions.styles';
-
 export const SettingsActions = () => {
   const { gitHubActions, gitHubPulls, set } = useAppSettings();
   const { all, count, ignoreDependabot = false, inProgress } = gitHubActions;
   const pullsIntervalMinutes = Math.max(1, Math.round(gitHubPulls.pollInterval / 60000));
 
   return (
-    <Root>
-      <h2>GitHub</h2>
+    <div className="select-none p-4">
+      <h2 className="text-xl font-semibold mb-1">GitHub</h2>
       <Divider />
-      <h3>Actions</h3>
+      <h3 className="text-sm font-semibold mt-4 mb-2.5">Actions</h3>
 
       <Label>
         Amount of actions to show under the project
@@ -45,7 +43,7 @@ export const SettingsActions = () => {
       />
 
       <Divider />
-      <h3>Pull Requests</h3>
+      <h3 className="text-sm font-semibold mt-4 mb-2.5">Pull Requests</h3>
 
       <Label>
         Polling interval (minutes)
@@ -56,6 +54,6 @@ export const SettingsActions = () => {
           value={pullsIntervalMinutes}
         />
       </Label>
-    </Root>
+    </div>
   );
 };

@@ -3,9 +3,8 @@ import { type FC, useState } from 'react';
 import { BranchSelect } from 'rendered/components/BranchSelect';
 import { useGit } from 'rendered/hooks/useGit';
 import { appToaster } from 'rendered/utils/appToaster';
+import { cn } from 'rendered/utils/cn';
 import { type GitStatus } from 'types/project';
-
-import { BranchLabel, Root } from './CheckoutBranch.styles';
 
 type Props = {
   getStatus: () => void;
@@ -51,7 +50,7 @@ export const CheckoutBranch: FC<Props> = ({ getStatus, gitStatus, id, name }) =>
 
   if (gitStatus && !current) {
     return (
-      <Root className={!gitStatus && Classes.SKELETON}>
+      <div className={cn('flex flex-col', !gitStatus && Classes.SKELETON)}>
         <Tag
           icon="git-commit"
           intent="warning"
@@ -59,7 +58,7 @@ export const CheckoutBranch: FC<Props> = ({ getStatus, gitStatus, id, name }) =>
         >
           No commits yet
         </Tag>
-      </Root>
+      </div>
     );
   }
 
@@ -69,7 +68,7 @@ export const CheckoutBranch: FC<Props> = ({ getStatus, gitStatus, id, name }) =>
   label = label.replace(/\[.*\]/, '');
 
   return (
-    <Root className={!gitStatus && Classes.SKELETON}>
+    <div className={cn('flex flex-col', !gitStatus && Classes.SKELETON)}>
       <BranchSelect
         currentBranch={currentBranch}
         gitStatus={gitStatus}
@@ -77,12 +76,15 @@ export const CheckoutBranch: FC<Props> = ({ getStatus, gitStatus, id, name }) =>
         onSelect={checkoutBranch}
       />
 
-      <BranchLabel
-        className={loading && Classes.SKELETON}
+      <div
+        className={cn(
+          'max-w-60 mt-0.5 overflow-hidden text-xs font-light text-ellipsis whitespace-nowrap dark:text-bp-gray-3',
+          loading && Classes.SKELETON
+        )}
         title={label.length > 41 ? label : undefined}
       >
         {label}
-      </BranchLabel>
-    </Root>
+      </div>
+    </div>
   );
 };

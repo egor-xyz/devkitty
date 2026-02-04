@@ -1,10 +1,9 @@
 import { Button, Classes, Dialog, DialogBody, DialogFooter, Icon } from '@blueprintjs/core';
 import { type FC, useState } from 'react';
+import { BranchSelect } from 'rendered/components/BranchSelect';
 import { useGit } from 'rendered/hooks/useGit';
 import { type ModalProps } from 'types/Modal';
 import { type GitStatus } from 'types/project';
-
-import { CurrentBranch, LightText, MergeTo, RepoInfo, StyledBranchSelect } from './GitMergeModal.styles';
 
 export type GitMergeModalProps = {
   gitStatus: GitStatus;
@@ -48,35 +47,36 @@ export const GitMergeModal: FC<GitMergeModalProps & ModalProps> = (props) => {
       title="Merge branch"
     >
       <DialogBody>
-        <RepoInfo>
+        <div className="flex flex-col items-start mb-2.5 text-sm font-semibold gap-1.5">
           <div>
-            <LightText>{gitStatus?.organization ?? '[Local git]'}/</LightText>
+            <span className="font-light">{gitStatus?.organization ?? '[Local git]'}/</span>
             {name}
           </div>
 
           <div>
-            <LightText>Branch: </LightText>
+            <span className="font-light">Branch: </span>
 
-            <CurrentBranch
-              as="span"
+            <span
+              className="overflow-hidden text-ellipsis select-none"
               title={gitStatus?.status?.current}
             >
               {gitStatus?.status?.current}
-            </CurrentBranch>
+            </span>
           </div>
-        </RepoInfo>
+        </div>
 
-        <MergeTo>
+        <div className="flex items-center justify-between my-5 gap-2.5">
           <span>merge to</span>
           <Icon icon="arrow-right" />
 
-          <StyledBranchSelect
+          <BranchSelect
+            className="flex-2"
             currentBranch={target}
             fill
             gitStatus={gitStatus}
             onSelect={setTargetAndSave}
           />
-        </MergeTo>
+        </div>
       </DialogBody>
 
       <DialogFooter

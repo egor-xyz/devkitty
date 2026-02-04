@@ -7,7 +7,6 @@ import { type GitStatus, type Project } from 'types/project';
 
 import VSCode from '../../assets/VSCode.svg?react';
 import Warp from '../../assets/Warp.svg?react';
-import { Title } from './OpenInMenu.styles';
 
 type Props = {
   gitStatus: GitStatus;
@@ -55,9 +54,9 @@ export const OpenInMenu: FC<Props> = ({ gitStatus, project }) => {
 
       <MenuDivider
         title={
-          <Title>
+          <div className="flex items-center gap-2">
             <FaGithub size={18} /> GitHub
-          </Title>
+          </div>
         }
       />
 

@@ -1,10 +1,8 @@
-import { Root } from './AppLoader.styles';
-
 export const AppLoader = () => (
-  <Root>
-    <span>{/* */}</span>
-    <span>{/* */}</span>
-    <span>{/* */}</span>
-    <span>{/* */}</span>
-  </Root>
+  <div className="app-loader">
+    <span />
+    <span />
+    <span />
+    <span />
+  </div>
 );

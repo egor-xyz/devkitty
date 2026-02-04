@@ -2,7 +2,6 @@ import { type FC } from 'react';
 import { type GitStatus } from 'types/project';
 
 import { GitStatusBadge } from '../GitStatusBadge';
-import { Root } from './GitStatusGroup.styles';
 
 type Props = {
   gitStatus: GitStatus;
@@ -15,7 +14,7 @@ export const GitStatusGroup: FC<Props> = ({ gitStatus, name }) => {
   const behind = gitStatus?.status.behind ?? 0;
 
   return (
-    <Root>
+    <div className="flex select-none">
       <GitStatusBadge
         count={changedFiles}
         icon="document"
@@ -51,6 +50,6 @@ export const GitStatusGroup: FC<Props> = ({ gitStatus, name }) => {
           </>
         }
       />
-    </Root>
+    </div>
   );
 };
