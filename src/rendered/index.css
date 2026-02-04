@@ -129,10 +129,20 @@
   transform: rotate(180deg);
 }
 
-/* Logo hover effect */
-.devkitty-logo:hover .cat,
-.devkitty-logo:hover .tail {
+/* Logo colors */
+.devkitty-logo .cat,
+.devkitty-logo .tail {
   fill: url(#linear-gradient);
+}
+
+.dark .devkitty-logo .cat,
+.dark .devkitty-logo .tail {
+  fill: #8f99a8 !important;
+}
+
+.dark .devkitty-logo:hover .cat,
+.dark .devkitty-logo:hover .tail {
+  fill: url(#linear-gradient) !important;
 }
 
 /* BranchSelect popover styles */

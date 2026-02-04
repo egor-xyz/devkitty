@@ -101,7 +101,7 @@ export const AppNavbar = () => {
         {showLogo && (
           <>
             <Navbar.Divider />
-            <Devkitty className="h-7 devkitty-logo [&_.cat]:dark:fill-bp-gray-3 [&_.tail]:dark:fill-bp-gray-3" />
+            <Devkitty className="h-7 devkitty-logo" />
           </>
         )}
       </Navbar.Group>
