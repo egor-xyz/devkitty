@@ -9,21 +9,7 @@ import { defineConfig } from 'vite';
 export default defineConfig({
   plugins: [
     tailwindcss(),
-    react({
-      babel: {
-        plugins: [
-          [
-            'babel-plugin-styled-components',
-            {
-              displayName: true,
-              fileName: true,
-              pure: true,
-              ssr: false
-            }
-          ]
-        ]
-      }
-    }),
+    react(),
     viteTsconfigPaths(),
     svgr()
   ]
