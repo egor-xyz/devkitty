@@ -23,6 +23,8 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
   const intervalId = useRef<null | number>(null);
 
   const getActions = useCallback(async () => {
+    if (!gitStatus?.branchSummary?.current) return;
+
     const savedOrigin = localStorage.getItem(`GitResetModal:origin-${project.id}`);
     const filterBy = [gitStatus.branchSummary.current];
     if (savedOrigin) filterBy.push(savedOrigin);
