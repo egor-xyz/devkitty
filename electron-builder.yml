@@ -1,0 +1,29 @@
+appId: app.devkitty
+productName: Devkitty
+copyright: Copyright © 2024 Devkitty
+
+mac:
+  category: public.app-category.developer-tools
+  icon: icons/icon.icon
+  hardenedRuntime: true
+  target:
+    - target: zip
+      arch: [x64, arm64]
+  entitlements: entitlements.mas.plist
+  entitlementsInherit: entitlements.mas.plist
+  notarize: true
+
+publish:
+  provider: github
+  owner: egor-xyz
+  repo: devkitty
+
+asar: true
+
+directories:
+  output: dist
+  buildResources: icons
+
+files:
+  - out/**/*
+  - package.json
