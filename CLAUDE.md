@@ -8,20 +8,22 @@ Devkitty is a macOS Electron desktop application for managing GitHub repositorie
 
 ## Commands
 
+This project uses **pnpm** as the package manager.
+
 ```bash
 # Development
-npm run dev              # Start dev server with hot reload
+pnpm dev              # Start dev server with hot reload
 
 # Build
-npm run build           # Build for production (electron-vite)
-npm run make            # Build universal macOS app (x64 + arm64)
-npm run make:arm        # Build for arm64 only
+pnpm build           # Build for production (electron-vite)
+pnpm make            # Build universal macOS app (x64 + arm64)
+pnpm make:arm        # Build for arm64 only
 
 # Linting
-npm run lint            # ESLint with auto-fix
+pnpm lint            # ESLint with auto-fix
 
 # Publishing
-npm run publish         # Publish to GitHub releases
+pnpm publish         # Publish to GitHub releases
 ```
 
 ## Architecture

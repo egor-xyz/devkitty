@@ -1,6 +1,5 @@
-import { app, BrowserWindow, nativeTheme, shell } from 'electron';
+import { app, BrowserWindow, nativeTheme, session, shell } from 'electron';
 import { is } from '@electron-toolkit/utils';
-import installExtension, { REACT_DEVELOPER_TOOLS } from 'electron-devtools-installer';
 import log from 'electron-log';
 import path from 'path';
 import { updateElectronApp } from 'update-electron-app';
@@ -21,6 +20,17 @@ app.name = 'Devkitty';
 const isDev = is.dev;
 
 const devBounds = () => (isDev ? { height: 600, width: 1426 } : {});
+
+const installReactDevTools = async () => {
+  const reactDevToolsId = 'fmkadmapgofadopljbjfkapdkoienihi';
+  const extensionPath = path.join(app.getPath('userData'), 'extensions', reactDevToolsId);
+
+  try {
+    await session.defaultSession.extensions.loadExtension(extensionPath);
+  } catch {
+    log.info('React DevTools not found, skipping installation');
+  }
+};
 
 const createWindow = (): void => {
   const mainWindow = new BrowserWindow({
@@ -71,26 +81,18 @@ const createWindow = (): void => {
   });
 };
 
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
 app.on('ready', async () => {
-  if (isDev) await installExtension(REACT_DEVELOPER_TOOLS);
+  if (isDev) await installReactDevTools();
 
   createWindow();
 });
 
 app.on('activate', () => {
-  // On OS X it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
   if (BrowserWindow.getAllWindows().length === 0) {
     createWindow();
   }
 });
 
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
     app.quit();
