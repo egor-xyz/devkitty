@@ -11,6 +11,7 @@ import { CheckoutBranch } from './components/CheckoutBranch';
 import { Error } from './components/Error';
 import { ProjectMenu } from './components/ProjectMenu';
 import { QuickActions } from './components/QuickActions';
+import { WorktreeList } from './components/WorktreeList';
 import { useActions } from './hooks/useActions';
 import { usePulls } from './hooks/usePulls';
 
@@ -26,7 +27,20 @@ export const Project: FC<Props> = ({ project }) => {
   const { Actions, getActions, showActions, toggleActions } = useActions(gitStatus, project);
   const { Pulls, refreshPulls, showPulls, togglePulls } = usePulls(project);
 
-  const { groupId, id, name } = project;
+  const { filePath, groupId, id, name } = project;
+
+  const [showWorktrees, setShowWorktrees] = useState(() => {
+    const saved = localStorage.getItem(`showWorktrees:${id}`);
+    return saved ? JSON.parse(saved) : false;
+  });
+
+  const toggleWorktrees = () => {
+    setShowWorktrees((prev: boolean) => {
+      const next = !prev;
+      localStorage.setItem(`showWorktrees:${id}`, JSON.stringify(next));
+      return next;
+    });
+  };
 
   const updateProject = () => {
     if (showActions) getActions();
@@ -99,8 +113,10 @@ export const Project: FC<Props> = ({ project }) => {
             project={project}
             showActions={showActions}
             showPulls={showPulls}
+            showWorktrees={showWorktrees}
             toggleActions={toggleActions}
             togglePulls={togglePulls}
+            toggleWorktrees={toggleWorktrees}
           />
         </div>
 
@@ -125,6 +141,7 @@ export const Project: FC<Props> = ({ project }) => {
             <Popover
               content={
                 <ProjectMenu
+                  filePath={filePath}
                   getStatus={updateProject}
                   gitStatus={gitStatus}
                   groupId={groupId}
@@ -153,6 +170,14 @@ export const Project: FC<Props> = ({ project }) => {
           />
         </div>
       </div>
+
+      {showWorktrees && gitStatus?.worktrees?.length > 0 && (
+        <WorktreeList
+          gitStatus={gitStatus}
+          id={id}
+          name={name}
+        />
+      )}
 
       {Actions}
       {Pulls}

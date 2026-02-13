@@ -48,6 +48,7 @@ export const useGroups = create<Actions & State>((set, get) => ({
     window.bridge.settings.set('newGroups', newGroups);
   },
   groupIds: [],
+  groups: [],
   renameGroup: (id: string, name: string) => {
     const newGroups = get().groups.map((group) =>
       group.id === id ? { ...group, fullName: name, name } : group
@@ -55,7 +56,6 @@ export const useGroups = create<Actions & State>((set, get) => ({
     set({ groups: newGroups });
     window.bridge.settings.set('newGroups', newGroups);
   },
-  groups: [],
   toggleCollapsed: (id) => {
     const { collapsedGroups } = get();
     const index = collapsedGroups.indexOf(id);

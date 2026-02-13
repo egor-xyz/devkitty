@@ -8,6 +8,7 @@ type Props = {
   className?: string;
   currentBranch?: string;
   disabled?: boolean;
+  excludeBranches?: string[];
   fill?: boolean;
   gitStatus: GitStatus;
   loading?: boolean;
@@ -21,6 +22,7 @@ export const BranchSelect: FC<Props> = ({
   className,
   currentBranch,
   disabled,
+  excludeBranches,
   fill = false,
   gitStatus,
   loading,
@@ -30,8 +32,15 @@ export const BranchSelect: FC<Props> = ({
 
   const { branchSummary } = gitStatus ?? {};
 
+  const excluded = excludeBranches ?? [];
+
   const items = (branchSummary?.all ?? [])
-    .filter((item) => item.toLowerCase().includes(query.toLowerCase()))
+    .filter(
+      (item) =>
+        item.toLowerCase().includes(query.toLowerCase()) &&
+        !excluded.includes(item) &&
+        !excluded.includes(item.replace('remotes/origin/', ''))
+    )
     .map((item) => item.replace('remotes/', ''))
     .slice(0, LIMIT);
 

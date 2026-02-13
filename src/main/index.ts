@@ -1,5 +1,5 @@
-import { app, BrowserWindow, nativeTheme, session, shell } from 'electron';
 import { is } from '@electron-toolkit/utils';
+import { app, BrowserWindow, nativeTheme, session, shell } from 'electron';
 import log from 'electron-log';
 import path from 'path';
 import { updateElectronApp } from 'update-electron-app';
@@ -55,8 +55,8 @@ const createWindow = (): void => {
   });
 
   // and load the index.html of the app.
-  if (isDev && process.env['ELECTRON_RENDERER_URL']) {
-    mainWindow.loadURL(process.env['ELECTRON_RENDERER_URL']);
+  if (isDev && process.env.ELECTRON_RENDERER_URL) {
+    mainWindow.loadURL(process.env.ELECTRON_RENDERER_URL);
   } else {
     mainWindow.loadFile(path.join(__dirname, '../renderer/index.html'));
   }
