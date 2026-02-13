@@ -1,7 +1,7 @@
 {
   "name": "devkitty",
   "productName": "Devkitty",
-  "version": "2.14.1",
+  "version": "2.14.2",
   "description": "Your Daily GitHub Desktop Assistant",
   "type": "module",
   "main": "out/main/index.mjs",
