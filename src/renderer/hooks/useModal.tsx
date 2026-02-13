@@ -5,12 +5,20 @@ import { GitMergeModal, type GitMergeModalProps } from 'renderer/components/Moda
 import { GitResetModal, type GitResetModalProps } from 'renderer/components/Modals/GitResetModal';
 import { GroupModal, type GroupModalProps } from 'renderer/components/Modals/GroupModal/GroupModal';
 import { TrayStickerModal } from 'renderer/components/Modals/TrayStickerModal';
+import {
+  WorktreeAddModal,
+  type WorktreeAddModalProps
+} from 'renderer/components/Modals/WorktreeAddModal/WorktreeAddModal';
 import { RemoveAlert } from 'renderer/components/Project/components/RemoveAlert';
 import { type RemoveAlertProps } from 'renderer/components/Project/components/RemoveAlert/RemoveAlert';
 import {
   RemoveGroupAlert,
   type RemoveGroupAlertProps
 } from 'renderer/components/Project/components/RemoveGroupAlert/RemoveGroupAlert';
+import {
+  RemoveWorktreeAlert,
+  type RemoveWorktreeAlertProps
+} from 'renderer/components/Project/components/RemoveWorktreeAlert/RemoveWorktreeAlert';
 import { type ModalProps } from 'types/Modal';
 import { create } from 'zustand';
 
@@ -25,6 +33,14 @@ type ActiveModal = ModalProps &
     | {
         name: 'git:reset';
         props: GitResetModalProps;
+      }
+    | {
+        name: 'git:worktree:add';
+        props: WorktreeAddModalProps;
+      }
+    | {
+        name: 'git:worktree:remove';
+        props: RemoveWorktreeAlertProps;
       }
     | {
         name: 'group';
@@ -53,6 +69,8 @@ type State = {
 const Modals: Record<ActiveModal['name'], FC<ActiveModal['props']>> = {
   'git:merge': GitMergeModal,
   'git:reset': GitResetModal,
+  'git:worktree:add': WorktreeAddModal,
+  'git:worktree:remove': RemoveWorktreeAlert,
   group: GroupModal,
   'remove:group': RemoveGroupAlert,
   'remove:project': RemoveAlert,

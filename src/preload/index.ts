@@ -45,6 +45,12 @@ const bridge = {
   },
   sticker: {
     add: (text: string) => ipcRenderer.invoke('sticker:add', text)
+  },
+  worktree: {
+    add: (id: string, repoName: string, branch: string, newBranch?: string) =>
+      ipcRenderer.invoke('git:worktree:add', id, repoName, branch, newBranch),
+    list: (id: string) => ipcRenderer.invoke('git:worktree:list', id),
+    remove: (id: string, path: string) => ipcRenderer.invoke('git:worktree:remove', id, path)
   }
 };
 

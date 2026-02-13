@@ -95,5 +95,49 @@ export const useGit = () => {
       window.clearInterval(intervalId.current);
     }, []);
 
-  return { checkout, getStatus, gitStatus, loading, mergeTo, pull };
+  const addWorktree = async (id: string, repoName: string, branch: string, newBranch?: string) => {
+    const res = await window.bridge.worktree.add(id, repoName, branch, newBranch);
+
+    if (res.success) {
+      await getStatus(id, false);
+      (await appToaster).show({
+        icon: 'git-new-branch',
+        intent: 'success',
+        message: res.message
+      });
+    } else if (res.message !== 'Cancelled') {
+      (await appToaster).show({
+        icon: 'info-sign',
+        intent: 'warning',
+        message: res.message,
+        timeout: 0
+      });
+    }
+
+    return res;
+  };
+
+  const removeWorktree = async (id: string, worktreePath: string) => {
+    const res = await window.bridge.worktree.remove(id, worktreePath);
+
+    if (res.success) {
+      await getStatus(id, false);
+      (await appToaster).show({
+        icon: 'trash',
+        intent: 'success',
+        message: res.message
+      });
+    } else {
+      (await appToaster).show({
+        icon: 'info-sign',
+        intent: 'warning',
+        message: res.message,
+        timeout: 0
+      });
+    }
+
+    return res;
+  };
+
+  return { addWorktree, checkout, getStatus, gitStatus, loading, mergeTo, pull, removeWorktree };
 };

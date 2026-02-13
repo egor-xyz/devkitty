@@ -1,5 +1,7 @@
 import { type BranchSummary, type StatusResult } from 'simple-git';
 
+import { type Worktree } from './worktree';
+
 export type GitStatus = {
   branchSummary?: BranchSummary;
   message?: string;
@@ -7,6 +9,7 @@ export type GitStatus = {
   origin?: string;
   status?: Status;
   success: boolean;
+  worktrees?: Worktree[];
 };
 
 export type Project = {

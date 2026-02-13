@@ -16,7 +16,7 @@ export const updateEditorsAndShells = async (mainWindow: BrowserWindow) => {
 
   const editors: FoundEditor[] = editorNames
     .map((editor) => {
-      const path = apps.find((app) => app.includes(editor));
+      const path = apps.find((app) => app.endsWith(`/${editor}.app`));
       if (!path) return undefined;
 
       return {
@@ -37,7 +37,7 @@ export const updateEditorsAndShells = async (mainWindow: BrowserWindow) => {
 
   const shells: FoundShell<string>[] = shellNames
     .map((shell) => {
-      const path = apps.find((app) => app.includes(shell));
+      const path = apps.find((app) => app.endsWith(`/${shell}.app`));
       if (!path) return undefined;
 
       return {

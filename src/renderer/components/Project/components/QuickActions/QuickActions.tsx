@@ -6,7 +6,6 @@ import { ActionsIcon } from 'renderer/assets/gitHubIcons';
 import { type GitStatus, type Project } from 'types/project';
 
 import { GitMenu } from '../GitMenu';
-import { OpenInMenu } from '../OpenInMenu';
 
 const size = 16;
 
@@ -16,8 +15,10 @@ type Props = {
   project: Project;
   showActions: boolean;
   showPulls: boolean;
+  showWorktrees: boolean;
   toggleActions: () => void;
   togglePulls: () => void;
+  toggleWorktrees: () => void;
 };
 
 export const QuickActions: FC<Props> = ({
@@ -26,8 +27,10 @@ export const QuickActions: FC<Props> = ({
   project,
   showActions,
   showPulls,
+  showWorktrees,
   toggleActions,
-  togglePulls
+  togglePulls,
+  toggleWorktrees
 }) => {
   const [copyIcon, setCopyIcon] = useState(
     <FaRegCopy
@@ -68,22 +71,6 @@ export const QuickActions: FC<Props> = ({
 
       <Popover
         content={
-          <OpenInMenu
-            gitStatus={gitStatus}
-            project={project}
-          />
-        }
-        placement="bottom"
-      >
-        <Button
-          icon={'share'}
-          loading={loading}
-          title="Open in ..."
-        />
-      </Popover>
-
-      <Popover
-        content={
           <GitMenu
             gitStatus={gitStatus}
             project={project}
@@ -98,13 +85,15 @@ export const QuickActions: FC<Props> = ({
         />
       </Popover>
 
-      <Button
-        active={showPulls}
-        icon={'git-pull'}
-        loading={loading}
-        onClick={togglePulls}
-        title="Pull Requests"
-      />
+      {gitStatus?.worktrees?.length > 0 && (
+        <Button
+          active={showWorktrees}
+          icon={'diagram-tree'}
+          loading={loading}
+          onClick={toggleWorktrees}
+          title="Worktrees"
+        />
+      )}
 
       <Button
         active={showActions}
@@ -112,6 +101,14 @@ export const QuickActions: FC<Props> = ({
         loading={loading}
         onClick={toggleActions}
         title="GitHub Actions"
+      />
+
+      <Button
+        active={showPulls}
+        icon={'git-pull'}
+        loading={loading}
+        onClick={togglePulls}
+        title="Pull Requests"
       />
     </ButtonGroup>
   );

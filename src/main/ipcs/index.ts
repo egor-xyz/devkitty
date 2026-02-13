@@ -5,3 +5,4 @@ import './ipcGit';
 import './ipcLaunch';
 import './ipcGitHub';
 import './ipcSticker';
+import './ipcWorktree';

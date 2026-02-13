@@ -23,9 +23,21 @@ export const CheckoutBranch: FC<Props> = ({ getStatus, gitStatus, id, name }) =>
   const { current } = branchSummary ?? {};
 
   const checkoutBranch = async (branch: string) => {
-    setLoading(true);
-
     const cleanBranch = branch.replace(/(remote\/origin\/|origin\/)/, '');
+
+    // Prevent checkout if branch is already checked out in a worktree
+    const worktreeMatch = gitStatus?.worktrees?.find((w) => !w.isMain && w.branch === cleanBranch);
+    if (worktreeMatch) {
+      (await appToaster).show({
+        icon: 'warning-sign',
+        intent: 'warning',
+        message: `Branch "${cleanBranch}" is already checked out in worktree at ${worktreeMatch.path}`,
+        timeout: 0
+      });
+      return;
+    }
+
+    setLoading(true);
 
     const res = await checkout(id, cleanBranch);
 
