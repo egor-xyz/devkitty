@@ -8,7 +8,7 @@
   "scripts": {
     "dev": "electron-vite dev",
     "build": "electron-vite build",
-    "make": "electron-vite build && electron-builder --mac --universal --publish never",
+    "make": "electron-vite build && electron-builder --mac --publish never",
     "make:arm": "electron-vite build && electron-builder --mac --arm64",
     "publish": "electron-vite build && electron-builder --mac --publish always",
     "lint": "eslint --ext .ts,.tsx . --fix"
