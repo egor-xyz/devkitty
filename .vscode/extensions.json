@@ -1,8 +1,3 @@
 {
-  "recommendations": [
-    "stylelint.vscode-stylelint",
-    "styled-components.vscode-styled-components",
-    "usernamehw.errorlens",
-    "dbaeumer.vscode-eslint"
-  ]
+  "recommendations": ["stylelint.vscode-stylelint", "usernamehw.errorlens", "dbaeumer.vscode-eslint"]
 }
