@@ -1,5 +1,5 @@
 import { Button, Classes, Dialog, DialogBody, InputGroup } from '@blueprintjs/core';
-import { type ChangeEventHandler, type FC, useState } from 'react';
+import { type ChangeEventHandler, type FC, useEffect, useState } from 'react';
 import { useGroups } from 'renderer/hooks/useGroups';
 import { useProjects } from 'renderer/hooks/useProjects';
 import { appToaster } from 'renderer/utils/appToaster';
@@ -8,23 +8,33 @@ import { type ModalProps } from 'types/Modal';
 import { v4 } from 'uuid';
 
 export type GroupModalProps = {
-  groupId?: string;
+  group?: Group;
   projectId?: string;
 };
 
-export const GroupModal: FC<GroupModalProps & ModalProps> = ({ darkMode, groupId, isOpen, onClose, projectId }) => {
-  const { addGroup, groups } = useGroups();
-  const [name, setName] = useState<Group['name']>('');
+export const GroupModal: FC<GroupModalProps & ModalProps> = ({ darkMode, group, isOpen, onClose, projectId }) => {
+  const { addGroup, groups, renameGroup } = useGroups();
+  const [name, setName] = useState<Group['name']>(group?.name ?? '');
   const [error, setError] = useState<string>();
   const { addGroupId } = useProjects();
 
-  const title = groupId ? 'Edit group' : 'Add group';
-  const actionText = groupId ? 'Save' : 'Add';
+  const isEditing = Boolean(group);
+  const title = isEditing ? 'Edit group' : 'Add group';
+  const actionText = isEditing ? 'Save' : 'Add';
+
+  useEffect(() => {
+    if (group) {
+      setName(group.name);
+    }
+  }, [group]);
 
   const handleChange: ChangeEventHandler<HTMLInputElement> = ({ target: { value } }) => {
     if (error) setError(undefined);
 
-    if (groups.some((group) => group.name.toLowerCase() === value.toLowerCase())) {
+    const isDuplicate = groups.some(
+      (g) => g.name.toLowerCase() === value.toLowerCase() && g.id !== group?.id
+    );
+    if (isDuplicate) {
       setError('Group name already exists');
     }
 
@@ -34,26 +44,42 @@ export const GroupModal: FC<GroupModalProps & ModalProps> = ({ darkMode, groupId
   const handleSave = async () => {
     setError(undefined);
 
-    if (!name || groups.some((group) => group.name.toLowerCase() === name.toLowerCase())) {
+    if (!name) {
+      setError('Group name is required');
+      return;
+    }
+
+    const isDuplicate = groups.some(
+      (g) => g.name.toLowerCase() === name.toLowerCase() && g.id !== group?.id
+    );
+    if (isDuplicate) {
       setError('Group name already exists');
       return;
     }
 
-    const newGroup: Group = {
-      fullName: name,
-      id: v4(),
-      name
-    };
+    if (isEditing && group) {
+      renameGroup(group.id, name);
+      (await appToaster).show({
+        intent: 'success',
+        message: `Group renamed to "${name}"`
+      });
+    } else {
+      const newGroup: Group = {
+        fullName: name,
+        id: v4(),
+        name
+      };
 
-    addGroup(newGroup);
-    if (projectId) {
-      addGroupId(projectId, newGroup.id);
+      addGroup(newGroup);
+      if (projectId) {
+        addGroupId(projectId, newGroup.id);
+      }
+
+      (await appToaster).show({
+        intent: 'success',
+        message: `Group "${name}" added`
+      });
     }
-
-    (await appToaster).show({
-      intent: 'success',
-      message: `Group "${name}" added`
-    });
 
     onClose();
   };

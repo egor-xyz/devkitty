@@ -1,6 +1,7 @@
-import { Classes, Icon } from '@blueprintjs/core';
+import { Classes, ContextMenu, Icon, Menu, MenuDivider, MenuItem } from '@blueprintjs/core';
 import { type FC, useRef } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
+import { useDarkModeStore } from 'renderer/hooks/useDarkMode';
 import { useGroups } from 'renderer/hooks/useGroups';
 import { useModal } from 'renderer/hooks/useModal';
 import { cn } from 'renderer/utils/cn';
@@ -22,6 +23,7 @@ type Props = {
 export const GroupCollapse: FC<Props> = ({ collapsed, group, index, onClick, projects }) => {
   const { openModal } = useModal();
   const { changeOrder } = useGroups();
+  const { darkMode } = useDarkModeStore();
 
   const ref = useRef<HTMLDivElement>(null);
 
@@ -75,7 +77,52 @@ export const GroupCollapse: FC<Props> = ({ collapsed, group, index, onClick, pro
     });
   };
 
+  const renameGroup = () => {
+    openModal({
+      name: 'group',
+      props: { group }
+    });
+  };
+
+  const createGroup = () => {
+    openModal({
+      name: 'group',
+      props: {}
+    });
+  };
+
   const isEmpty = !projects.length;
+
+  const isUngrouped = group.id === 'ungrouped';
+
+  const menuContent = (
+    <Menu className={darkMode ? Classes.DARK : undefined}>
+      <MenuItem
+        icon="add"
+        onClick={createGroup}
+        text="New group"
+      />
+
+      {!isUngrouped && (
+        <>
+          <MenuItem
+            icon="edit"
+            onClick={renameGroup}
+            text="Rename"
+          />
+
+          <MenuDivider title="Danger zone" />
+
+          <MenuItem
+            icon="trash"
+            intent="danger"
+            onClick={removeGroup}
+            text="Remove"
+          />
+        </>
+      )}
+    </Menu>
+  );
 
   if (group.id === 'ungrouped' && isEmpty) {
     return null;
@@ -91,41 +138,43 @@ export const GroupCollapse: FC<Props> = ({ collapsed, group, index, onClick, pro
       key={group.id}
       ref={group.id === 'ungrouped' ? null : ref}
     >
-      <div
-        className={cn(
-          'flex items-start justify-between w-full py-1 pl-5 pr-4',
-          'text-sm font-light uppercase cursor-pointer select-none gap-x-2.5',
-          'dark:text-bp-dark-gray-5'
-        )}
-        onClick={() => !isEmpty && onClick()}
-        ref={drag}
-      >
-        <div className={Classes.ALIGN_LEFT}>
-          <Icon icon={group.icon} />{' '}
-
-          <span>
-            {group.fullName} ({projects.length})
-          </span>
-        </div>
-
-        <div className={Classes.ALIGN_RIGHT}>
-          {isEmpty && (
-            <Icon
-              icon="trash"
-              onClick={removeGroup}
-              size={14}
-            />
+      <ContextMenu content={menuContent}>
+        <div
+          className={cn(
+            'flex items-start justify-between w-full py-1 pl-5 pr-4',
+            'text-sm font-light cursor-pointer select-none gap-x-2.5',
+            'dark:text-bp-dark-gray-5'
           )}
+          onClick={() => !isEmpty && onClick()}
+          ref={drag}
+        >
+          <div className={Classes.ALIGN_LEFT}>
+            <Icon icon={group.icon} />{' '}
 
-          {!isEmpty && (
-            <Icon
-              icon={collapsed ? 'minimize' : 'maximize'}
-              intent={collapsed ? 'warning' : 'none'}
-              size={14}
-            />
-          )}
+            <span>
+              {group.fullName} ({projects.length})
+            </span>
+          </div>
+
+          <div className={Classes.ALIGN_RIGHT}>
+            {isEmpty && (
+              <Icon
+                icon="trash"
+                onClick={removeGroup}
+                size={14}
+              />
+            )}
+
+            {!isEmpty && (
+              <Icon
+                icon={collapsed ? 'minimize' : 'maximize'}
+                intent={collapsed ? 'warning' : 'none'}
+                size={14}
+              />
+            )}
+          </div>
         </div>
-      </div>
+      </ContextMenu>
 
       <div
         className={cn(

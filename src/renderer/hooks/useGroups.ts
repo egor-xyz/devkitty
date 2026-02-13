@@ -5,6 +5,7 @@ type Actions = {
   addGroup: (group: Group) => void;
   changeOrder: (dragIndex: number, hoverIndex: number) => void;
   deleteGroup: (id: string) => void;
+  renameGroup: (id: string, name: string) => void;
   toggleCollapsed: (id: string) => void;
   unselectCollapsed: () => void;
 };
@@ -47,6 +48,13 @@ export const useGroups = create<Actions & State>((set, get) => ({
     window.bridge.settings.set('newGroups', newGroups);
   },
   groupIds: [],
+  renameGroup: (id: string, name: string) => {
+    const newGroups = get().groups.map((group) =>
+      group.id === id ? { ...group, fullName: name, name } : group
+    );
+    set({ groups: newGroups });
+    window.bridge.settings.set('newGroups', newGroups);
+  },
   groups: [],
   toggleCollapsed: (id) => {
     const { collapsedGroups } = get();
