@@ -1,11 +1,17 @@
-import { Menu, MenuDivider, MenuItem } from '@blueprintjs/core';
+import { type IconName, type MaybeElement, Menu, MenuDivider, MenuItem } from '@blueprintjs/core';
 import { type FC } from 'react';
+import { FaGithub } from 'react-icons/fa';
+import { ActionsIcon } from 'renderer/assets/gitHubIcons';
+import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useModal } from 'renderer/hooks/useModal';
 import { type GitStatus } from 'types/project';
 
+import VSCode from '../../assets/VSCode.svg?react';
+import Warp from '../../assets/Warp.svg?react';
 import { GroupsSelect } from '../GroupsSelect';
 
 type Props = {
+  filePath: string;
   getStatus: () => void;
   gitStatus: GitStatus;
   groupId?: string;
@@ -15,8 +21,17 @@ type Props = {
   removeProject: () => void;
 };
 
-export const ProjectMenu: FC<Props> = ({ getStatus, gitStatus, groupId, id, name, pull, removeProject }) => {
+export const ProjectMenu: FC<Props> = ({ filePath, getStatus, gitStatus, groupId, id, name, pull, removeProject }) => {
   const { openModal } = useModal();
+  const { selectedEditor, selectedShell } = useAppSettings();
+
+  const shellIcon: IconName | MaybeElement = selectedShell?.shell === 'Warp' ? <Warp height={15} /> : 'console';
+  const editorIcon: IconName | MaybeElement =
+    selectedEditor?.editor === 'Visual Studio Code' ? <VSCode height={15} /> : 'code';
+
+  const openInGitHub = (path = '') => {
+    window.open(`https://github.com/${gitStatus?.organization}/${name}${path}`, '_blank');
+  };
 
   return (
     <Menu>
@@ -45,7 +60,60 @@ export const ProjectMenu: FC<Props> = ({ getStatus, gitStatus, groupId, id, name
         text="Reset branch"
       />
 
+      <MenuItem
+        icon="git-new-branch"
+        onClick={() => openModal({ name: 'git:worktree:add', props: { gitStatus, id, name, onSuccess: getStatus } })}
+        text="Add worktree"
+      />
+
       <MenuDivider />
+
+      <MenuItem
+        icon="share"
+        text="Open in"
+      >
+        {selectedShell && (
+          <MenuItem
+            icon={shellIcon}
+            onClick={() => window.bridge.launch.shell(filePath, selectedShell)}
+            text={selectedShell.shell}
+          />
+        )}
+
+        {selectedEditor && (
+          <MenuItem
+            icon={editorIcon}
+            onClick={() => window.bridge.launch.editor(filePath, selectedEditor)}
+            text={selectedEditor.editor}
+          />
+        )}
+
+        <MenuDivider
+          title={
+            <div className="flex items-center gap-2">
+              <FaGithub size={14} /> GitHub
+            </div>
+          }
+        />
+
+        <MenuItem
+          icon="code"
+          onClick={() => openInGitHub('/')}
+          text="Project"
+        />
+
+        <MenuItem
+          icon={<ActionsIcon />}
+          onClick={() => openInGitHub('/actions')}
+          text="Actions"
+        />
+
+        <MenuItem
+          icon="git-pull"
+          onClick={() => openInGitHub('/pulls')}
+          text="Pull requests"
+        />
+      </MenuItem>
 
       <GroupsSelect
         groupId={groupId}

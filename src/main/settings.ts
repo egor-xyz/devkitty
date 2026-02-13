@@ -1,5 +1,5 @@
-import { app, nativeTheme } from 'electron';
 import { is } from '@electron-toolkit/utils';
+import { app, nativeTheme } from 'electron';
 import Store from 'electron-store';
 import path from 'path';
 import { type Settings } from 'types/settings';

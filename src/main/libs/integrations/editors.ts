@@ -30,7 +30,7 @@ const editors: Editor[] = [
   },
   {
     bundleIdentifiers: ['com.microsoft.VSCodeInsiders'],
-    name: 'Visual Studio Code (Insiders)'
+    name: 'Visual Studio Code - Insiders'
   },
   {
     bundleIdentifiers: ['com.visualstudio.code.oss', 'com.vscodium'],
