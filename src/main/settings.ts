@@ -1,12 +1,14 @@
 import { app, nativeTheme } from 'electron';
+import { is } from '@electron-toolkit/utils';
 import Store from 'electron-store';
 import path from 'path';
 import { type Settings } from 'types/settings';
 
-const isDev = process.env.NODE_ENV === 'development';
+const isDev = is.dev;
 
+// Set userData path BEFORE creating store
 if (isDev) {
-  app.setPath('userData', path.resolve('.'));
+  app.setPath('userData', path.resolve('./.tmp'));
 }
 
 export const settings = new Store<Settings>({
