@@ -146,7 +146,7 @@
 }
 
 /* BranchSelect popover styles */
-.branchSelectPopoverList .bp5-menu {
+.branchSelectPopoverList .bp6-menu {
   max-height: 295px;
   overflow: auto;
 }
@@ -159,42 +159,42 @@
   border-radius: 6px;
 }
 
-.branch-select-button .bp5-button-text {
+.branch-select-button .bp6-button-text {
   max-width: calc(100% - 10px);
   margin-left: 2px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  overflow: hidden !important;
+  text-overflow: ellipsis !important;
+  white-space: nowrap !important;
 }
 
 /* Settings page tabs styling */
-.settings-root .bp5-tabs {
+.settings-root .bp6-tabs {
   height: 100%;
 }
 
-.settings-root .bp5-tab-list {
+.settings-root .bp6-tab-list {
   padding-top: 14px;
   border-right: 1px solid #e5e8eb;
 }
 
-.settings-root .bp5-tab-panel {
+.settings-root .bp6-tab-panel {
   width: 100%;
   padding: 14px 20px 20px 20px;
   background-color: #f6f7f9;
 }
 
-.settings-root .bp5-tab-panel .bp5-divider {
+.settings-root .bp6-tab-panel .bp6-divider {
   margin: 10px 0;
 }
 
 /* Dark mode settings */
-.bp5-dark.settings-root .bp5-tab-list,
-.bp5-dark .settings-root .bp5-tab-list {
+.bp6-dark.settings-root .bp6-tab-list,
+.bp6-dark .settings-root .bp6-tab-list {
   border-right: 1px solid #2f343c;
 }
 
-.bp5-dark.settings-root .bp5-tab-panel,
-.bp5-dark .settings-root .bp5-tab-panel {
+.bp6-dark.settings-root .bp6-tab-panel,
+.bp6-dark .settings-root .bp6-tab-panel {
   background-color: #252a31;
 }
 
