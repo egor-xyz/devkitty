@@ -4,6 +4,7 @@ import { GitHubIcon } from 'renderer/assets/gitHubIcons';
 
 import { SettingsActions } from '../SettingsActions';
 import { SettingsAppearance } from '../SettingsAppearance';
+import { SettingsGit } from '../SettingsGit';
 import { SettingsIntegrations } from '../SettingsIntegrations';
 
 export const Settings = () => {
@@ -26,6 +27,13 @@ export const Settings = () => {
           id="appearance"
           panel={<SettingsAppearance />}
           title="Appearance"
+        />
+
+        <Tabs.Tab
+          icon="git-merge"
+          id="git"
+          panel={<SettingsGit />}
+          title="Git"
         />
 
         <Tabs.Tab

@@ -1,5 +1,6 @@
 import { Button, ButtonGroup, Classes, Colors, Icon, Popover } from '@blueprintjs/core';
 import { type FC, useState } from 'react';
+import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useGit } from 'renderer/hooks/useGit';
 import { useModal } from 'renderer/hooks/useModal';
 import { useMountEffect } from 'renderer/hooks/useMountEffect';
@@ -22,25 +23,13 @@ type Props = {
 export const Project: FC<Props> = ({ project }) => {
   const { getStatus, gitStatus, loading, pull } = useGit();
   const { openModal } = useModal();
+  const { showWorktrees } = useAppSettings();
   const [pullLoading, setPullLoading] = useState(false);
 
   const { Actions, getActions, showActions, toggleActions } = useActions(gitStatus, project);
   const { Pulls, refreshPulls, showPulls, togglePulls } = usePulls(project);
 
   const { filePath, groupId, id, name } = project;
-
-  const [showWorktrees, setShowWorktrees] = useState(() => {
-    const saved = localStorage.getItem(`showWorktrees:${id}`);
-    return saved ? JSON.parse(saved) : false;
-  });
-
-  const toggleWorktrees = () => {
-    setShowWorktrees((prev: boolean) => {
-      const next = !prev;
-      localStorage.setItem(`showWorktrees:${id}`, JSON.stringify(next));
-      return next;
-    });
-  };
 
   const updateProject = () => {
     if (showActions) getActions();
@@ -113,10 +102,8 @@ export const Project: FC<Props> = ({ project }) => {
             project={project}
             showActions={showActions}
             showPulls={showPulls}
-            showWorktrees={showWorktrees}
             toggleActions={toggleActions}
             togglePulls={togglePulls}
-            toggleWorktrees={toggleWorktrees}
           />
         </div>
 
@@ -176,6 +163,7 @@ export const Project: FC<Props> = ({ project }) => {
           gitStatus={gitStatus}
           id={id}
           name={name}
+          onSuccess={updateProject}
         />
       )}
 

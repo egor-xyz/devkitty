@@ -6,7 +6,7 @@ import { type ModalProps } from 'types/Modal';
 export type RemoveWorktreeAlertProps = {
   branch: string;
   id: string;
-  onSuccess: () => void;
+  onSuccess?: () => void;
   worktreePath: string;
 };
 
@@ -24,7 +24,7 @@ export const RemoveWorktreeAlert: FC<ModalProps & RemoveWorktreeAlertProps> = ({
 
     if (res.success) {
       (await appToaster).show({ icon: 'trash', intent: 'success', message: res.message });
-      onSuccess();
+      onSuccess?.();
     } else {
       (await appToaster).show({ icon: 'info-sign', intent: 'warning', message: res.message, timeout: 0 });
     }

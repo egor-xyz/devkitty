@@ -21,6 +21,7 @@ export const SettingsAppearance = () => {
         label="Show Logo"
         onChange={() => set({ showLogo: !showLogo })}
       />
+
     </div>
   );
 };

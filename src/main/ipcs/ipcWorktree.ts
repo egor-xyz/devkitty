@@ -1,4 +1,4 @@
-import { dialog, ipcMain } from 'electron';
+import { BrowserWindow, dialog, ipcMain } from 'electron';
 import path from 'path';
 import { type Worktree } from 'types/worktree';
 
@@ -24,7 +24,8 @@ ipcMain.handle(
 
       const targetBranch = newBranch || branch;
 
-      const result = await dialog.showOpenDialog({
+      const win = BrowserWindow.getFocusedWindow();
+      const result = await dialog.showOpenDialog(win, {
         buttonLabel: 'Select',
         properties: ['openDirectory', 'createDirectory'],
         title: `Select directory for worktree (${targetBranch})`
