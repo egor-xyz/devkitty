@@ -28,6 +28,10 @@ pnpm publish         # Publish to GitHub releases
 
 ## Architecture
 
+### Hot Reload
+
+Only renderer (`src/renderer/`) changes are hot-reloaded. Changes to main process (`src/main/`) or preload (`src/preload/`) require restarting `pnpm dev`. Always restart the dev server automatically when these files are modified.
+
 ### Process Separation
 
 The app follows Electron's process model:

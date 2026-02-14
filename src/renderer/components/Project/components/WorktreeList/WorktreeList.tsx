@@ -7,9 +7,10 @@ type Props = {
   gitStatus: GitStatus;
   id: string;
   name: string;
+  onSuccess?: () => void;
 };
 
-export const WorktreeList: FC<Props> = ({ gitStatus, id }) => {
+export const WorktreeList: FC<Props> = ({ gitStatus, id, onSuccess }) => {
   const worktrees = gitStatus?.worktrees ?? [];
   const secondary = worktrees.filter((w) => !w.isMain);
 
@@ -19,6 +20,7 @@ export const WorktreeList: FC<Props> = ({ gitStatus, id }) => {
         <WorktreeRow
           id={id}
           key={worktree.path}
+          onSuccess={onSuccess}
           worktree={worktree}
         />
       ))}

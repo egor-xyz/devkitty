@@ -24,7 +24,8 @@ export const useAppSettings = create<Actions & AppSettings>((set) => ({
     });
   },
   shells: [],
-  showLogo: true
+  showLogo: true,
+  showWorktrees: true
 }));
 
 (async () => {

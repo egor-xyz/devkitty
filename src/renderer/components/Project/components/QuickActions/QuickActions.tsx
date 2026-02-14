@@ -15,10 +15,8 @@ type Props = {
   project: Project;
   showActions: boolean;
   showPulls: boolean;
-  showWorktrees: boolean;
   toggleActions: () => void;
   togglePulls: () => void;
-  toggleWorktrees: () => void;
 };
 
 export const QuickActions: FC<Props> = ({
@@ -27,10 +25,8 @@ export const QuickActions: FC<Props> = ({
   project,
   showActions,
   showPulls,
-  showWorktrees,
   toggleActions,
-  togglePulls,
-  toggleWorktrees
+  togglePulls
 }) => {
   const [copyIcon, setCopyIcon] = useState(
     <FaRegCopy
@@ -84,16 +80,6 @@ export const QuickActions: FC<Props> = ({
           title="Git actions"
         />
       </Popover>
-
-      {gitStatus?.worktrees?.length > 0 && (
-        <Button
-          active={showWorktrees}
-          icon={'diagram-tree'}
-          loading={loading}
-          onClick={toggleWorktrees}
-          title="Worktrees"
-        />
-      )}
 
       <Button
         active={showActions}

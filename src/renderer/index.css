@@ -1,7 +1,7 @@
-@import 'tailwindcss';
 @import 'normalize.css';
 @import '@blueprintjs/core/lib/css/blueprint.css';
 @import '@blueprintjs/icons/lib/css/blueprint-icons.css';
+@import 'tailwindcss';
 
 /* Configure dark mode to use class selector */
 @custom-variant dark (&:where(.dark, .dark *));

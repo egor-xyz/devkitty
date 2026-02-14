@@ -4,6 +4,10 @@ import { BranchSelect } from 'renderer/components/BranchSelect';
 import { appToaster } from 'renderer/utils/appToaster';
 import { type ModalProps } from 'types/Modal';
 import { type GitStatus } from 'types/project';
+import { adjectives, animals, uniqueNamesGenerator } from 'unique-names-generator';
+
+const generateBranchName = () =>
+  uniqueNamesGenerator({ dictionaries: [adjectives, animals], separator: '-', style: 'lowerCase' });
 
 export type WorktreeAddModalProps = {
   gitStatus: GitStatus;
@@ -21,11 +25,20 @@ export const WorktreeAddModal: FC<ModalProps & WorktreeAddModalProps> = (props) 
   const available = allBranches.filter(
     (b) => !worktreeBranches.includes(b) && !worktreeBranches.includes(b.replace('remotes/origin/', ''))
   );
-  const defaultBranch = available[0] ?? allBranches[0];
 
-  const [branch, setBranch] = useState(defaultBranch);
-  const [createNew, setCreateNew] = useState(false);
-  const [newBranchName, setNewBranchName] = useState('');
+  const findDefaultBranch = () => {
+    const defaults = ['main', 'master'];
+    return (
+      available.find((b) => defaults.includes(b)) ??
+      available.find((b) => defaults.some((d) => b.endsWith(`/${d}`))) ??
+      available[0] ??
+      allBranches[0]
+    );
+  };
+
+  const [branch, setBranch] = useState(findDefaultBranch);
+  const [createNew, setCreateNew] = useState(true);
+  const [newBranchName, setNewBranchName] = useState(generateBranchName);
   const [loading, setLoading] = useState(false);
 
   const create = async () => {
@@ -35,12 +48,7 @@ export const WorktreeAddModal: FC<ModalProps & WorktreeAddModalProps> = (props) 
     setLoading(true);
 
     const cleanBranch = branch.replace(/(remotes\/origin\/|origin\/)/, '');
-    const res = await window.bridge.worktree.add(
-      id,
-      name,
-      cleanBranch,
-      createNew ? newBranchName.trim() : undefined
-    );
+    const res = await window.bridge.worktree.add(id, name, cleanBranch, createNew ? newBranchName.trim() : undefined);
     setLoading(false);
 
     if (res.success) {
@@ -77,11 +85,6 @@ export const WorktreeAddModal: FC<ModalProps & WorktreeAddModalProps> = (props) 
             <span className="font-light">{gitStatus?.organization ?? '[Local git]'}/</span>
             {name}
           </div>
-
-          <div>
-            <span className="font-light">Current branch: </span>
-            <span>{gitStatus?.branchSummary?.current}</span>
-          </div>
         </div>
 
         <Switch
@@ -111,8 +114,14 @@ export const WorktreeAddModal: FC<ModalProps & WorktreeAddModalProps> = (props) 
             <InputGroup
               className="flex-2"
               fill
+              inputRef={(el) => {
+                if (el) {
+                  el.focus();
+                  el.select();
+                }
+              }}
               onChange={(e) => setNewBranchName(e.target.value)}
-              placeholder="feature/my-branch"
+              placeholder="Ex: feat/my-new-branch"
               value={newBranchName}
             />
           </div>

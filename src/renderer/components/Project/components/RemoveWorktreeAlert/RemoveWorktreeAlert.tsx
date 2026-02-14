@@ -1,12 +1,12 @@
-import { Alert, Classes } from '@blueprintjs/core';
-import { type FC } from 'react';
+import { Alert, Classes, Switch } from '@blueprintjs/core';
+import { type FC, useState } from 'react';
 import { appToaster } from 'renderer/utils/appToaster';
 import { type ModalProps } from 'types/Modal';
 
 export type RemoveWorktreeAlertProps = {
   branch: string;
   id: string;
-  onSuccess: () => void;
+  onSuccess?: () => void;
   worktreePath: string;
 };
 
@@ -19,12 +19,14 @@ export const RemoveWorktreeAlert: FC<ModalProps & RemoveWorktreeAlertProps> = ({
   onSuccess,
   worktreePath
 }) => {
+  const [force, setForce] = useState(false);
+
   const remove = async () => {
-    const res = await window.bridge.worktree.remove(id, worktreePath);
+    const res = await window.bridge.worktree.remove(id, worktreePath, force);
 
     if (res.success) {
       (await appToaster).show({ icon: 'trash', intent: 'success', message: res.message });
-      onSuccess();
+      onSuccess?.();
     } else {
       (await appToaster).show({ icon: 'info-sign', intent: 'warning', message: res.message, timeout: 0 });
     }
@@ -45,6 +47,14 @@ export const RemoveWorktreeAlert: FC<ModalProps & RemoveWorktreeAlertProps> = ({
     >
       Are you sure you want to remove the worktree for branch <br />
       <b>{branch}</b>?
+
+      <Switch
+        checked={force}
+        className="mt-4 mb-0"
+        label="Force delete"
+        onChange={() => setForce(!force)}
+      />
+
     </Alert>
   );
 };
