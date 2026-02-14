@@ -52,13 +52,16 @@ ipcMain.handle(
   }
 );
 
-ipcMain.handle('git:worktree:remove', async (_, id: string, worktreePath: string) => {
+ipcMain.handle('git:worktree:remove', async (_, id: string, worktreePath: string, force?: boolean) => {
   try {
     const git = await getGit(id);
-    await git.raw(['worktree', 'remove', worktreePath]);
+    const args = ['worktree', 'remove', worktreePath];
+    if (force) args.push('--force');
+    await git.raw(args);
 
     return { message: 'Worktree removed', success: true };
   } catch (e) {
-    return { message: e.message, success: false };
+    const needsForce = e.message?.includes('contains modified or untracked files');
+    return { message: e.message, needsForce, success: false };
   }
 });
