@@ -7,10 +7,11 @@ import { type Worktree } from 'types/worktree';
 
 type Props = {
   id: string;
+  onSuccess?: () => void;
   worktree: Worktree;
 };
 
-export const WorktreeRow: FC<Props> = ({ id, worktree }) => {
+export const WorktreeRow: FC<Props> = ({ id, onSuccess, worktree }) => {
   const { openModal } = useModal();
   const { selectedEditor, selectedShell } = useAppSettings();
 
@@ -67,7 +68,7 @@ export const WorktreeRow: FC<Props> = ({ id, worktree }) => {
           icon="trash"
           intent="danger"
           minimal
-          onClick={() => openModal({ name: 'git:worktree:remove', props: { branch: worktree.branch, id, worktreePath: worktree.path } })}
+          onClick={() => openModal({ name: 'git:worktree:remove', props: { branch: worktree.branch, id, onSuccess, worktreePath: worktree.path } })}
           small
           title="Remove worktree"
         />

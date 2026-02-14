@@ -25,7 +25,8 @@ export const settings = new Store<Settings>({
         inProgress: false
       },
       shells: [],
-      showLogo: true
+      showLogo: true,
+      showWorktrees: true
     },
     collapsedGroups: [],
     newGroups: [],
