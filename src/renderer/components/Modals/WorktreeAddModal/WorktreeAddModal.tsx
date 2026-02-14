@@ -1,5 +1,5 @@
 import { Button, Classes, Dialog, DialogBody, DialogFooter, InputGroup, Switch } from '@blueprintjs/core';
-import { type FC, useState } from 'react';
+import { type FC, useCallback, useRef, useState } from 'react';
 import { BranchSelect } from 'renderer/components/BranchSelect';
 import { appToaster } from 'renderer/utils/appToaster';
 import { type ModalProps } from 'types/Modal';
@@ -40,6 +40,14 @@ export const WorktreeAddModal: FC<ModalProps & WorktreeAddModalProps> = (props) 
   const [createNew, setCreateNew] = useState(true);
   const [newBranchName, setNewBranchName] = useState(generateBranchName);
   const [loading, setLoading] = useState(false);
+  const inputRefSet = useRef(false);
+  const inputRef = useCallback((el: HTMLInputElement | null) => {
+    if (el && !inputRefSet.current) {
+      inputRefSet.current = true;
+      el.focus();
+      el.select();
+    }
+  }, []);
 
   const create = async () => {
     if (!branch) return;
@@ -114,12 +122,7 @@ export const WorktreeAddModal: FC<ModalProps & WorktreeAddModalProps> = (props) 
             <InputGroup
               className="flex-2"
               fill
-              inputRef={(el) => {
-                if (el) {
-                  el.focus();
-                  el.select();
-                }
-              }}
+              inputRef={inputRef}
               onChange={(e) => setNewBranchName(e.target.value)}
               placeholder="Ex: feat/my-new-branch"
               value={newBranchName}
