@@ -1,4 +1,4 @@
-import { Icon as BPIcon, Button, ButtonGroup, Collapse } from '@blueprintjs/core';
+import { Icon as BPIcon, Button, ButtonGroup, Collapse, Tooltip } from '@blueprintjs/core';
 import { type FC, useEffect, useState } from 'react';
 import { getStatusIcon } from 'renderer/assets/gitHubStatusUtils';
 import { cn } from 'renderer/utils/cn';
@@ -16,7 +16,8 @@ type Job = {
 };
 
 type Props = {
-  onHide?: (runId: number) => void;
+  onHide?: (runId: number, runName: string) => void;
+  onIgnore?: (workflowName: string, workflowPath: string) => void;
   project: Project;
   run: Run;
 };
@@ -38,7 +39,7 @@ const formatDuration = (start?: string, end?: string) => {
   return `${seconds}s`;
 };
 
-export const Workflow: FC<Props> = ({ onHide, project, run }) => {
+export const Workflow: FC<Props> = ({ onHide, onIgnore, project, run }) => {
   const {
     conclusion,
     created_at,
@@ -48,6 +49,7 @@ export const Workflow: FC<Props> = ({ onHide, project, run }) => {
     html_url,
     id,
     name,
+    path,
     run_number,
     status,
     updated_at
@@ -149,7 +151,9 @@ export const Workflow: FC<Props> = ({ onHide, project, run }) => {
         onClick={toggleJobs}
       >
         <div className="overflow-hidden flex text-left justify-start gap-4 items-center flex-1 min-w-0">
-          <div className="w-[30px] shrink-0 flex justify-center" title={conclusion || status}>
+          <div className="w-[30px] shrink-0 flex justify-center"
+            title={conclusion || status}
+          >
             <StatusIcon />
           </div>
 
@@ -178,19 +182,42 @@ export const Workflow: FC<Props> = ({ onHide, project, run }) => {
         ) : null}
 
         <ButtonGroup onClick={(e) => e.stopPropagation()}>
-          <Button
-            icon="globe"
-            onClick={openInBrowser}
-            title="Open in browser"
-          />
+          {onIgnore && (
+            <Tooltip compact
+              content="Ignore workflow"
+              hoverOpenDelay={500}
+              placement="bottom"
+            >
+              <Button
+                icon="disable"
+                onClick={() => onIgnore(name, path)}
+              />
+            </Tooltip>
+          )}
 
           {onHide && (
-            <Button
-              icon="eye-off"
-              onClick={() => onHide(id)}
-              title="Hide this action"
-            />
+            <Tooltip compact
+              content="Hide this action"
+              hoverOpenDelay={500}
+              placement="bottom"
+            >
+              <Button
+                icon="eye-off"
+                onClick={() => onHide(id, display_title)}
+              />
+            </Tooltip>
           )}
+
+          <Tooltip compact
+            content="Open in browser"
+            hoverOpenDelay={500}
+            placement="bottom"
+          >
+            <Button
+              icon="globe"
+              onClick={openInBrowser}
+            />
+          </Tooltip>
         </ButtonGroup>
       </div>
 

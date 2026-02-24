@@ -84,7 +84,9 @@ ipcMain.handle('git:api:getAction', async (_, id: string, filterBy: string[]) =>
       return { message: 'No actions for this branch', success: false };
     }
 
-    return { runs: runs.slice(0, count), success: true };
+    const { ignoredWorkflows = [] } = gitHubActions;
+    const filtered = runs.filter((run) => !ignoredWorkflows.includes(run.path));
+    return { runs: filtered.slice(0, count), success: true };
   } catch (e) {
     log.error(e);
     return { message: e.message, success: false };

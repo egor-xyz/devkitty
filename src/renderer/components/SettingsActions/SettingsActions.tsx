@@ -1,14 +1,31 @@
-import { Divider, Label, NumericInput, Switch } from '@blueprintjs/core';
+import { Divider, Label, NumericInput, Switch, Tag } from '@blueprintjs/core';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 
 export const SettingsActions = () => {
   const { gitHubActions, gitHubPulls, set } = useAppSettings();
-  const { all, count, ignoreDependabot = false, inProgress } = gitHubActions;
+  const { all, count, ignoreDependabot = false, ignoredWorkflows = [], inProgress } = gitHubActions;
   const pullsIntervalMinutes = Math.max(1, Math.round(gitHubPulls.pollInterval / 60000));
+
+  const removeIgnored = (name: string) => {
+    set({ gitHubActions: { ...gitHubActions, ignoredWorkflows: ignoredWorkflows.filter((w) => w !== name) } });
+  };
 
   return (
     <div className="select-none p-4">
       <h2 className="text-xl font-semibold mb-1">GitHub</h2>
+      <Divider />
+      <h3 className="text-sm font-semibold mt-4 mb-2.5">Pull Requests</h3>
+
+      <Label>
+        Polling interval (minutes)
+        <NumericInput
+          max={60}
+          min={1}
+          onValueChange={(value) => set({ gitHubPulls: { ...gitHubPulls, pollInterval: value * 60000 } })}
+          value={pullsIntervalMinutes}
+        />
+      </Label>
+
       <Divider />
       <h3 className="text-sm font-semibold mt-4 mb-2.5">Actions</h3>
 
@@ -42,18 +59,22 @@ export const SettingsActions = () => {
         onChange={() => set({ gitHubActions: { ...gitHubActions, ignoreDependabot: !ignoreDependabot } })}
       />
 
-      <Divider />
-      <h3 className="text-sm font-semibold mt-4 mb-2.5">Pull Requests</h3>
+      {ignoredWorkflows.length > 0 && (
+        <>
+          <h4 className="text-xs font-semibold mt-4 mb-2">Ignored workflows</h4>
 
-      <Label>
-        Polling interval (minutes)
-        <NumericInput
-          max={60}
-          min={1}
-          onValueChange={(value) => set({ gitHubPulls: { ...gitHubPulls, pollInterval: value * 60000 } })}
-          value={pullsIntervalMinutes}
-        />
-      </Label>
+          <div className="flex flex-wrap gap-1.5">
+            {ignoredWorkflows.map((name) => (
+              <Tag
+                key={name}
+                onRemove={() => removeIgnored(name)}
+              >
+                {name}
+              </Tag>
+            ))}
+          </div>
+        </>
+      )}
     </div>
   );
 };

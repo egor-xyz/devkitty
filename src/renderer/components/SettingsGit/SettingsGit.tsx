@@ -8,7 +8,6 @@ export const SettingsGit = () => {
     <div className="select-none p-4">
       <h2 className="text-xl font-semibold mb-1">Git</h2>
       <Divider />
-
       <h3 className="text-sm font-semibold mt-4 mb-2.5">Worktrees</h3>
       <Divider />
 

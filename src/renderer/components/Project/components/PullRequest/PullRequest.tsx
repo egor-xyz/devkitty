@@ -1,4 +1,4 @@
-import { Button } from '@blueprintjs/core';
+import { Button, Tooltip } from '@blueprintjs/core';
 import { readableColor } from 'polished';
 import { type FC } from 'react';
 import { cn } from 'renderer/utils/cn';
@@ -76,10 +76,16 @@ export const PullRequest: FC<Props> = ({ pull, tags = [] }) => {
       </div>
 
       <div className="flex gap-1 items-center shrink-0 justify-end min-w-[100px]">
-        <Button
-          icon="globe"
-          onClick={openInBrowser}
-        />
+        <Tooltip compact
+          content="Open in browser"
+          hoverOpenDelay={500}
+          placement="bottom"
+        >
+          <Button
+            icon="globe"
+            onClick={openInBrowser}
+          />
+        </Tooltip>
       </div>
     </div>
   );

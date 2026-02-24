@@ -26,7 +26,7 @@ export const Project: FC<Props> = ({ project }) => {
   const { showWorktrees } = useAppSettings();
   const [pullLoading, setPullLoading] = useState(false);
 
-  const { Actions, getActions, showActions, toggleActions } = useActions(gitStatus, project);
+  const { Actions, clearHiddenRuns, getActions, hiddenCount, showActions, toggleActions } = useActions(gitStatus, project);
   const { Pulls, refreshPulls, showPulls, togglePulls } = usePulls(project);
 
   const { filePath, groupId, id, name } = project;
@@ -99,6 +99,7 @@ export const Project: FC<Props> = ({ project }) => {
 
           <QuickActions
             gitStatus={gitStatus}
+            onUpdate={updateProject}
             project={project}
             showActions={showActions}
             showPulls={showPulls}
@@ -128,10 +129,12 @@ export const Project: FC<Props> = ({ project }) => {
             <Popover
               content={
                 <ProjectMenu
+                  clearHiddenRuns={clearHiddenRuns}
                   filePath={filePath}
                   getStatus={updateProject}
                   gitStatus={gitStatus}
                   groupId={groupId}
+                  hiddenCount={hiddenCount}
                   id={id}
                   name={name}
                   pull={runPull}

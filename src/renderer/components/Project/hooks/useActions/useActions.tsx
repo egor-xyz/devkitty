@@ -1,6 +1,7 @@
 import { Classes, Tag } from '@blueprintjs/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
+import { useModal } from 'renderer/hooks/useModal';
 import { appToaster } from 'renderer/utils/appToaster';
 import { type Run } from 'types/gitHub';
 import { type GitStatus, type Project } from 'types/project';
@@ -28,9 +29,10 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
   const [isEmpty, setIsEmpty] = useState(false);
   const {
     fetchInterval,
-    gitHubActions: { all, ignoreDependabot, inProgress },
+    gitHubActions: { all, ignoreDependabot, ignoredWorkflows = [], inProgress },
     gitHubToken
   } = useAppSettings();
+  const { openModal } = useModal();
 
   const intervalId = useRef<null | number>(null);
 
@@ -59,7 +61,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
     setRuns(filteredRuns);
   }, [gitStatus, project.id, ignoreDependabot]);
 
-  const hideRun = useCallback((runId: number) => {
+  const doHideRun = useCallback((runId: number) => {
     setHiddenRuns((prev) => {
       const next = new Set(prev);
       next.add(runId);
@@ -67,6 +69,19 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
       return next;
     });
   }, [project.id]);
+
+  const clearHiddenRuns = useCallback(() => {
+    sessionStorage.removeItem(hiddenKey(project.id));
+    setHiddenRuns(new Set());
+  }, [project.id]);
+
+  const hideRun = useCallback((runId: number, runName: string) => {
+    openModal({ name: 'action:hide', props: { onConfirm: doHideRun, runId, runName } });
+  }, [openModal, doHideRun]);
+
+  const ignoreWorkflow = useCallback((workflowName: string, workflowPath: string) => {
+    openModal({ name: 'ignore:workflow', props: { workflowName, workflowPath } });
+  }, [openModal]);
 
   const toggleActions = async () => {
     if (!showActions && !gitHubToken) {
@@ -144,6 +159,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
 
           {[...runs]
             .filter((run: Run) => !hiddenRuns.has(run.id))
+            .filter((run: Run) => !ignoredWorkflows.includes(run.path))
             .sort((a: Run, b: Run) => {
               const timeA = new Date(a.created_at).getTime();
               const timeB = new Date(b.created_at).getTime();
@@ -153,18 +169,21 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
               <Workflow
                 key={run.id}
                 onHide={hideRun}
+                onIgnore={ignoreWorkflow}
                 project={project}
                 run={run}
               />
             ))}
         </>
       ),
-    [runs, showActions, isEmpty, all, inProgress, gitStatus, project, hiddenRuns, hideRun]
+    [runs, showActions, isEmpty, all, inProgress, gitStatus, project, hiddenRuns, hideRun, ignoredWorkflows, ignoreWorkflow]
   );
 
   return {
     Actions,
+    clearHiddenRuns,
     getActions,
+    hiddenCount: hiddenRuns.size,
     showActions,
     toggleActions
   };
