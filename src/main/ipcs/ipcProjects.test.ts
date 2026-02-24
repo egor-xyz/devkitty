@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const handlers: Record<string, (...args: any[]) => any> = {};
 
@@ -27,6 +27,7 @@ vi.mock('uuid', () => ({
 }));
 
 import { dialog } from 'electron';
+
 import { settings } from '../settings';
 
 await import('./ipcProjects');

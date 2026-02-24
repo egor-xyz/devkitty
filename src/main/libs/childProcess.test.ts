@@ -1,10 +1,11 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('child_process', () => ({
   exec: vi.fn()
 }));
 
 import { exec } from 'child_process';
+
 import { execAsync } from './childProcess';
 
 const mockExec = vi.mocked(exec);

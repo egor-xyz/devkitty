@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('child_process', () => ({
   spawn: vi.fn(() => ({ pid: 1234 }))
@@ -9,7 +9,8 @@ vi.mock('./path-exists', () => ({
 }));
 
 import { spawn } from 'child_process';
-import { type FoundEditor, ExternalEditorError } from '../../../types/foundEditor';
+
+import { ExternalEditorError, type FoundEditor } from '../../../types/foundEditor';
 import { launchExternalEditor } from './editrosLaunch';
 import { pathExists } from './path-exists';
 

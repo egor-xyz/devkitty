@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const handlers: Record<string, (...args: any[]) => any> = {};
 
@@ -32,6 +32,7 @@ vi.mock('../libs/git', () => ({
 }));
 
 import { dialog } from 'electron';
+
 import { getGit, parseWorktreeList } from '../libs/git';
 
 await import('./ipcWorktree');
