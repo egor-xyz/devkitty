@@ -44,26 +44,43 @@ export const WorktreeRow: FC<Props> = ({ id, onSuccess, worktree }) => {
 
       <ButtonGroup>
         {selectedEditor && (
-          <Button
-            icon="code"
-            onClick={() => window.bridge.launch.editor(worktree.path, selectedEditor)}
-            title="Open in editor"
-          />
+          <Tooltip compact
+            content={selectedEditor.editor}
+            hoverOpenDelay={500}
+            placement="bottom"
+            popoverClassName="whitespace-nowrap"
+          >
+            <Button
+              icon="code"
+              onClick={() => window.bridge.launch.editor(worktree.path, selectedEditor)}
+            />
+          </Tooltip>
         )}
 
         {selectedShell && (
-          <Button
-            icon="console"
-            onClick={() => window.bridge.launch.shell(worktree.path, selectedShell)}
-            title="Open in terminal"
-          />
+          <Tooltip compact
+            content={selectedShell.shell}
+            hoverOpenDelay={500}
+            placement="bottom"
+            popoverClassName="whitespace-nowrap"
+          >
+            <Button
+              icon="console"
+              onClick={() => window.bridge.launch.shell(worktree.path, selectedShell)}
+            />
+          </Tooltip>
         )}
 
-        <Button
-          icon="trash"
-          onClick={() => openModal({ name: 'git:worktree:remove', props: { branch: worktree.branch, id, onSuccess, worktreePath: worktree.path } })}
-          title="Remove worktree"
-        />
+        <Tooltip compact
+          content="Remove worktree"
+          hoverOpenDelay={500}
+          placement="bottom"
+        >
+          <Button
+            icon="trash"
+            onClick={() => openModal({ name: 'git:worktree:remove', props: { branch: worktree.branch, id, onSuccess, worktreePath: worktree.path } })}
+          />
+        </Tooltip>
       </ButtonGroup>
     </div>
   );

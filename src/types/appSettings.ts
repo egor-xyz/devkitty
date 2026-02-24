@@ -8,6 +8,7 @@ export type AppSettings = {
     all: boolean;
     count: number;
     ignoreDependabot: boolean;
+    ignoredWorkflows: string[];
     inProgress: boolean;
   };
   gitHubPulls: {

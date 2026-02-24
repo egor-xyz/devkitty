@@ -11,17 +11,19 @@ import Warp from '../../assets/Warp.svg?react';
 import { GroupsSelect } from '../GroupsSelect';
 
 type Props = {
+  clearHiddenRuns: () => void;
   filePath: string;
   getStatus: () => void;
   gitStatus: GitStatus;
   groupId?: string;
+  hiddenCount: number;
   id: string;
   name: string;
   pull: () => void;
   removeProject: () => void;
 };
 
-export const ProjectMenu: FC<Props> = ({ filePath, getStatus, gitStatus, groupId, id, name, pull, removeProject }) => {
+export const ProjectMenu: FC<Props> = ({ clearHiddenRuns, filePath, getStatus, gitStatus, groupId, hiddenCount, id, name, pull, removeProject }) => {
   const { openModal } = useModal();
   const { selectedEditor, selectedShell } = useAppSettings();
 
@@ -64,6 +66,13 @@ export const ProjectMenu: FC<Props> = ({ filePath, getStatus, gitStatus, groupId
         icon="git-new-branch"
         onClick={() => openModal({ name: 'git:worktree:add', props: { gitStatus, id, name, onSuccess: getStatus } })}
         text="Add worktree"
+      />
+
+      <MenuItem
+        disabled={hiddenCount === 0}
+        icon="eye-open"
+        onClick={clearHiddenRuns}
+        text={hiddenCount > 0 ? `Unhide actions (${hiddenCount})` : 'Unhide actions'}
       />
 
       <MenuDivider />

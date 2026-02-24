@@ -221,6 +221,20 @@
   height: 16px;
 }
 
+/* Tooltip styles - dark mode and no-wrap */
+.dark .bp6-tooltip .bp6-popover-content {
+  background-color: #383e47;
+  color: #f6f7f9;
+}
+
+.dark .bp6-tooltip .bp6-popover-arrow-fill {
+  fill: #383e47;
+}
+
+.bp6-tooltip .bp6-popover-content {
+  white-space: nowrap;
+}
+
 /* Global body background - must be at end to override other styles */
 body {
   background-color: #dce0e5 !important;

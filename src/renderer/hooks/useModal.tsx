@@ -9,6 +9,14 @@ import {
   WorktreeAddModal,
   type WorktreeAddModalProps
 } from 'renderer/components/Modals/WorktreeAddModal/WorktreeAddModal';
+import {
+  HideRunAlert,
+  type HideRunAlertProps
+} from 'renderer/components/Project/components/HideRunAlert/HideRunAlert';
+import {
+  IgnoreWorkflowAlert,
+  type IgnoreWorkflowAlertProps
+} from 'renderer/components/Project/components/IgnoreWorkflowAlert/IgnoreWorkflowAlert';
 import { RemoveAlert } from 'renderer/components/Project/components/RemoveAlert';
 import { type RemoveAlertProps } from 'renderer/components/Project/components/RemoveAlert/RemoveAlert';
 import {
@@ -26,6 +34,10 @@ import { useDarkModeStore } from './useDarkMode';
 
 type ActiveModal = ModalProps &
   (
+    | {
+        name: 'action:hide';
+        props: HideRunAlertProps;
+      }
     | {
         name: 'git:merge';
         props: GitMergeModalProps;
@@ -45,6 +57,10 @@ type ActiveModal = ModalProps &
     | {
         name: 'group';
         props: GroupModalProps;
+      }
+    | {
+        name: 'ignore:workflow';
+        props: IgnoreWorkflowAlertProps;
       }
     | {
         name: 'remove:group';
@@ -67,11 +83,13 @@ type State = {
 };
 
 const Modals: Record<ActiveModal['name'], FC<ActiveModal['props']>> = {
+  'action:hide': HideRunAlert,
   'git:merge': GitMergeModal,
   'git:reset': GitResetModal,
   'git:worktree:add': WorktreeAddModal,
   'git:worktree:remove': RemoveWorktreeAlert,
   group: GroupModal,
+  'ignore:workflow': IgnoreWorkflowAlert,
   'remove:group': RemoveGroupAlert,
   'remove:project': RemoveAlert,
   'sticker:add': TrayStickerModal
