@@ -1,4 +1,5 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron';
+import { copyFile } from 'fs/promises';
 import path from 'path';
 import { type Worktree } from 'types/worktree';
 
@@ -18,7 +19,7 @@ ipcMain.handle('git:worktree:list', async (_, id: string): Promise<{ message?: s
 
 ipcMain.handle(
   'git:worktree:add',
-  async (_, id: string, repoName: string, branch: string, newBranch?: string) => {
+  async (_, id: string, repoName: string, branch: string, newBranch?: string, copyEnvLocal?: boolean) => {
     try {
       const git = await getGit(id);
 
@@ -43,6 +44,17 @@ ipcMain.handle(
         await git.raw(['worktree', 'add', '-b', newBranch, worktreePath, branch]);
       } else {
         await git.raw(['worktree', 'add', worktreePath, branch]);
+      }
+
+      if (copyEnvLocal) {
+        try {
+          const repoPath = await git.revparse(['--show-toplevel']);
+          const src = path.join(repoPath.trim(), '.env.local');
+          const dest = path.join(worktreePath, '.env.local');
+          await copyFile(src, dest);
+        } catch {
+          // .env.local may not exist — silently skip
+        }
       }
 
       return { message: `Worktree created at ${worktreePath}`, success: true };

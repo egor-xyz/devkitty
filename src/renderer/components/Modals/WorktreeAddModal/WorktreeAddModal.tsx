@@ -38,6 +38,7 @@ export const WorktreeAddModal: FC<ModalProps & WorktreeAddModalProps> = (props) 
 
   const [branch, setBranch] = useState(findDefaultBranch);
   const [createNew, setCreateNew] = useState(true);
+  const [copyEnvLocal, setCopyEnvLocal] = useState(false);
   const [newBranchName, setNewBranchName] = useState(generateBranchName);
   const [loading, setLoading] = useState(false);
   const inputRefSet = useRef(false);
@@ -56,7 +57,13 @@ export const WorktreeAddModal: FC<ModalProps & WorktreeAddModalProps> = (props) 
     setLoading(true);
 
     const cleanBranch = branch.replace(/(remotes\/origin\/|origin\/)/, '');
-    const res = await window.bridge.worktree.add(id, name, cleanBranch, createNew ? newBranchName.trim() : undefined);
+    const res = await window.bridge.worktree.add(
+      id,
+      name,
+      cleanBranch,
+      createNew ? newBranchName.trim() : undefined,
+      copyEnvLocal
+    );
     setLoading(false);
 
     if (res.success) {
@@ -129,6 +136,13 @@ export const WorktreeAddModal: FC<ModalProps & WorktreeAddModalProps> = (props) 
             />
           </div>
         )}
+
+        <Switch
+          checked={copyEnvLocal}
+          className="mt-5 mb-0"
+          label="Include .env.local"
+          onChange={() => setCopyEnvLocal(!copyEnvLocal)}
+        />
       </DialogBody>
 
       <DialogFooter

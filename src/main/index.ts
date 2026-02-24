@@ -4,6 +4,10 @@ import log from 'electron-log';
 import path from 'path';
 import { updateElectronApp } from 'update-electron-app';
 
+import { fixPath } from './libs/fixPath';
+
+fixPath();
+
 import './ipcs';
 import { updateEditorsAndShells } from './libs/integrations/integrations';
 import { loadWindowState, saveBounds } from './libs/window';
