@@ -20,9 +20,8 @@ export const PullRequest: FC<Props> = ({ pull, tags = [] }) => {
   return (
     <div
       className={cn(
-        'flex relative items-center justify-between min-h-5 py-1.5 pl-5 pr-4 my-0.5',
-        'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
-        '[&+&]:mt-0'
+        'flex relative items-center justify-between min-h-[45px] py-1 pl-5 pr-4 mt-0.5',
+        'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2'
       )}
     >
       <div className="overflow-hidden flex text-left justify-start gap-4 items-center">
@@ -32,7 +31,7 @@ export const PullRequest: FC<Props> = ({ pull, tags = [] }) => {
           src={user.avatar_url}
         />
 
-        <div className="overflow-hidden text-[13px] flex flex-col">
+        <div className="overflow-hidden flex flex-col">
           <div className="flex items-center overflow-hidden text-ellipsis whitespace-nowrap mb-0.5 gap-2">
             {draft && '[DRAFT] '}
 
@@ -76,10 +75,12 @@ export const PullRequest: FC<Props> = ({ pull, tags = [] }) => {
         </div>
       </div>
 
-      <Button
-        icon="globe"
-        onClick={openInBrowser}
-      />
+      <div className="flex gap-1 items-center shrink-0 justify-end min-w-[100px]">
+        <Button
+          icon="globe"
+          onClick={openInBrowser}
+        />
+      </div>
     </div>
   );
 };

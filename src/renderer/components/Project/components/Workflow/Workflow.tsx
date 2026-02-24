@@ -1,4 +1,4 @@
-import { Icon as BPIcon, Button, Collapse } from '@blueprintjs/core';
+import { Icon as BPIcon, Button, ButtonGroup, Collapse } from '@blueprintjs/core';
 import { type FC, useEffect, useState } from 'react';
 import { getStatusIcon } from 'renderer/assets/gitHubStatusUtils';
 import { cn } from 'renderer/utils/cn';
@@ -16,6 +16,7 @@ type Job = {
 };
 
 type Props = {
+  onHide?: (runId: number) => void;
   project: Project;
   run: Run;
 };
@@ -37,7 +38,7 @@ const formatDuration = (start?: string, end?: string) => {
   return `${seconds}s`;
 };
 
-export const Workflow: FC<Props> = ({ project, run }) => {
+export const Workflow: FC<Props> = ({ onHide, project, run }) => {
   const {
     conclusion,
     created_at,
@@ -142,17 +143,17 @@ export const Workflow: FC<Props> = ({ project, run }) => {
     <>
       <div
         className={cn(
-          'flex relative items-center justify-between min-h-5 py-1.5 pl-5 pr-4 gap-2 w-full box-border shrink-0 my-0.5',
-          'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
-          '[&+&]:mt-0'
+          'flex relative items-center justify-between min-h-[45px] py-1 pl-5 pr-4 gap-2 w-full box-border shrink-0 mt-0.5 cursor-pointer',
+          'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2 hover:opacity-90'
         )}
+        onClick={toggleJobs}
       >
         <div className="overflow-hidden flex text-left justify-start gap-4 items-center flex-1 min-w-0">
-          <div title={conclusion || status}>
+          <div className="w-[30px] shrink-0 flex justify-center" title={conclusion || status}>
             <StatusIcon />
           </div>
 
-          <div className="overflow-hidden text-[13px] flex flex-col">
+          <div className="overflow-hidden flex flex-col">
             <div className="overflow-hidden text-ellipsis whitespace-nowrap">
               <b>{name}</b>
               {': '}
@@ -176,24 +177,21 @@ export const Workflow: FC<Props> = ({ project, run }) => {
           </span>
         ) : null}
 
-        <div className="flex gap-1 items-center shrink-0">
+        <ButtonGroup onClick={(e) => e.stopPropagation()}>
           <Button
             icon="globe"
-            minimal
             onClick={openInBrowser}
-            small
             title="Open in browser"
           />
 
-          <Button
-            icon={isOpen ? 'chevron-up' : 'chevron-down'}
-            loading={loading}
-            minimal
-            onClick={toggleJobs}
-            small
-            title="Show jobs"
-          />
-        </div>
+          {onHide && (
+            <Button
+              icon="eye-off"
+              onClick={() => onHide(id)}
+              title="Hide this action"
+            />
+          )}
+        </ButtonGroup>
       </div>
 
       <Collapse isOpen={isOpen}>

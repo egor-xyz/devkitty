@@ -7,8 +7,20 @@ import { type GitStatus, type Project } from 'types/project';
 
 import { Workflow } from '../../components/Workflow';
 
+const hiddenKey = (id: string) => `hiddenActions:${id}`;
+
+const getHiddenRuns = (projectId: string): Set<number> => {
+  try {
+    const raw = sessionStorage.getItem(hiddenKey(projectId));
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+};
+
 export const useActions = (gitStatus: GitStatus, project: Project) => {
   const [runs, setRuns] = useState([]);
+  const [hiddenRuns, setHiddenRuns] = useState(() => getHiddenRuns(project.id));
   const [showActions, setShowActions] = useState(() => {
     const saved = localStorage.getItem(`showActions:${project.id}`);
     return saved ? JSON.parse(saved) : false;
@@ -46,6 +58,15 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
       : nextRuns;
     setRuns(filteredRuns);
   }, [gitStatus, project.id, ignoreDependabot]);
+
+  const hideRun = useCallback((runId: number) => {
+    setHiddenRuns((prev) => {
+      const next = new Set(prev);
+      next.add(runId);
+      sessionStorage.setItem(hiddenKey(project.id), JSON.stringify([...next]));
+      return next;
+    });
+  }, [project.id]);
 
   const toggleActions = async () => {
     if (!showActions && !gitHubToken) {
@@ -122,6 +143,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
           )}
 
           {[...runs]
+            .filter((run: Run) => !hiddenRuns.has(run.id))
             .sort((a: Run, b: Run) => {
               const timeA = new Date(a.created_at).getTime();
               const timeB = new Date(b.created_at).getTime();
@@ -130,13 +152,14 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
             .map((run: Run) => (
               <Workflow
                 key={run.id}
+                onHide={hideRun}
                 project={project}
                 run={run}
               />
             ))}
         </>
       ),
-    [runs, showActions, isEmpty, all, inProgress, gitStatus, project]
+    [runs, showActions, isEmpty, all, inProgress, gitStatus, project, hiddenRuns, hideRun]
   );
 
   return {
