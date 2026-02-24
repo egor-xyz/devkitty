@@ -49,6 +49,9 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Enable pnpm (needed by electron-builder node module collector)
+        run: corepack enable pnpm
+
       - name: Bumb version
         id: version
         run: |
