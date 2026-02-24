@@ -101,7 +101,7 @@ export const usePulls = (project: Project) => {
   const Pulls = useMemo(
     () =>
       showPulls && (
-        <div className="relative mt-0.5 border-t border-bp-light-gray-2 dark:border-black">
+        <div className="relative">
           {isEmpty && pulls.length < 1 && (
             <div className={cn('flex justify-between items-center py-2.5 px-4', Classes.TEXT_MUTED, loading && Classes.SKELETON)}>
               <span>No pull request were found</span>

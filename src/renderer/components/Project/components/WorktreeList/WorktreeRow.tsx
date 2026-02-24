@@ -1,4 +1,4 @@
-import { Button, Icon, Tooltip } from '@blueprintjs/core';
+import { Button, ButtonGroup, Icon, Tooltip } from '@blueprintjs/core';
 import { type FC } from 'react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useModal } from 'renderer/hooks/useModal';
@@ -20,17 +20,16 @@ export const WorktreeRow: FC<Props> = ({ id, onSuccess, worktree }) => {
   return (
     <div
       className={cn(
-        'flex relative items-center justify-between min-h-5 py-1.5 pl-5 pr-4 gap-2 w-full box-border shrink-0 my-0.5',
+        'flex relative items-center justify-between min-h-[45px] py-1 pl-5 pr-4 gap-2 w-full box-border shrink-0 mt-0.5',
         'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2'
       )}
     >
       <div className="overflow-hidden flex text-left justify-start gap-4 items-center flex-1 min-w-0">
-        <Icon
-          className="shrink-0"
-          icon="diagram-tree"
-        />
+        <div className="w-[30px] shrink-0 flex justify-center">
+          <Icon icon="diagram-tree" />
+        </div>
 
-        <div className="overflow-hidden text-[13px] flex flex-col">
+        <div className="overflow-hidden flex flex-col">
           <div className="overflow-hidden text-ellipsis whitespace-nowrap">
             <b>{worktree.branch}</b>
           </div>
@@ -43,13 +42,11 @@ export const WorktreeRow: FC<Props> = ({ id, onSuccess, worktree }) => {
         </div>
       </div>
 
-      <div className="flex gap-1 items-center shrink-0">
+      <ButtonGroup>
         {selectedEditor && (
           <Button
             icon="code"
-            minimal
             onClick={() => window.bridge.launch.editor(worktree.path, selectedEditor)}
-            small
             title="Open in editor"
           />
         )}
@@ -57,22 +54,17 @@ export const WorktreeRow: FC<Props> = ({ id, onSuccess, worktree }) => {
         {selectedShell && (
           <Button
             icon="console"
-            minimal
             onClick={() => window.bridge.launch.shell(worktree.path, selectedShell)}
-            small
             title="Open in terminal"
           />
         )}
 
         <Button
           icon="trash"
-          intent="danger"
-          minimal
           onClick={() => openModal({ name: 'git:worktree:remove', props: { branch: worktree.branch, id, onSuccess, worktreePath: worktree.path } })}
-          small
           title="Remove worktree"
         />
-      </div>
+      </ButtonGroup>
     </div>
   );
 };
