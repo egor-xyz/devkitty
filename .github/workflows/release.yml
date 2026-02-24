@@ -42,14 +42,12 @@ jobs:
 
       - uses: actions/setup-node@v6
         with:
+          cache: npm
           check-latest: true
           node-version-file: .nvmrc
 
-      - name: Enable pnpm
-        run: corepack enable pnpm
-
       - name: Install dependencies
-        run: pnpm install --frozen-lockfile
+        run: npm ci
 
       - name: Bumb version
         id: version
@@ -61,7 +59,7 @@ jobs:
         if: github.event.inputs.dry_run != 'true'
         run: |
           chmod +x add-osx-cert.sh && ./add-osx-cert.sh
-          pnpm make
+          npm run make
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
@@ -71,7 +69,7 @@ jobs:
 
       - name: Make (dry run)
         if: github.event.inputs.dry_run == 'true'
-        run: pnpm build
+        run: npm run build
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
