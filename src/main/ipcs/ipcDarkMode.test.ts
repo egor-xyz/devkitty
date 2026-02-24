@@ -1,4 +1,4 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const handlers: Record<string, (...args: any[]) => any> = {};
 
@@ -23,6 +23,7 @@ vi.mock('../settings', () => ({
 
 // Import after mocks are set up to capture handlers
 import { nativeTheme } from 'electron';
+
 import { settings } from '../settings';
 
 // Trigger the side effects that register IPC handlers

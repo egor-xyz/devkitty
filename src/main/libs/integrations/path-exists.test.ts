@@ -1,10 +1,11 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 vi.mock('fs/promises', () => ({
   access: vi.fn()
 }));
 
 import { access } from 'fs/promises';
+
 import { pathExists } from './path-exists';
 
 const mockAccess = vi.mocked(access);
