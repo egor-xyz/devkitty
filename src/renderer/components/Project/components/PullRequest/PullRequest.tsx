@@ -1,21 +1,52 @@
-import { Button, Tooltip } from '@blueprintjs/core';
+import { Button, Icon, Tooltip } from '@blueprintjs/core';
 import { readableColor } from 'polished';
-import { type FC } from 'react';
+import { type FC, useEffect, useState } from 'react';
 import { cn } from 'renderer/utils/cn';
 import { timeAgo } from 'renderer/utils/timeAgo';
 import { type Pull } from 'types/gitHub';
 
+type Check = {
+  conclusion: null | string;
+  id: number;
+  name: string;
+  status: string;
+};
+
 type Props = {
+  projectId: string;
   pull: Pull;
   tags?: string[];
 };
 
-export const PullRequest: FC<Props> = ({ pull, tags = [] }) => {
+const getChecksSummary = (checks: Check[]) => {
+  if (checks.length === 0) return null;
+
+  const success = checks.filter((c) => c.conclusion === 'success').length;
+  const failed = checks.filter((c) => c.conclusion === 'failure' || c.conclusion === 'timed_out' || c.conclusion === 'cancelled').length;
+  const pending = checks.filter((c) => c.status !== 'completed').length;
+
+  return { failed, pending, success, total: checks.length };
+};
+
+export const PullRequest: FC<Props> = ({ projectId, pull, tags = [] }) => {
   const { created_at, draft, html_url, labels, number, title, user } = pull;
+  const [checks, setChecks] = useState<Check[]>([]);
+
+  useEffect(() => {
+    const fetchChecks = async () => {
+      const res = await window.bridge.gitAPI.getPRChecks(projectId, number);
+      if (res.success && res.checks) {
+        setChecks(res.checks);
+      }
+    };
+    fetchChecks();
+  }, [projectId, number]);
 
   const openInBrowser = () => {
     window.open(html_url, '_blank');
   };
+
+  const summary = getChecksSummary(checks);
 
   return (
     <div
@@ -43,7 +74,7 @@ export const PullRequest: FC<Props> = ({ pull, tags = [] }) => {
 
             {title}
 
-            {labels.map((label) => (
+            {labels.map((label: { color: string; id: number; name: string }) => (
               <div
                 className="rounded px-1 py-px text-xs"
                 key={label.id}
@@ -69,8 +100,44 @@ export const PullRequest: FC<Props> = ({ pull, tags = [] }) => {
             ))}
           </div>
 
-          <div className="flex items-center overflow-hidden whitespace-nowrap text-ellipsis -mt-px text-xs font-light dark:text-bp-gray-3">
+          <div className="flex items-center overflow-hidden whitespace-nowrap text-ellipsis -mt-px text-xs font-light dark:text-bp-gray-3 gap-2">
             #{number} opened {timeAgo(created_at)} by {user.login.replace('[bot]', '')}
+
+            {summary && (
+              <Tooltip
+                content={
+                  <div className="text-xs">
+                    {summary.success > 0 && <div>{summary.success} passed</div>}
+                    {summary.failed > 0 && <div>{summary.failed} failed</div>}
+                    {summary.pending > 0 && <div>{summary.pending} pending</div>}
+                  </div>
+                }
+                placement="bottom"
+              >
+                <span className="flex items-center gap-1 shrink-0">
+                  {summary.failed > 0 ? (
+                    <Icon icon="cross-circle"
+                      intent="danger"
+                      size={12}
+                    />
+                  ) : summary.pending > 0 ? (
+                    <Icon className="text-bp-orange-3"
+                      icon="time"
+                      size={12}
+                    />
+                  ) : (
+                    <Icon icon="tick-circle"
+                      intent="success"
+                      size={12}
+                    />
+                  )}
+
+                  <span className="text-[10px]">
+                    {summary.success}/{summary.total}
+                  </span>
+                </span>
+              </Tooltip>
+            )}
           </div>
         </div>
       </div>

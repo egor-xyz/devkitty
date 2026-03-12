@@ -3,7 +3,7 @@ import { useAppSettings } from 'renderer/hooks/useAppSettings';
 
 export const SettingsActions = () => {
   const { gitHubActions, gitHubPulls, set } = useAppSettings();
-  const { all, count, ignoreDependabot = false, ignoredWorkflows = [], inProgress } = gitHubActions;
+  const { all, count, hideDone = false, ignoreDependabot = false, ignoredWorkflows = [], inProgress } = gitHubActions;
   const pullsIntervalMinutes = Math.max(1, Math.round(gitHubPulls.pollInterval / 60000));
 
   const removeIgnored = (name: string) => {
@@ -51,6 +51,12 @@ export const SettingsActions = () => {
         checked={inProgress}
         label="Display ongoing actions and those completed within the last 30 minutes"
         onChange={() => set({ gitHubActions: { ...gitHubActions, inProgress: !inProgress } })}
+      />
+
+      <Switch
+        checked={hideDone}
+        label="Hide completed actions (always show running)"
+        onChange={() => set({ gitHubActions: { ...gitHubActions, hideDone: !hideDone } })}
       />
 
       <Switch
