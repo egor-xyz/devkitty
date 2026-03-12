@@ -179,6 +179,7 @@ describe('preload bridge', () => {
         'proj-1',
         'my-repo',
         'feature',
+        undefined,
         undefined
       );
     });
@@ -190,7 +191,8 @@ describe('preload bridge', () => {
         'proj-1',
         'my-repo',
         'main',
-        'new-feature'
+        'new-feature',
+        undefined
       );
     });
 
