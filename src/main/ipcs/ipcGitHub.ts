@@ -111,6 +111,39 @@ ipcMain.handle('git:api:getJobs', async (_, id: string, runId: number) => {
   }
 });
 
+ipcMain.handle('git:api:getPRChecks', async (_, id: string, prNumber: number) => {
+  try {
+    const { owner, repo } = await getRepoInfo(id);
+    if (!owner || !repo) throw new Error('Project not found');
+
+    const { data: pr } = await octokit().rest.pulls.get({
+      owner,
+      pull_number: prNumber,
+      repo
+    });
+
+    const {sha} = pr.head;
+
+    const { data } = await octokit().rest.checks.listForRef({
+      owner,
+      ref: sha,
+      repo
+    });
+
+    const checks = data.check_runs.map((check) => ({
+      conclusion: check.conclusion,
+      id: check.id,
+      name: check.name,
+      status: check.status
+    }));
+
+    return { checks, success: true };
+  } catch (e) {
+    log.error(e);
+    return { message: e.message, success: false };
+  }
+});
+
 ipcMain.handle('git:api:getPulls', async (_, id: string, pullType: PullType) => {
   try {
     const { owner, repo } = await getRepoInfo(id);

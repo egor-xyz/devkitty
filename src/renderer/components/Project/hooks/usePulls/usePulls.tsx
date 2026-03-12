@@ -111,13 +111,14 @@ export const usePulls = (project: Project) => {
           {pulls.map(({ pull, tags }) => (
             <PullRequest
               key={pull.id}
+              projectId={project.id}
               pull={pull}
               tags={tags}
             />
           ))}
         </div>
       ),
-    [showPulls, isEmpty, pulls, loading]
+    [showPulls, isEmpty, pulls, loading, project.id]
   );
 
   return {

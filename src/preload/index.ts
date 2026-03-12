@@ -23,6 +23,7 @@ const bridge = {
   gitAPI: {
     getAction: (id: string, filterBy: string[]) => ipcRenderer.invoke('git:api:getAction', id, filterBy),
     getJobs: (id: string, runId: number) => ipcRenderer.invoke('git:api:getJobs', id, runId),
+    getPRChecks: (id: string, prNumber: number) => ipcRenderer.invoke('git:api:getPRChecks', id, prNumber),
     getPulls: (id: string, type: (typeof pullTypes)[number]) => ipcRenderer.invoke('git:api:getPulls', id, type),
     reset: (id: string, origin: string, target: string) => ipcRenderer.invoke('git:api:reset', id, origin, target)
   },
@@ -49,6 +50,7 @@ const bridge = {
   worktree: {
     add: (id: string, repoName: string, branch: string, newBranch?: string, copyEnvLocal?: boolean) =>
       ipcRenderer.invoke('git:worktree:add', id, repoName, branch, newBranch, copyEnvLocal),
+    getStatus: (worktreePath: string) => ipcRenderer.invoke('git:worktree:status', worktreePath),
     list: (id: string) => ipcRenderer.invoke('git:worktree:list', id),
     remove: (id: string, path: string, force?: boolean) => ipcRenderer.invoke('git:worktree:remove', id, path, force)
   }

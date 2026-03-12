@@ -29,7 +29,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
   const [isEmpty, setIsEmpty] = useState(false);
   const {
     fetchInterval,
-    gitHubActions: { all, ignoreDependabot, ignoredWorkflows = [], inProgress },
+    gitHubActions: { all, hideDone, ignoreDependabot, ignoredWorkflows = [], inProgress },
     gitHubToken
   } = useAppSettings();
   const { openModal } = useModal();
@@ -75,9 +75,9 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
     setHiddenRuns(new Set());
   }, [project.id]);
 
-  const hideRun = useCallback((runId: number, runName: string) => {
-    openModal({ name: 'action:hide', props: { onConfirm: doHideRun, runId, runName } });
-  }, [openModal, doHideRun]);
+  const hideRun = useCallback((runId: number) => {
+    doHideRun(runId);
+  }, [doHideRun]);
 
   const ignoreWorkflow = useCallback((workflowName: string, workflowPath: string) => {
     openModal({ name: 'ignore:workflow', props: { workflowName, workflowPath } });
@@ -160,6 +160,11 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
           {[...runs]
             .filter((run: Run) => !hiddenRuns.has(run.id))
             .filter((run: Run) => !ignoredWorkflows.includes(run.path))
+            .filter((run: Run) => {
+              if (!hideDone) return true;
+              const isRunning = !run.conclusion || run.status === 'in_progress' || run.status === 'queued' || run.status === 'pending';
+              return isRunning;
+            })
             .sort((a: Run, b: Run) => {
               const timeA = new Date(a.created_at).getTime();
               const timeB = new Date(b.created_at).getTime();
@@ -176,7 +181,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
             ))}
         </>
       ),
-    [runs, showActions, isEmpty, all, inProgress, gitStatus, project, hiddenRuns, hideRun, ignoredWorkflows, ignoreWorkflow]
+    [runs, showActions, isEmpty, all, hideDone, inProgress, gitStatus, project, hiddenRuns, hideRun, ignoredWorkflows, ignoreWorkflow]
   );
 
   return {
