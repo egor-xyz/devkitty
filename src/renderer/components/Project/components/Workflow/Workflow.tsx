@@ -1,5 +1,5 @@
-import { Icon as BPIcon, Button, ButtonGroup, Collapse, Tooltip } from '@blueprintjs/core';
-import { type FC, useEffect, useState } from 'react';
+import { Icon as BPIcon, Button, ButtonGroup, Collapse, Menu, MenuItem, Popover, Tooltip } from '@blueprintjs/core';
+import { type FC, useCallback, useEffect, useState } from 'react';
 import { getStatusIcon } from 'renderer/assets/gitHubStatusUtils';
 import { cn } from 'renderer/utils/cn';
 import { type Run } from 'types/gitHub';
@@ -16,7 +16,7 @@ type Job = {
 };
 
 type Props = {
-  onHide?: (runId: number, runName: string) => void;
+  onHide?: (runId: number) => void;
   onIgnore?: (workflowName: string, workflowPath: string) => void;
   project: Project;
   run: Run;
@@ -57,7 +57,7 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, project, run }) => {
   const StatusIcon = getStatusIcon(conclusion || status);
   const [isOpen, setIsOpen] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [, setLoading] = useState(false);
   const [expandedJobs, setExpandedJobs] = useState<Set<number>>(new Set());
   const [, setRefresh] = useState(0);
 
@@ -75,6 +75,13 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, project, run }) => {
   const openInBrowser = () => {
     window.open(html_url, '_blank');
   };
+
+  const [copied, setCopied] = useState(false);
+  const copyLink = useCallback(() => {
+    navigator.clipboard.writeText(html_url);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  }, [html_url]);
 
   const toggleJobs = async () => {
     if (!isOpen && jobs.length === 0) {
@@ -182,31 +189,17 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, project, run }) => {
         ) : null}
 
         <ButtonGroup onClick={(e) => e.stopPropagation()}>
-          {onIgnore && (
-            <Tooltip compact
-              content="Ignore workflow"
-              hoverOpenDelay={500}
-              placement="bottom"
-            >
-              <Button
-                icon="disable"
-                onClick={() => onIgnore(name, path)}
-              />
-            </Tooltip>
-          )}
-
-          {onHide && (
-            <Tooltip compact
-              content="Hide this action"
-              hoverOpenDelay={500}
-              placement="bottom"
-            >
-              <Button
-                icon="eye-off"
-                onClick={() => onHide(id, display_title)}
-              />
-            </Tooltip>
-          )}
+          <Tooltip compact
+            content={copied ? 'Copied!' : 'Copy link'}
+            hoverOpenDelay={copied ? 0 : 500}
+            placement="bottom"
+          >
+            <Button
+              icon={copied ? 'tick' : 'link'}
+              intent={copied ? 'success' : 'none'}
+              onClick={copyLink}
+            />
+          </Tooltip>
 
           <Tooltip compact
             content="Open in browser"
@@ -218,6 +211,32 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, project, run }) => {
               onClick={openInBrowser}
             />
           </Tooltip>
+
+          <Popover
+            content={
+              <Menu>
+                {onHide && (
+                  <MenuItem
+                    icon="eye-off"
+                    onClick={() => onHide(id)}
+                    text="Hide this action"
+                  />
+                )}
+
+                {onIgnore && (
+                  <MenuItem
+                    icon="disable"
+                    intent="warning"
+                    onClick={() => onIgnore(name, path)}
+                    text="Ignore workflow"
+                  />
+                )}
+              </Menu>
+            }
+            placement="bottom-end"
+          >
+            <Button icon="caret-down" />
+          </Popover>
         </ButtonGroup>
       </div>
 

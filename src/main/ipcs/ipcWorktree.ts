@@ -1,6 +1,7 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron';
 import { copyFile } from 'fs/promises';
 import path from 'path';
+import { simpleGit } from 'simple-git';
 import { type Worktree } from 'types/worktree';
 
 import { getGit, parseWorktreeList } from '../libs/git';
@@ -63,6 +64,22 @@ ipcMain.handle(
     }
   }
 );
+
+ipcMain.handle('git:worktree:status', async (_, worktreePath: string) => {
+  try {
+    const git = simpleGit(worktreePath);
+    const status = await git.status();
+    const isClean = status.isClean();
+    delete status.isClean;
+
+    return {
+      status: { ...status, isClean },
+      success: true
+    };
+  } catch (e) {
+    return { message: e.message, success: false };
+  }
+});
 
 ipcMain.handle('git:worktree:remove', async (_, id: string, worktreePath: string, force?: boolean) => {
   try {

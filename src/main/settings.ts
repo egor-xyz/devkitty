@@ -22,7 +22,13 @@ export const settings = new Store<Settings>({
       gitHubActions: {
         all: true,
         count: 3,
+        hideDone: false,
+        ignoreDependabot: false,
+        ignoredWorkflows: [],
         inProgress: false
+      },
+      gitHubPulls: {
+        pollInterval: 300000
       },
       shells: [],
       showLogo: true,
