@@ -102,12 +102,6 @@ export const usePulls = (project: Project) => {
     () =>
       showPulls && (
         <div className="relative">
-          {isEmpty && pulls.length < 1 && (
-            <div className={cn('flex justify-between items-center py-2.5 px-4', Classes.TEXT_MUTED, loading && Classes.SKELETON)}>
-              <span>No pull request were found</span>
-            </div>
-          )}
-
           {pulls.map(({ pull, tags }) => (
             <PullRequest
               key={pull.id}
