@@ -155,7 +155,7 @@ export const Project: FC<Props> = ({ project }) => {
                   removeProject={removeAlert}
                 />
               }
-              placement="bottom-end"
+              placement="auto-end"
             >
               <Button
                 icon="caret-down"
