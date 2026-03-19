@@ -21,6 +21,7 @@ type Job = {
 type Props = {
   onHide?: (runId: number) => void;
   onIgnore?: (workflowName: string, workflowPath: string) => void;
+  onRefresh?: () => void;
   project: Project;
   run: Run;
 };
@@ -42,7 +43,7 @@ const formatDuration = (start?: string, end?: string) => {
   return `${seconds}s`;
 };
 
-export const Workflow: FC<Props> = ({ onHide, onIgnore, project, run }) => {
+export const Workflow: FC<Props> = ({ onHide, onIgnore, onRefresh, project, run }) => {
   const {
     conclusion,
     created_at,
@@ -66,7 +67,10 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, project, run }) => {
   const [, setLoading] = useState(false);
   const [, setRefresh] = useState(0);
 
+  // Only tick the duration timer while the workflow is still running
   useEffect(() => {
+    if (conclusion) return;
+
     const timer = window.setInterval(() => {
       setRefresh((prev) => prev + 1);
     }, 1000);
@@ -74,7 +78,7 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, project, run }) => {
     return () => {
       window.clearInterval(timer);
     };
-  }, []);
+  }, [conclusion]);
   const runDuration = formatDuration(created_at, conclusion ? updated_at : undefined);
 
   const openInBrowser = () => {
@@ -101,14 +105,25 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, project, run }) => {
   };
 
   useEffect(() => {
-    if (!isOpen || jobs.length === 0 || conclusion) return;
+    if (!isOpen || jobs.length === 0) return;
 
     const pollJobs = async () => {
       const res = await window.bridge.gitAPI.getJobs(project.id, id);
       if (res.success && res.jobs) {
         setJobs(res.jobs);
+
+        // If all jobs are done but the workflow run hasn't updated yet, trigger a refresh
+        if (!conclusion && res.jobs.length > 0 && res.jobs.every((j: Job) => j.conclusion)) {
+          onRefresh?.();
+        }
       }
     };
+
+    // Final fetch when workflow completes to get final job/step statuses
+    if (conclusion) {
+      pollJobs();
+      return;
+    }
 
     let jobPollTimer: null | number = null;
 
@@ -141,7 +156,7 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, project, run }) => {
       stopJobPolling();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [isOpen, jobs.length, id, project.id, conclusion]);
+  }, [isOpen, jobs.length, id, project.id, conclusion, onRefresh]);
 
   return (
     <>
