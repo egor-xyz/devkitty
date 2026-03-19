@@ -31,7 +31,7 @@ jobs:
   release:
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Prepare Git
         id: prepare-git
@@ -40,29 +40,29 @@ jobs:
           git config user.name github-actions
           git config user.email github-actions@github.com
 
+      - name: Enable pnpm
+        run: corepack enable pnpm
+
       - uses: actions/setup-node@v6
         with:
-          cache: npm
+          cache: pnpm
           check-latest: true
           node-version-file: .nvmrc
 
       - name: Install dependencies
-        run: npm ci
-
-      - name: Enable pnpm (needed by electron-builder node module collector)
-        run: corepack enable pnpm
+        run: pnpm install --frozen-lockfile
 
       - name: Bumb version
         id: version
         run: |
-          npm version ${{ github.event.inputs.bump }}
+          pnpm version ${{ github.event.inputs.bump }}
           echo "new_tag=$(git describe --tags --abbrev=0 | sed 's/v//')" >> $GITHUB_OUTPUT
 
       - name: Make
         if: github.event.inputs.dry_run != 'true'
         run: |
           chmod +x add-osx-cert.sh && ./add-osx-cert.sh
-          npm run make
+          pnpm make
         env:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
@@ -72,13 +72,13 @@ jobs:
 
       - name: Make (dry run)
         if: github.event.inputs.dry_run == 'true'
-        run: npm run build
+        run: pnpm build
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
       - name: Generate changelog
         id: changelog
-        uses: mathieudutour/github-tag-action@v6.1
+        uses: mathieudutour/github-tag-action@v6.2
         with:
           custom_tag: ${{ steps.version.outputs.new_tag }}
           github_token: ${{ secrets.GITHUB_TOKEN }}
