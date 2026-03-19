@@ -16,7 +16,7 @@ export default defineConfig({
       },
       // Bundle CJS deps that don't support ESM named exports
       externalizeDeps: {
-        exclude: ['lodash']
+        exclude: ['lodash', 'octokit']
       }
     },
     resolve: {
