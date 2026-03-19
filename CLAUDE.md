@@ -2,6 +2,10 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## Rules
+
+- **Never commit or push automatically.** Only commit and push when the user explicitly asks you to.
+
 ## Project Overview
 
 Devkitty is a macOS Electron desktop application for managing GitHub repositories. It allows users to monitor GitHub actions, manage branches, and integrate with code editors and terminals.
