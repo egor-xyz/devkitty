@@ -97,6 +97,7 @@ export const GroupModal: FC<GroupModalProps & ModalProps> = ({ darkMode, group, 
           autoFocus
           intent={error ? 'danger' : 'none'}
           onChange={handleChange}
+          onKeyDown={(e) => e.key === 'Enter' && handleSave()}
           placeholder="group name..."
           value={name}
         />
