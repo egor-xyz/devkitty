@@ -3,13 +3,7 @@ import { type FC, useEffect, useRef, useState } from 'react';
 import { getStatusIcon } from 'renderer/assets/gitHubStatusUtils';
 import { cn } from 'renderer/utils/cn';
 
-type Step = {
-  completed_at?: string;
-  conclusion?: string;
-  name: string;
-  started_at?: string;
-  status?: string;
-};
+type Column = Job[];
 
 type Job = {
   completed_at?: string;
@@ -26,7 +20,13 @@ type Props = {
   jobs: Job[];
 };
 
-type Column = Job[];
+type Step = {
+  completed_at?: string;
+  conclusion?: string;
+  name: string;
+  started_at?: string;
+  status?: string;
+};
 
 const groupJobsIntoColumns = (jobs: Job[]): Column[] => {
   if (jobs.length === 0) return [];
@@ -99,9 +99,11 @@ const JobCard: FC<{
               size={12}
             />
           )}
+
           <div className="shrink-0">
             <JobIcon />
           </div>
+
           <span className="overflow-hidden text-ellipsis whitespace-nowrap text-xs font-medium">
             {job.name}
           </span>
@@ -128,6 +130,7 @@ const JobCard: FC<{
                   <StepIcon />
                   <span className="overflow-hidden text-ellipsis whitespace-nowrap">{step.name}</span>
                 </div>
+
                 {stepDuration && (
                   <span className="text-[10px] text-bp-gray-2 dark:text-bp-gray-4 ml-2 whitespace-nowrap shrink-0">
                     {stepDuration}

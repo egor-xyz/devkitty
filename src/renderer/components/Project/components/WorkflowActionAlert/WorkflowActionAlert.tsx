@@ -1,6 +1,6 @@
 import { Alert, Classes } from '@blueprintjs/core';
-import { type FC, useState } from 'react';
 import { type IconName } from '@blueprintjs/icons';
+import { type FC, useState } from 'react';
 import { type ModalProps } from 'types/Modal';
 
 export type WorkflowAction = 'cancel' | 'rerun' | 'rerun-failed';
@@ -20,20 +20,20 @@ const config: Record<WorkflowAction, { buttonText: string; icon: IconName; inten
     message: (name) => `Cancel workflow run "${name}"?`
   },
   rerun: {
-    buttonText: 'Restart all',
-    icon: 'refresh',
+    buttonText: 'Re-run all',
+    icon: 'repeat',
     intent: 'primary',
-    message: (name) => `Restart all jobs in "${name}"?`
+    message: (name) => `Re-run all jobs in "${name}"?`
   },
   'rerun-failed': {
-    buttonText: 'Restart failed',
-    icon: 'refresh',
+    buttonText: 'Re-run failed',
+    icon: 'warning-sign',
     intent: 'warning',
-    message: (name) => `Restart failed jobs in "${name}"?`
+    message: (name) => `Re-run failed jobs in "${name}"?`
   }
 };
 
-export const WorkflowActionAlert: FC<WorkflowActionAlertProps & ModalProps> = ({
+export const WorkflowActionAlert: FC<ModalProps & WorkflowActionAlertProps> = ({
   action,
   darkMode,
   isOpen,

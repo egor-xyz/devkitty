@@ -222,17 +222,17 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, project, run }) => {
                 {!isRunning && (
                   <>
                     <MenuItem
-                      icon="refresh"
+                      icon="repeat"
                       onClick={() => openModal({ name: 'workflow:action', props: { action: 'rerun', projectId: project.id, runId: id, runName: name } })}
-                      text="Restart all jobs"
+                      text="Re-run all jobs"
                     />
 
                     {hasFailed && (
                       <MenuItem
-                        icon="refresh"
+                        icon="warning-sign"
                         intent="warning"
                         onClick={() => openModal({ name: 'workflow:action', props: { action: 'rerun-failed', projectId: project.id, runId: id, runName: name } })}
-                        text="Restart failed jobs"
+                        text="Re-run failed jobs"
                       />
                     )}
                   </>
