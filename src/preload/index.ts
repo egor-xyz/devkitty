@@ -21,15 +21,21 @@ const bridge = {
     reset: (id: string, target: string, force: boolean) => ipcRenderer.invoke('git:reset', id, target, force)
   },
   gitAPI: {
+    cancelRun: (id: string, runId: number) => ipcRenderer.invoke('git:api:cancelRun', id, runId),
     getAction: (id: string, filterBy: string[]) => ipcRenderer.invoke('git:api:getAction', id, filterBy),
     getJobs: (id: string, runId: number) => ipcRenderer.invoke('git:api:getJobs', id, runId),
     getPRChecks: (id: string, prNumber: number) => ipcRenderer.invoke('git:api:getPRChecks', id, prNumber),
     getPulls: (id: string, type: (typeof pullTypes)[number]) => ipcRenderer.invoke('git:api:getPulls', id, type),
+    rerunFailedJobs: (id: string, runId: number) => ipcRenderer.invoke('git:api:rerunFailedJobs', id, runId),
+    rerunWorkflow: (id: string, runId: number) => ipcRenderer.invoke('git:api:rerunWorkflow', id, runId),
     reset: (id: string, origin: string, target: string) => ipcRenderer.invoke('git:api:reset', id, origin, target)
   },
   launch: {
     editor: (fullPath: string, editor: FoundEditor) => ipcRenderer.invoke('launch:editor', { editor, fullPath }),
     shell: (fullPath: string, shell: FoundShell<string>) => ipcRenderer.invoke('launch:shell', { fullPath, shell })
+  },
+  notification: {
+    show: (title: string, body: string) => ipcRenderer.invoke('notification:show', title, body)
   },
   projects: {
     add: () => ipcRenderer.invoke('projects:add'),

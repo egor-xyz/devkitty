@@ -29,12 +29,13 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
   const [isEmpty, setIsEmpty] = useState(false);
   const {
     fetchInterval,
-    gitHubActions: { all, hideDone, ignoreDependabot, ignoredWorkflows = [], inProgress },
+    gitHubActions: { all, hideDone, ignoreDependabot, ignoredWorkflows = [], inProgress, notifications = true },
     gitHubToken
   } = useAppSettings();
   const { openModal } = useModal();
 
   const intervalId = useRef<null | number>(null);
+  const prevConclusions = useRef<Map<number, null | string>>(new Map());
 
   const getActions = useCallback(async () => {
     if (!gitStatus?.branchSummary?.current) return;
@@ -58,8 +59,24 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
           return !login?.includes('dependabot');
         })
       : nextRuns;
+
+    for (const run of filteredRuns) {
+      const prev = prevConclusions.current.get(run.id);
+      if (prev === undefined && prevConclusions.current.size > 0 && run.conclusion) {
+        // New run that already has a conclusion — skip notification
+      } else if (prev !== undefined && !prev && run.conclusion && notifications) {
+        const status = run.conclusion === 'success' ? 'passed' : 'failed';
+        const event = run.event !== 'workflow_dispatch' ? run.event : 'manual';
+        window.bridge.notification.show(
+          `${project.name}: ${run.name} ${status}`,
+          `${event} » ${run.head_branch} (#${run.run_number})\n${run.display_title}`
+        );
+      }
+      prevConclusions.current.set(run.id, run.conclusion ?? null);
+    }
+
     setRuns(filteredRuns);
-  }, [gitStatus, project.id, ignoreDependabot]);
+  }, [gitStatus, project.id, ignoreDependabot, project.name]);
 
   const doHideRun = useCallback((runId: number) => {
     setHiddenRuns((prev) => {

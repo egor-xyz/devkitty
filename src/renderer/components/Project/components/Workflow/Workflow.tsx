@@ -1,9 +1,12 @@
-import { Icon as BPIcon, Button, ButtonGroup, Collapse, Menu, MenuItem, Popover, Tooltip } from '@blueprintjs/core';
+import { Button, ButtonGroup, Collapse, Menu, MenuDivider, MenuItem, Popover, Tooltip } from '@blueprintjs/core';
 import { type FC, useCallback, useEffect, useState } from 'react';
 import { getStatusIcon } from 'renderer/assets/gitHubStatusUtils';
+import { useModal } from 'renderer/hooks/useModal';
 import { cn } from 'renderer/utils/cn';
 import { type Run } from 'types/gitHub';
 import { type Project } from 'types/project';
+
+import { WorkflowGraph } from './WorkflowGraph';
 
 type Job = {
   completed_at?: string;
@@ -54,11 +57,13 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, project, run }) => {
     status,
     updated_at
   } = run;
+  const { openModal } = useModal();
   const StatusIcon = getStatusIcon(conclusion || status);
+  const isRunning = !conclusion && (status === 'in_progress' || status === 'queued' || status === 'pending');
+  const hasFailed = conclusion === 'failure' || conclusion === 'timed_out' || conclusion === 'cancelled';
   const [isOpen, setIsOpen] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
   const [, setLoading] = useState(false);
-  const [expandedJobs, setExpandedJobs] = useState<Set<number>>(new Set());
   const [, setRefresh] = useState(0);
 
   useEffect(() => {
@@ -138,16 +143,6 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, project, run }) => {
     };
   }, [isOpen, jobs.length, id, project.id, conclusion]);
 
-  const toggleJobExpanded = (jobId: number) => {
-    const newExpanded = new Set(expandedJobs);
-    if (newExpanded.has(jobId)) {
-      newExpanded.delete(jobId);
-    } else {
-      newExpanded.add(jobId);
-    }
-    setExpandedJobs(newExpanded);
-  };
-
   return (
     <>
       <div
@@ -215,6 +210,36 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, project, run }) => {
           <Popover
             content={
               <Menu>
+                {isRunning && (
+                  <MenuItem
+                    icon="stop"
+                    intent="danger"
+                    onClick={() => openModal({ name: 'workflow:action', props: { action: 'cancel', projectId: project.id, runId: id, runName: name } })}
+                    text="Cancel"
+                  />
+                )}
+
+                {!isRunning && (
+                  <>
+                    <MenuItem
+                      icon="refresh"
+                      onClick={() => openModal({ name: 'workflow:action', props: { action: 'rerun', projectId: project.id, runId: id, runName: name } })}
+                      text="Restart all jobs"
+                    />
+
+                    {hasFailed && (
+                      <MenuItem
+                        icon="refresh"
+                        intent="warning"
+                        onClick={() => openModal({ name: 'workflow:action', props: { action: 'rerun-failed', projectId: project.id, runId: id, runName: name } })}
+                        text="Restart failed jobs"
+                      />
+                    )}
+                  </>
+                )}
+
+                <MenuDivider />
+
                 {onHide && (
                   <MenuItem
                     icon="eye-off"
@@ -241,73 +266,10 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, project, run }) => {
       </div>
 
       <Collapse isOpen={isOpen}>
-        <div className="py-2 pl-5 pr-4 bg-bp-light-gray-5 dark:bg-bp-dark-gray-1 w-full box-border">
-          {jobs.map((job) => {
-            const JobIcon = getStatusIcon(job.conclusion || job.status);
-            const isJobExpanded = expandedJobs.has(job.id);
-            const jobDuration = formatDuration(job.started_at, job.completed_at);
-            return (
-              <div
-                className="p-0 m-0 bg-transparent text-xs"
-                key={job.id}
-              >
-                <div
-                  className={cn(
-                    'flex items-center gap-1.5 py-2 px-2.5 cursor-pointer rounded my-1 select-none justify-between',
-                    'bg-white dark:bg-bp-dark-gray-3 hover:opacity-80'
-                  )}
-                  onClick={() => toggleJobExpanded(job.id)}
-                >
-                  <div className="flex items-center gap-1.5 min-w-0 overflow-hidden [&>span]:overflow-hidden [&>span]:text-ellipsis [&>span]:whitespace-nowrap">
-                    <BPIcon icon={isJobExpanded ? 'chevron-down' : 'chevron-right'} />
-                    <JobIcon />
-                    <span>{job.name}</span>
-                  </div>
-
-                  {jobDuration ? (
-                    <span className="text-[11px] text-bp-gray-2 dark:text-bp-gray-4 ml-2 whitespace-nowrap shrink-0">
-                      {jobDuration}
-                    </span>
-                  ) : null}
-                </div>
-
-                {isJobExpanded && (
-                  <div style={{ paddingLeft: '10px' }}>
-                    {job.steps && job.steps.length > 0 && (
-                      <div style={{ marginTop: '4px' }}>
-                        {job.steps.map((step) => {
-                          const StepIcon = getStatusIcon(step.conclusion || step.status);
-                          const stepDuration = formatDuration(step.started_at, step.completed_at);
-                          return (
-                            <div
-                              className={cn(
-                                'flex items-center gap-2 py-1.5 pl-9 pr-2.5 text-[11px] font-light my-0.5 rounded-sm justify-between',
-                                'bg-white dark:bg-bp-dark-gray-3 dark:text-bp-gray-4',
-                                '[&>svg]:w-3 [&>svg]:h-3 [&>svg]:shrink-0'
-                              )}
-                              key={`${job.id}-step-${step.name}`}
-                            >
-                              <div className="flex items-center gap-2 min-w-0 overflow-hidden [&>span]:overflow-hidden [&>span]:text-ellipsis [&>span]:whitespace-nowrap">
-                                <StepIcon />
-                                <span>{step.name}</span>
-                              </div>
-
-                              {stepDuration ? (
-                                <span className="text-[11px] text-bp-gray-2 dark:text-bp-gray-4 ml-2 whitespace-nowrap shrink-0">
-                                  {stepDuration}
-                                </span>
-                              ) : null}
-                            </div>
-                          );
-                        })}
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
-            );
-          })}
-        </div>
+        <WorkflowGraph
+          formatDuration={formatDuration}
+          jobs={jobs}
+        />
       </Collapse>
     </>
   );

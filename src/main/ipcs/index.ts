@@ -4,5 +4,6 @@ import './ipcProjects';
 import './ipcGit';
 import './ipcLaunch';
 import './ipcGitHub';
+import './ipcNotification';
 import './ipcSticker';
 import './ipcWorktree';

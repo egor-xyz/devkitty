@@ -3,7 +3,7 @@ import { useAppSettings } from 'renderer/hooks/useAppSettings';
 
 export const SettingsActions = () => {
   const { gitHubActions, gitHubPulls, set } = useAppSettings();
-  const { all, count, hideDone = false, ignoreDependabot = false, ignoredWorkflows = [], inProgress } = gitHubActions;
+  const { all, count, hideDone = false, ignoreDependabot = false, ignoredWorkflows = [], inProgress, notifications = true } = gitHubActions;
   const pullsIntervalMinutes = Math.max(1, Math.round(gitHubPulls.pollInterval / 60000));
 
   const removeIgnored = (name: string) => {
@@ -57,6 +57,12 @@ export const SettingsActions = () => {
         checked={hideDone}
         label="Hide completed actions (always show running)"
         onChange={() => set({ gitHubActions: { ...gitHubActions, hideDone: !hideDone } })}
+      />
+
+      <Switch
+        checked={notifications}
+        label="Show macOS notifications when actions complete"
+        onChange={() => set({ gitHubActions: { ...gitHubActions, notifications: !notifications } })}
       />
 
       <Switch

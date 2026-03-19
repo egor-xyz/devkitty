@@ -1,8 +1,6 @@
-import { Classes } from '@blueprintjs/core';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { appToaster } from 'renderer/utils/appToaster';
-import { cn } from 'renderer/utils/cn';
 import { type Pull } from 'types/gitHub';
 import { type Project } from 'types/project';
 
@@ -13,8 +11,20 @@ type PullWithTags = {
   tags: string[];
 };
 
+const hiddenKey = (id: string) => `hiddenPulls:${id}`;
+
+const getHiddenPulls = (projectId: string): Set<number> => {
+  try {
+    const raw = sessionStorage.getItem(hiddenKey(projectId));
+    return raw ? new Set(JSON.parse(raw)) : new Set();
+  } catch {
+    return new Set();
+  }
+};
+
 export const usePulls = (project: Project) => {
   const [pulls, setPulls] = useState<PullWithTags[]>([]);
+  const [hiddenPulls, setHiddenPulls] = useState(() => getHiddenPulls(project.id));
   const [showPulls, setShowPulls] = useState(() => {
     const saved = localStorage.getItem(`showPulls:${project.id}`);
     return saved ? JSON.parse(saved) : false;
@@ -75,6 +85,20 @@ export const usePulls = (project: Project) => {
     });
   }, [gitHubToken, project.id, showPulls]);
 
+  const hidePull = useCallback((pullId: number) => {
+    setHiddenPulls((prev) => {
+      const next = new Set(prev);
+      next.add(pullId);
+      sessionStorage.setItem(hiddenKey(project.id), JSON.stringify([...next]));
+      return next;
+    });
+  }, [project.id]);
+
+  const clearHiddenPulls = useCallback(() => {
+    sessionStorage.removeItem(hiddenKey(project.id));
+    setHiddenPulls(new Set());
+  }, [project.id]);
+
   const refreshPulls = useCallback(() => {
     getPulls();
   }, [getPulls]);
@@ -102,21 +126,26 @@ export const usePulls = (project: Project) => {
     () =>
       showPulls && (
         <div className="relative">
-          {pulls.map(({ pull, tags }) => (
-            <PullRequest
-              key={pull.id}
-              projectId={project.id}
-              pull={pull}
-              tags={tags}
-            />
-          ))}
+          {pulls
+            .filter(({ pull }) => !hiddenPulls.has(pull.id))
+            .map(({ pull, tags }) => (
+              <PullRequest
+                key={pull.id}
+                onHide={hidePull}
+                projectId={project.id}
+                pull={pull}
+                tags={tags}
+              />
+            ))}
         </div>
       ),
-    [showPulls, isEmpty, pulls, loading, project.id]
+    [showPulls, isEmpty, pulls, loading, project.id, hiddenPulls, hidePull]
   );
 
   return {
+    clearHiddenPulls,
     getPulls,
+    hiddenPullCount: hiddenPulls.size,
     Pulls,
     refreshPulls,
     showPulls,

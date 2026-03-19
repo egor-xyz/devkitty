@@ -111,6 +111,45 @@ ipcMain.handle('git:api:getJobs', async (_, id: string, runId: number) => {
   }
 });
 
+ipcMain.handle('git:api:cancelRun', async (_, id: string, runId: number) => {
+  try {
+    const { owner, repo } = await getRepoInfo(id);
+    if (!owner || !repo) throw new Error('Project not found');
+
+    await octokit().rest.actions.cancelWorkflowRun({ owner, repo, run_id: runId });
+    return { success: true };
+  } catch (e) {
+    log.error(e);
+    return { message: e.message, success: false };
+  }
+});
+
+ipcMain.handle('git:api:rerunWorkflow', async (_, id: string, runId: number) => {
+  try {
+    const { owner, repo } = await getRepoInfo(id);
+    if (!owner || !repo) throw new Error('Project not found');
+
+    await octokit().rest.actions.reRunWorkflow({ owner, repo, run_id: runId });
+    return { success: true };
+  } catch (e) {
+    log.error(e);
+    return { message: e.message, success: false };
+  }
+});
+
+ipcMain.handle('git:api:rerunFailedJobs', async (_, id: string, runId: number) => {
+  try {
+    const { owner, repo } = await getRepoInfo(id);
+    if (!owner || !repo) throw new Error('Project not found');
+
+    await octokit().rest.actions.reRunWorkflowFailedJobs({ owner, repo, run_id: runId });
+    return { success: true };
+  } catch (e) {
+    log.error(e);
+    return { message: e.message, success: false };
+  }
+});
+
 ipcMain.handle('git:api:getPRChecks', async (_, id: string, prNumber: number) => {
   try {
     const { owner, repo } = await getRepoInfo(id);

@@ -11,6 +11,7 @@ export type AppSettings = {
     ignoreDependabot: boolean;
     ignoredWorkflows: string[];
     inProgress: boolean;
+    notifications: boolean;
   };
   gitHubPulls: {
     pollInterval: number;

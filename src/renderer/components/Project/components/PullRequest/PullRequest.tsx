@@ -1,4 +1,4 @@
-import { Button, Icon, Tooltip } from '@blueprintjs/core';
+import { Button, ButtonGroup, Icon, Menu, MenuItem, Popover, Tooltip } from '@blueprintjs/core';
 import { readableColor } from 'polished';
 import { type FC, useEffect, useState } from 'react';
 import { cn } from 'renderer/utils/cn';
@@ -13,6 +13,7 @@ type Check = {
 };
 
 type Props = {
+  onHide?: (pullId: number) => void;
   projectId: string;
   pull: Pull;
   tags?: string[];
@@ -28,7 +29,7 @@ const getChecksSummary = (checks: Check[]) => {
   return { failed, pending, success, total: checks.length };
 };
 
-export const PullRequest: FC<Props> = ({ projectId, pull, tags = [] }) => {
+export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) => {
   const { created_at, draft, html_url, labels, number, title, user } = pull;
   const [checks, setChecks] = useState<Check[]>([]);
 
@@ -142,7 +143,7 @@ export const PullRequest: FC<Props> = ({ projectId, pull, tags = [] }) => {
         </div>
       </div>
 
-      <div className="flex gap-1 items-center shrink-0 justify-end min-w-[100px]">
+      <ButtonGroup>
         <Tooltip compact
           content="Open in browser"
           hoverOpenDelay={500}
@@ -153,7 +154,24 @@ export const PullRequest: FC<Props> = ({ projectId, pull, tags = [] }) => {
             onClick={openInBrowser}
           />
         </Tooltip>
-      </div>
+
+        <Popover
+          content={
+            <Menu>
+              {onHide && (
+                <MenuItem
+                  icon="eye-off"
+                  onClick={() => onHide(pull.id)}
+                  text="Hide this PR"
+                />
+              )}
+            </Menu>
+          }
+          placement="bottom-end"
+        >
+          <Button icon="caret-down" />
+        </Popover>
+      </ButtonGroup>
     </div>
   );
 };
