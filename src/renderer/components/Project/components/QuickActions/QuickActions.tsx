@@ -2,7 +2,6 @@ import { Button, ButtonGroup, Classes, Tooltip } from '@blueprintjs/core';
 import { type FC, useState } from 'react';
 import { FaCopy, FaRegCopy } from 'react-icons/fa';
 import { ActionsIcon } from 'renderer/assets/gitHubIcons';
-import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useModal } from 'renderer/hooks/useModal';
 import { type GitStatus, type Project } from 'types/project';
 
@@ -15,8 +14,10 @@ type Props = {
   project: Project;
   showActions: boolean;
   showPulls: boolean;
+  showWorktrees: boolean;
   toggleActions: () => void;
   togglePulls: () => void;
+  toggleWorktrees: () => void;
 };
 
 export const QuickActions: FC<Props> = ({
@@ -26,11 +27,12 @@ export const QuickActions: FC<Props> = ({
   project,
   showActions,
   showPulls,
+  showWorktrees,
   toggleActions,
-  togglePulls
+  togglePulls,
+  toggleWorktrees
 }) => {
   const { openModal } = useModal();
-  const { set, showWorktrees } = useAppSettings();
   const [copyIcon, setCopyIcon] = useState(
     <FaRegCopy
       className="text-bp-gray-1 dark:text-bp-gray-4"
@@ -97,7 +99,7 @@ export const QuickActions: FC<Props> = ({
             active={showWorktrees}
             icon="diagram-tree"
             loading={loading}
-            onClick={() => set({ showWorktrees: !showWorktrees })}
+            onClick={toggleWorktrees}
           />
         </Tooltip>
 

@@ -1,6 +1,5 @@
 import { Button, ButtonGroup, Classes, Colors, Icon, Popover } from '@blueprintjs/core';
-import { type FC, useState } from 'react';
-import { useAppSettings } from 'renderer/hooks/useAppSettings';
+import { type FC, useCallback, useState } from 'react';
 import { useGit } from 'renderer/hooks/useGit';
 import { useModal } from 'renderer/hooks/useModal';
 import { useMountEffect } from 'renderer/hooks/useMountEffect';
@@ -23,11 +22,22 @@ type Props = {
 export const Project: FC<Props> = ({ project }) => {
   const { getStatus, gitStatus, loading, pull } = useGit();
   const { openModal } = useModal();
-  const { showWorktrees } = useAppSettings();
+  const [showWorktrees, setShowWorktrees] = useState(() => {
+    const saved = localStorage.getItem(`showWorktrees:${project.id}`);
+    return saved ? JSON.parse(saved) : false;
+  });
   const [pullLoading, setPullLoading] = useState(false);
 
+  const toggleWorktrees = useCallback(() => {
+    setShowWorktrees((prev: boolean) => {
+      const newValue = !prev;
+      localStorage.setItem(`showWorktrees:${project.id}`, JSON.stringify(newValue));
+      return newValue;
+    });
+  }, [project.id]);
+
   const { Actions, clearHiddenRuns, getActions, hiddenCount, showActions, toggleActions } = useActions(gitStatus, project);
-  const { Pulls, refreshPulls, showPulls, togglePulls } = usePulls(project);
+  const { clearHiddenPulls, hiddenPullCount, Pulls, refreshPulls, showPulls, togglePulls } = usePulls(project);
 
   const { filePath, groupId, id, name } = project;
 
@@ -103,8 +113,10 @@ export const Project: FC<Props> = ({ project }) => {
             project={project}
             showActions={showActions}
             showPulls={showPulls}
+            showWorktrees={showWorktrees}
             toggleActions={toggleActions}
             togglePulls={togglePulls}
+            toggleWorktrees={toggleWorktrees}
           />
         </div>
 
@@ -129,12 +141,14 @@ export const Project: FC<Props> = ({ project }) => {
             <Popover
               content={
                 <ProjectMenu
+                  clearHiddenPulls={clearHiddenPulls}
                   clearHiddenRuns={clearHiddenRuns}
                   filePath={filePath}
                   getStatus={updateProject}
                   gitStatus={gitStatus}
                   groupId={groupId}
                   hiddenCount={hiddenCount}
+                  hiddenPullCount={hiddenPullCount}
                   id={id}
                   name={name}
                   pull={runPull}

@@ -27,6 +27,10 @@ import {
   RemoveWorktreeAlert,
   type RemoveWorktreeAlertProps
 } from 'renderer/components/Project/components/RemoveWorktreeAlert/RemoveWorktreeAlert';
+import {
+  WorkflowActionAlert,
+  type WorkflowActionAlertProps
+} from 'renderer/components/Project/components/WorkflowActionAlert/WorkflowActionAlert';
 import { type ModalProps } from 'types/Modal';
 import { create } from 'zustand';
 
@@ -74,6 +78,10 @@ type ActiveModal = ModalProps &
         name: 'sticker:add';
         props: ModalProps;
       }
+    | {
+        name: 'workflow:action';
+        props: WorkflowActionAlertProps;
+      }
   );
 
 type State = {
@@ -92,7 +100,8 @@ const Modals: Record<ActiveModal['name'], FC<ActiveModal['props']>> = {
   'ignore:workflow': IgnoreWorkflowAlert,
   'remove:group': RemoveGroupAlert,
   'remove:project': RemoveAlert,
-  'sticker:add': TrayStickerModal
+  'sticker:add': TrayStickerModal,
+  'workflow:action': WorkflowActionAlert
 };
 
 export const useModal = create<State>()((set, get) => ({

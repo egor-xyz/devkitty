@@ -11,19 +11,21 @@ import Warp from '../../assets/Warp.svg?react';
 import { GroupsSelect } from '../GroupsSelect';
 
 type Props = {
+  clearHiddenPulls: () => void;
   clearHiddenRuns: () => void;
   filePath: string;
   getStatus: () => void;
   gitStatus: GitStatus;
   groupId?: string;
   hiddenCount: number;
+  hiddenPullCount: number;
   id: string;
   name: string;
   pull: () => void;
   removeProject: () => void;
 };
 
-export const ProjectMenu: FC<Props> = ({ clearHiddenRuns, filePath, getStatus, gitStatus, groupId, hiddenCount, id, name, pull, removeProject }) => {
+export const ProjectMenu: FC<Props> = ({ clearHiddenPulls, clearHiddenRuns, filePath, getStatus, gitStatus, groupId, hiddenCount, hiddenPullCount, id, name, pull, removeProject }) => {
   const { openModal } = useModal();
   const { selectedEditor, selectedShell } = useAppSettings();
 
@@ -73,6 +75,13 @@ export const ProjectMenu: FC<Props> = ({ clearHiddenRuns, filePath, getStatus, g
         icon="eye-open"
         onClick={clearHiddenRuns}
         text={hiddenCount > 0 ? `Unhide actions (${hiddenCount})` : 'Unhide actions'}
+      />
+
+      <MenuItem
+        disabled={hiddenPullCount === 0}
+        icon="eye-open"
+        onClick={clearHiddenPulls}
+        text={hiddenPullCount > 0 ? `Unhide PRs (${hiddenPullCount})` : 'Unhide PRs'}
       />
 
       <MenuDivider />
