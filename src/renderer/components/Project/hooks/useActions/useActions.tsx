@@ -130,7 +130,7 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
     const stopPolling = () => {
       if (intervalId.current) {
         window.clearInterval(intervalId.current);
-        intervalId.current = undefined;
+        intervalId.current = null;
       }
     };
 
@@ -192,13 +192,14 @@ export const useActions = (gitStatus: GitStatus, project: Project) => {
                 key={run.id}
                 onHide={hideRun}
                 onIgnore={ignoreWorkflow}
+                onRefresh={getActions}
                 project={project}
                 run={run}
               />
             ))}
         </>
       ),
-    [runs, showActions, isEmpty, all, hideDone, inProgress, gitStatus, project, hiddenRuns, hideRun, ignoredWorkflows, ignoreWorkflow]
+    [runs, showActions, isEmpty, all, hideDone, inProgress, gitStatus, project, hiddenRuns, hideRun, ignoredWorkflows, ignoreWorkflow, getActions]
   );
 
   return {
