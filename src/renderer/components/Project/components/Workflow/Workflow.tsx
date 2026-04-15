@@ -1,5 +1,5 @@
 import { Button, ButtonGroup, Collapse, Menu, MenuDivider, MenuItem, Popover, Tooltip } from '@blueprintjs/core';
-import { type FC, useCallback, useEffect, useState } from 'react';
+import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { getStatusIcon } from 'renderer/assets/gitHubStatusUtils';
 import { useModal } from 'renderer/hooks/useModal';
 import { cn } from 'renderer/utils/cn';
@@ -59,11 +59,20 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, onRefresh, project, run 
     updated_at
   } = run;
   const { openModal } = useModal();
-  const StatusIcon = getStatusIcon(conclusion || status);
-  const isRunning = !conclusion && (status === 'in_progress' || status === 'queued' || status === 'pending');
-  const hasFailed = conclusion === 'failure' || conclusion === 'timed_out' || conclusion === 'cancelled';
   const [isOpen, setIsOpen] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
+
+  // GitHub's workflow-run status can lag behind the actual state of jobs
+  // (e.g. still reporting "waiting" or "queued" while jobs are already executing
+  // or have even completed). When we have job data, prefer it over run.status.
+  const effectiveStatus = useMemo(() => {
+    if (conclusion) return conclusion;
+    if (jobs.some((j) => j.status === 'in_progress' || j.conclusion)) return 'in_progress';
+    return status;
+  }, [conclusion, status, jobs]);
+  const StatusIcon = getStatusIcon(effectiveStatus);
+  const isRunning = !conclusion && (effectiveStatus === 'in_progress' || effectiveStatus === 'queued' || effectiveStatus === 'pending' || effectiveStatus === 'waiting');
+  const hasFailed = conclusion === 'failure' || conclusion === 'timed_out' || conclusion === 'cancelled';
   const [, setLoading] = useState(false);
   const [, setRefresh] = useState(0);
 
@@ -129,7 +138,7 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, onRefresh, project, run 
 
     const startJobPolling = () => {
       if (!jobPollTimer) {
-        jobPollTimer = window.setInterval(pollJobs, 10000);
+        jobPollTimer = window.setInterval(pollJobs, 5000);
       }
     };
 
@@ -169,7 +178,7 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, onRefresh, project, run 
       >
         <div className="overflow-hidden flex text-left justify-start gap-4 items-center flex-1 min-w-0">
           <div className="w-[30px] shrink-0 flex justify-center"
-            title={conclusion || status}
+            title={effectiveStatus}
           >
             <StatusIcon />
           </div>
