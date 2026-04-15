@@ -28,46 +28,44 @@ type Step = {
   status?: string;
 };
 
-const groupJobsIntoColumns = (jobs: Job[]): Column[] => {
+const startMs = (j: Job) => (j.started_at ? new Date(j.started_at).getTime() : Infinity);
+const endMs = (j: Job) => (j.completed_at ? new Date(j.completed_at).getTime() : Infinity);
+
+export const groupJobsIntoColumns = (jobs: Job[]): Column[] => {
   if (jobs.length === 0) return [];
 
-  const sorted = [...jobs].sort((a, b) => {
-    const aStart = a.started_at ? new Date(a.started_at).getTime() : Infinity;
-    const bStart = b.started_at ? new Date(b.started_at).getTime() : Infinity;
-    return aStart - bStart;
-  });
+  // Sort by started_at; not-yet-started jobs sort to the end (Infinity)
+  const sorted = [...jobs].sort((a, b) => startMs(a) - startMs(b));
 
   const columns: Column[] = [];
-  const assigned = new Set<number>();
 
   for (const job of sorted) {
-    if (assigned.has(job.id)) continue;
+    const jobStart = startMs(job);
+    const jobEnd = endMs(job);
 
-    // Find which column this job belongs to
+    // Find the first column where this job's execution overlaps with an existing job.
+    // Two jobs are in the same column if their run intervals overlap — i.e. they ran
+    // in parallel. Jobs that run strictly after all of a column's jobs have finished
+    // get placed in a new column (they represent a later stage in the dep graph).
     let placed = false;
     for (const col of columns) {
-      // Check if this job overlaps with any job in this column
-      const colLatestEnd = Math.max(
-        ...col.map((j) => (j.completed_at ? new Date(j.completed_at).getTime() : Date.now()))
-      );
-      const colEarliestStart = Math.min(
-        ...col.map((j) => (j.started_at ? new Date(j.started_at).getTime() : Infinity))
-      );
-      const jobStart = job.started_at ? new Date(job.started_at).getTime() : Infinity;
+      const overlaps = col.some((j) => {
+        const jStart = startMs(j);
+        const jEnd = endMs(j);
+        // Both not-yet-started: treat as parallel (queued together).
+        if (jobStart === Infinity && jStart === Infinity) return true;
+        // Standard half-open interval overlap: [jobStart, jobEnd) ∩ [jStart, jEnd) ≠ ∅
+        return jobStart < jEnd && jStart < jobEnd;
+      });
 
-      // Job started while column jobs were still running — it's parallel
-      if (jobStart >= colEarliestStart && jobStart < colLatestEnd + 2000) {
+      if (overlaps) {
         col.push(job);
-        assigned.add(job.id);
         placed = true;
         break;
       }
     }
 
-    if (!placed) {
-      columns.push([job]);
-      assigned.add(job.id);
-    }
+    if (!placed) columns.push([job]);
   }
 
   return columns;
