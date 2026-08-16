@@ -128,18 +128,16 @@ export const Project: FC<Props> = ({ project }) => {
     <>
       <div
         className={cn(
-          'flex relative items-center justify-between min-h-[55px] py-0.5 pl-5 pr-4',
+          'flex relative items-center gap-2.5 min-h-[55px] py-0.5 pl-5 pr-4',
           'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
           '[&+&]:mt-0.5'
         )}
       >
-        <div className="flex flex-1 items-center justify-between w-full pr-2.5 gap-2.5">
-          <div className={cn('flex flex-col', loading && !gitStatus && Classes.SKELETON)}>
-            <div className="font-medium">{name}</div>
+        <div className={cn('flex flex-col shrink-0', loading && !gitStatus && Classes.SKELETON)}>
+          <div className="font-medium">{name}</div>
 
-            <div className="text-[11px] font-light -mt-0.5 dark:text-bp-gray-3">
-              {gitStatus?.organization ?? 'Local git'}
-            </div>
+          <div className="text-[11px] font-light -mt-0.5 dark:text-bp-gray-3">
+            {gitStatus?.organization ?? 'Local git'}
           </div>
         </div>
 
@@ -153,7 +151,7 @@ export const Project: FC<Props> = ({ project }) => {
 
         <div
           className={cn(
-            'flex relative flex-row-reverse min-w-[79px] ml-auto select-none',
+            'flex relative flex-row-reverse min-w-[79px] select-none',
             !gitStatus && Classes.SKELETON
           )}
         >

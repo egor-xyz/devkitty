@@ -174,12 +174,12 @@ export const CheckoutCard: FC<Props> = ({
     <>
       <div
         className={cn(
-          'flex relative items-center justify-between min-h-[45px] py-1 pl-10 pr-4 gap-2 w-full box-border shrink-0 mt-0.5',
+          'flex relative items-center justify-start min-h-[45px] py-1 pl-10 pr-4 gap-4 w-full box-border shrink-0 mt-0.5',
           'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
           deleting && 'opacity-50 pointer-events-none'
         )}
       >
-        <div className="overflow-hidden flex text-left justify-start gap-4 items-center flex-1 min-w-0">
+        <div className="overflow-hidden flex text-left justify-start gap-4 items-center min-w-0 max-w-[420px]">
           <div className="overflow-hidden flex flex-col">
             <div className="overflow-hidden text-ellipsis whitespace-nowrap">
               <b>{worktree.branch}</b>
@@ -234,7 +234,7 @@ export const CheckoutCard: FC<Props> = ({
           )}
         </div>
 
-        <div className="flex min-w-[240px]">
+        <div className="flex shrink-0 min-w-[240px]">
           {isMain && (
             <CheckoutBranch
               getStatus={onRefresh}
@@ -245,7 +245,7 @@ export const CheckoutCard: FC<Props> = ({
           )}
         </div>
 
-        <ButtonGroup>
+        <ButtonGroup className="ml-auto">
           {isMain && Boolean(status?.behind) && (
             <Tooltip compact
               content="Pull"
