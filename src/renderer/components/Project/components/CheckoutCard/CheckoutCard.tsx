@@ -189,7 +189,7 @@ export const CheckoutCard: FC<Props> = ({
           />
         </Tooltip>
 
-        <div className="overflow-hidden flex text-left justify-start gap-4 items-center min-w-0 max-w-[420px]">
+        <div className="overflow-hidden flex flex-1 text-left justify-start gap-4 items-center min-w-0">
           <div className="overflow-hidden flex flex-col">
             <div className="overflow-hidden text-ellipsis whitespace-nowrap">
               <b>{worktree.branch}</b>
@@ -244,16 +244,16 @@ export const CheckoutCard: FC<Props> = ({
           )}
         </div>
 
-        <div className="flex shrink-0 min-w-[240px]">
-          {isMain && (
+        {isMain && (
+          <div className="flex shrink-0 min-w-[240px]">
             <CheckoutBranch
               getStatus={onRefresh}
               gitStatus={gitStatus}
               id={project.id}
               name={project.name}
             />
-          )}
-        </div>
+          </div>
+        )}
 
         <ButtonGroup className="ml-auto">
           {isMain && Boolean(status?.behind) && (

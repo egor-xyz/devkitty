@@ -179,16 +179,14 @@ export const Project: FC<Props> = ({ project }) => {
           key={worktree.path}
           leading={
             worktree.isMain ? (
-              <div className={cn('flex flex-col shrink-0 w-[130px]', loading && !gitStatus && Classes.SKELETON)}>
+              <div className={cn('flex flex-col shrink-0 max-w-[160px]', loading && !gitStatus && Classes.SKELETON)}>
                 <div className="font-medium truncate">{name}</div>
 
                 <div className="text-[11px] font-light -mt-0.5 truncate dark:text-bp-gray-3">
                   {gitStatus?.organization ?? 'Local git'}
                 </div>
               </div>
-            ) : (
-              <div className="w-[130px] shrink-0" />
-            )
+            ) : undefined
           }
           onHidePull={hidePull}
           onHideRun={hideRun}
