@@ -23,7 +23,15 @@ const getHidden = (key: string): Set<number> => {
   }
 };
 
-export const useRepoData = (project: Project) => {
+/**
+ * Fetches the runs and pull requests of a whole repo once and groups them by
+ * branch, so every checkout card can render its own slice.
+ *
+ * `pollRuns` gates the *repeating* runs poll: the caller passes `true` only
+ * while at least one of the repo's checkout cards is expanded. Runs are still
+ * fetched once on mount so a failing run can auto-expand its card.
+ */
+export const useRepoData = (project: Project, pollRuns: boolean) => {
   const [runs, setRuns] = useState<Run[]>([]);
   const [pulls, setPulls] = useState<PullWithTags[]>([]);
   const [hiddenRuns, setHiddenRuns] = useState(() => getHidden(hiddenRunsKey(project.id)));
@@ -39,6 +47,7 @@ export const useRepoData = (project: Project) => {
   const runsIntervalId = useRef<null | number>(null);
   const pullsIntervalId = useRef<null | number>(null);
   const prevConclusions = useRef<Map<number, null | string>>(new Map());
+  const initialRunsFetched = useRef(false);
 
   const getRuns = useCallback(async () => {
     if (!gitHubToken) return;
@@ -87,7 +96,15 @@ export const useRepoData = (project: Project) => {
   useEffect(() => {
     if (!gitHubToken) return;
 
-    getRuns();
+    // One fetch per mount even while every card is collapsed — `Project` needs
+    // the runs to know whether a card should auto-expand on a failing run.
+    // Expanding a card refetches immediately, then keeps polling.
+    if (!initialRunsFetched.current || pollRuns) {
+      initialRunsFetched.current = true;
+      getRuns();
+    }
+
+    if (!pollRuns) return;
 
     const startPolling = () => {
       if (!runsIntervalId.current && fetchInterval > 2000) {
@@ -118,7 +135,7 @@ export const useRepoData = (project: Project) => {
       stopPolling();
       document.removeEventListener('visibilitychange', handleVisibilityChange);
     };
-  }, [fetchInterval, getRuns, gitHubToken]);
+  }, [fetchInterval, getRuns, gitHubToken, pollRuns]);
 
   useEffect(() => {
     if (!gitHubToken) return;

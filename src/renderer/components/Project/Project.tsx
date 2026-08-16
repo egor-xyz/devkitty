@@ -1,5 +1,5 @@
 import { Button, ButtonGroup, Classes, Colors, Icon, Popover } from '@blueprintjs/core';
-import { type FC, Fragment, useMemo } from 'react';
+import { type FC, Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGit } from 'renderer/hooks/useGit';
 import { useModal } from 'renderer/hooks/useModal';
 import { useMountEffect } from 'renderer/hooks/useMountEffect';
@@ -18,9 +18,35 @@ type Props = {
   project: IProject;
 };
 
+const expandedKey = (projectId: string, path: string) => `showChecks:${projectId}:${path}`;
+
+const readExpanded = (projectId: string, path: string): boolean | null => {
+  const saved = localStorage.getItem(expandedKey(projectId, path));
+  return saved ? JSON.parse(saved) : null;
+};
+
 export const Project: FC<Props> = ({ project }) => {
   const { getStatus, gitStatus, loading, pull } = useGit();
   const { openModal } = useModal();
+
+  const { filePath, groupId, id, name } = project;
+
+  // A repo always has at least its main worktree. Older status payloads and
+  // failed `git worktree list` calls leave it undefined — synthesise it so a
+  // zero-worktree repo still renders exactly one card.
+  const worktrees: Worktree[] = useMemo(() => {
+    if (gitStatus?.worktrees?.length) return gitStatus.worktrees;
+    if (!gitStatus?.branchSummary?.current) return [];
+
+    return [{ branch: gitStatus.branchSummary.current, isMain: true, path: filePath }];
+  }, [filePath, gitStatus]);
+
+  // Expand state lives here, not in the cards: fetching runs costs API budget,
+  // so a repo is only polled while at least one of its cards is expanded.
+  const [expandedPaths, setExpandedPaths] = useState<Record<string, boolean>>({});
+  const autoExpanded = useRef<Set<string>>(new Set());
+
+  const anyExpanded = worktrees.some(({ path }) => expandedPaths[path]);
 
   const {
     clearHiddenPulls,
@@ -33,9 +59,43 @@ export const Project: FC<Props> = ({ project }) => {
     pullsByBranch,
     refresh,
     runsByBranch
-  } = useRepoData(project);
+  } = useRepoData(project, anyExpanded);
 
-  const { filePath, groupId, id, name } = project;
+  // Worktrees arrive asynchronously — seed each new card from its saved state.
+  useEffect(() => {
+    setExpandedPaths((prev) => {
+      const unseen = worktrees.filter(({ path }) => !(path in prev));
+      if (unseen.length === 0) return prev;
+
+      const next = { ...prev };
+      for (const { path } of unseen) next[path] = readExpanded(id, path) ?? false;
+      return next;
+    });
+  }, [id, worktrees]);
+
+  // Auto-expand a card once when its checkout has a failing run, unless the
+  // user already made an explicit choice for that card.
+  useEffect(() => {
+    for (const { branch, path } of worktrees) {
+      if (autoExpanded.current.has(path)) continue;
+      if (readExpanded(id, path) !== null) continue;
+      if (!(runsByBranch[branch] ?? []).some((run) => run.conclusion === 'failure')) continue;
+
+      autoExpanded.current.add(path);
+      setExpandedPaths((prev) => ({ ...prev, [path]: true }));
+    }
+  }, [id, runsByBranch, worktrees]);
+
+  const toggleExpanded = useCallback(
+    (path: string) => {
+      setExpandedPaths((prev) => {
+        const next = !prev[path];
+        localStorage.setItem(expandedKey(id, path), JSON.stringify(next));
+        return { ...prev, [path]: next };
+      });
+    },
+    [id]
+  );
 
   const updateProject = () => {
     refresh();
@@ -61,16 +121,6 @@ export const Project: FC<Props> = ({ project }) => {
   useMountEffect(() => {
     getStatus(id, true);
   });
-
-  // A repo always has at least its main worktree. Older status payloads and
-  // failed `git worktree list` calls leave it undefined — synthesise it so a
-  // zero-worktree repo still renders exactly one card.
-  const worktrees: Worktree[] = useMemo(() => {
-    if (gitStatus?.worktrees?.length) return gitStatus.worktrees;
-    if (!gitStatus?.branchSummary?.current) return [];
-
-    return [{ branch: gitStatus.branchSummary.current, isMain: true, path: filePath }];
-  }, [filePath, gitStatus]);
 
   const orphans = getOrphanPulls(worktrees.map((worktree) => worktree.branch)).filter(({ tags }) => tags.length > 0);
   const behind = gitStatus?.status?.behind ?? 0;
@@ -161,11 +211,13 @@ export const Project: FC<Props> = ({ project }) => {
       {worktrees.map((worktree) => (
         <Fragment key={worktree.path}>
           <CheckoutCard
+            expanded={Boolean(expandedPaths[worktree.path])}
             gitStatus={worktree.isMain ? gitStatus : undefined}
             onHidePull={hidePull}
             onHideRun={hideRun}
             onIgnoreWorkflow={ignoreWorkflow}
             onRefresh={updateProject}
+            onToggleExpanded={() => toggleExpanded(worktree.path)}
             project={project}
             pulls={pullsByBranch[worktree.branch] ?? []}
             runs={runsByBranch[worktree.branch] ?? []}

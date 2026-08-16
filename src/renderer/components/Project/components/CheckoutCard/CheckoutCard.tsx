@@ -1,5 +1,5 @@
 import { Button, ButtonGroup, Icon, Tooltip } from '@blueprintjs/core';
-import { type FC, Fragment, useCallback, useEffect, useRef, useState } from 'react';
+import { type FC, Fragment, useCallback, useEffect, useState } from 'react';
 import { ActionsIcon } from 'renderer/assets/gitHubIcons';
 import { GitStatusBadge } from 'renderer/components/GitStatusBadge';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
@@ -22,30 +22,27 @@ type CheckoutStatus = {
 };
 
 type Props = {
+  expanded: boolean;
   gitStatus?: GitStatus;
   onHidePull: (pullId: number) => void;
   onHideRun: (runId: number) => void;
   onIgnoreWorkflow: (workflowName: string, workflowPath: string) => void;
   onRefresh: () => void;
+  onToggleExpanded: () => void;
   project: Project;
   pulls: PullWithTags[];
   runs: Run[];
   worktree: Worktree;
 };
 
-const expandedKey = (projectId: string, path: string) => `showChecks:${projectId}:${path}`;
-
-const readExpanded = (projectId: string, path: string): boolean | null => {
-  const saved = localStorage.getItem(expandedKey(projectId, path));
-  return saved ? JSON.parse(saved) : null;
-};
-
 export const CheckoutCard: FC<Props> = ({
+  expanded,
   gitStatus,
   onHidePull,
   onHideRun,
   onIgnoreWorkflow,
   onRefresh,
+  onToggleExpanded,
   project,
   pulls,
   runs,
@@ -56,8 +53,6 @@ export const CheckoutCard: FC<Props> = ({
   const [status, setStatus] = useState<CheckoutStatus | null>(null);
   const [pullLoading, setPullLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
-  const [expanded, setExpanded] = useState(() => readExpanded(project.id, worktree.path) ?? false);
-  const autoExpanded = useRef(false);
 
   const { isMain } = worktree;
   const abbreviated = worktree.path.replace(/^.*\//, '.../');
@@ -91,25 +86,6 @@ export const CheckoutCard: FC<Props> = ({
 
     fetchStatus();
   }, [fetchStatus, gitStatus, isMain]);
-
-  // Auto-expand once when this checkout has a failing run, unless the user
-  // already made an explicit choice for this card.
-  useEffect(() => {
-    if (autoExpanded.current) return;
-    if (readExpanded(project.id, worktree.path) !== null) return;
-    if (!runs.some((run) => run.conclusion === 'failure')) return;
-
-    autoExpanded.current = true;
-    setExpanded(true);
-  }, [project.id, runs, worktree.path]);
-
-  const toggleExpanded = () => {
-    setExpanded((prev) => {
-      const next = !prev;
-      localStorage.setItem(expandedKey(project.id, worktree.path), JSON.stringify(next));
-      return next;
-    });
-  };
 
   const runPull = async () => {
     setPullLoading(true);
@@ -251,7 +227,7 @@ export const CheckoutCard: FC<Props> = ({
             <Button
               active={expanded}
               icon={<ActionsIcon />}
-              onClick={toggleExpanded}
+              onClick={onToggleExpanded}
             />
           </Tooltip>
 
