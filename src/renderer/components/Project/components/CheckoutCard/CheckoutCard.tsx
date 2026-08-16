@@ -121,11 +121,10 @@ export const CheckoutCard: FC<Props> = ({
     navigator.clipboard.writeText(worktree.branch);
   };
 
+  // Only the main checkout offers a pull button, so this only ever runs there.
   const runPull = async () => {
     setPullLoading(true);
-    const res = isMain
-      ? await window.bridge.git.pull(project.id)
-      : await window.bridge.worktree.pull(project.id, worktree.path);
+    const res = await window.bridge.git.pull(project.id);
     setPullLoading(false);
 
     if (!res.success) {
@@ -175,8 +174,12 @@ export const CheckoutCard: FC<Props> = ({
     <>
       <div
         className={cn(
-          'flex relative items-center justify-between min-h-[45px] py-1 pl-5 pr-4 gap-2 w-full box-border shrink-0 mt-0.5',
+          'flex relative items-center justify-between min-h-[45px] py-1 pl-10 pr-4 gap-2 w-full box-border shrink-0 mt-0.5',
           'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
+          // A checkout belongs to the repo above it: indent, and mark the
+          // ownership with a rule rather than the icons that used to do it.
+          'before:absolute before:left-5 before:top-0 before:bottom-0 before:w-px',
+          'before:bg-bp-light-gray-1 dark:before:bg-bp-dark-gray-4',
           deleting && 'opacity-50 pointer-events-none'
         )}
       >
@@ -247,7 +250,7 @@ export const CheckoutCard: FC<Props> = ({
         </div>
 
         <ButtonGroup>
-          {Boolean(status?.behind) && (
+          {isMain && Boolean(status?.behind) && (
             <Tooltip compact
               content="Pull"
               hoverOpenDelay={500}
