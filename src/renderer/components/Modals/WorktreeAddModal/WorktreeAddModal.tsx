@@ -19,7 +19,12 @@ export type WorktreeAddModalProps = {
 export const WorktreeAddModal: FC<ModalProps & WorktreeAddModalProps> = (props) => {
   const { darkMode, gitStatus, id, isOpen, name, onClose, onSuccess } = props;
 
-  const worktreeBranches = (gitStatus?.worktrees ?? []).map((w) => w.branch);
+  // Only worktree-checked-out branches other than the main checkout's are a
+  // genuine collision here — the main branch is legal to branch off of (and
+  // to checkout-existing) while it is the one checked out in the primary
+  // worktree; git only refuses to check the same branch out a second time.
+  const worktreeBranches = (gitStatus?.worktrees ?? []).filter((w) => !w.isMain).map((w) => w.branch);
+  const mainBranch = gitStatus?.worktrees?.find((w) => w.isMain)?.branch;
 
   const allBranches = gitStatus?.branchSummary?.all ?? [];
   const available = allBranches.filter(
@@ -49,6 +54,11 @@ export const WorktreeAddModal: FC<ModalProps & WorktreeAddModalProps> = (props) 
       el.select();
     }
   }, []);
+
+  // Checking out an existing branch (not branching a new one off it) hits the
+  // same "already checked out" collision for the main branch as for any other
+  // worktree's branch, so exclude it too in that case only.
+  const excludeBranches = createNew || !mainBranch ? worktreeBranches : [...worktreeBranches, mainBranch];
 
   const create = async () => {
     if (!branch) return;
@@ -115,7 +125,7 @@ export const WorktreeAddModal: FC<ModalProps & WorktreeAddModalProps> = (props) 
           <BranchSelect
             className="flex-2"
             currentBranch={branch}
-            excludeBranches={worktreeBranches}
+            excludeBranches={excludeBranches}
             fill
             gitStatus={gitStatus}
             onSelect={setBranch}

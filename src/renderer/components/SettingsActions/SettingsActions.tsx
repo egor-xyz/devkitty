@@ -3,7 +3,7 @@ import { useAppSettings } from 'renderer/hooks/useAppSettings';
 
 export const SettingsActions = () => {
   const { gitHubActions, gitHubPulls, set } = useAppSettings();
-  const { all, count, hideDone = false, ignoreDependabot = false, ignoredWorkflows = [], inProgress, notifications = true } = gitHubActions;
+  const { count, hideDone = false, ignoreDependabot = false, ignoredWorkflows = [], inProgress, notifications = true } = gitHubActions;
   const pullsIntervalMinutes = Math.max(1, Math.round(gitHubPulls.pollInterval / 60000));
 
   const removeIgnored = (name: string) => {
@@ -40,12 +40,6 @@ export const SettingsActions = () => {
       </Label>
 
       <br />
-
-      <Switch
-        checked={!all}
-        label="Show actions only for current branch"
-        onChange={() => set({ gitHubActions: { ...gitHubActions, all: !all } })}
-      />
 
       <Switch
         checked={inProgress}

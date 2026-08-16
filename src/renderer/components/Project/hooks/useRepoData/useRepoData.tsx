@@ -77,10 +77,9 @@ export const useRepoData = (project: Project) => {
       window.bridge.gitAPI.getPulls(project.id, 'review-requested')
     ]);
 
-    if (!openRes.success) return;
+    if (!openRes.success || !authorRes.success || !reviewRes.success) return;
 
-    const numbersOf = (res: { pulls?: { number: number }[]; success: boolean }) =>
-      res.success ? (res.pulls ?? []).map((item) => item.number) : [];
+    const numbersOf = (res: { pulls?: { number: number }[] }) => (res.pulls ?? []).map((item) => item.number);
 
     setPulls(tagPulls(openRes.pulls ?? [], numbersOf(authorRes), numbersOf(reviewRes)));
   }, [gitHubToken, project.id]);
