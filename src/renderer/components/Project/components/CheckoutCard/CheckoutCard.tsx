@@ -12,6 +12,7 @@ import { type GitStatus, type Project } from 'types/project';
 import { type Worktree } from 'types/worktree';
 
 import { type PullWithTags } from '../../hooks/useRepoData/groupByBranch';
+import { CheckoutBranch } from '../CheckoutBranch';
 import { PullRequest } from '../PullRequest';
 import { Workflow } from '../Workflow';
 
@@ -246,6 +247,17 @@ export const CheckoutCard: FC<Props> = ({
             </div>
           )}
         </div>
+
+        {isMain && (
+          <div className="flex min-w-[240px]">
+            <CheckoutBranch
+              getStatus={onRefresh}
+              gitStatus={gitStatus}
+              id={project.id}
+              name={project.name}
+            />
+          </div>
+        )}
 
         <ButtonGroup>
           <Tooltip compact
