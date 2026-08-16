@@ -30,6 +30,10 @@ describe('tagPulls', () => {
 
     expect(result[0].tags).toEqual([]);
   });
+
+  it('should return an empty array for an empty input array', () => {
+    expect(tagPulls([], [], [])).toEqual([]);
+  });
 });
 
 describe('groupPullsByBranch', () => {
@@ -55,6 +59,30 @@ describe('groupPullsByBranch', () => {
     const result = groupPullsByBranch([{ pull: { id: 1, number: 42 } as any, tags: [] }]);
 
     expect(result).toEqual({});
+  });
+
+  it('should return an empty object for an empty input array', () => {
+    expect(groupPullsByBranch([])).toEqual({});
+  });
+
+  it('should group a branch named __proto__ without throwing', () => {
+    const items = tagPulls([pull(1, 42, '__proto__')], [], []);
+
+    expect(() => groupPullsByBranch(items)).not.toThrow();
+
+    const result = groupPullsByBranch(items);
+    expect(result.__proto__).toHaveLength(1);
+    expect(result.__proto__[0].pull.number).toBe(42);
+  });
+
+  it('should group a branch named constructor without throwing', () => {
+    const items = tagPulls([pull(1, 42, 'constructor')], [], []);
+
+    expect(() => groupPullsByBranch(items)).not.toThrow();
+
+    const result = groupPullsByBranch(items);
+    expect(result.constructor).toHaveLength(1);
+    expect(result.constructor[0].pull.number).toBe(42);
   });
 });
 
@@ -99,6 +127,46 @@ describe('groupRunsByBranch', () => {
 
     expect(result).toEqual({});
   });
+
+  it('should return an empty object for an empty input array', () => {
+    expect(groupRunsByBranch([], 5)).toEqual({});
+  });
+
+  it('should return no runs per branch when countPerBranch is 0', () => {
+    const runs = [run(1, 'main', '2026-08-16T10:00:00Z')];
+
+    const result = groupRunsByBranch(runs, 0);
+
+    expect(result.main).toEqual([]);
+  });
+
+  it('should keep both runs when created_at timestamps are identical', () => {
+    const runs = [run(1, 'main', '2026-08-16T10:00:00Z'), run(2, 'main', '2026-08-16T10:00:00Z')];
+
+    const result = groupRunsByBranch(runs, 5);
+
+    expect(result.main.map((item) => item.id)).toEqual([1, 2]);
+  });
+
+  it('should group a branch named __proto__ without throwing', () => {
+    const runs = [run(1, '__proto__', '2026-08-16T10:00:00Z')];
+
+    expect(() => groupRunsByBranch(runs, 5)).not.toThrow();
+
+    const result = groupRunsByBranch(runs, 5);
+    expect(result.__proto__).toHaveLength(1);
+    expect(result.__proto__[0].id).toBe(1);
+  });
+
+  it('should group a branch named constructor without throwing', () => {
+    const runs = [run(1, 'constructor', '2026-08-16T10:00:00Z')];
+
+    expect(() => groupRunsByBranch(runs, 5)).not.toThrow();
+
+    const result = groupRunsByBranch(runs, 5);
+    expect(result.constructor).toHaveLength(1);
+    expect(result.constructor[0].id).toBe(1);
+  });
 });
 
 describe('orphanPulls', () => {
@@ -115,5 +183,9 @@ describe('orphanPulls', () => {
     const grouped = groupPullsByBranch(tagPulls([pull(1, 42, 'feature')], [], []));
 
     expect(orphanPulls(grouped, ['feature'])).toEqual([]);
+  });
+
+  it('should return an empty array for an empty grouping', () => {
+    expect(orphanPulls({}, ['main'])).toEqual([]);
   });
 });

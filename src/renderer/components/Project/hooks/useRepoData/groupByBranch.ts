@@ -23,7 +23,7 @@ export const tagPulls = (
 };
 
 export const groupPullsByBranch = (pulls: PullWithTags[]): Record<string, PullWithTags[]> => {
-  const grouped: Record<string, PullWithTags[]> = {};
+  const grouped: Record<string, PullWithTags[]> = Object.create(null);
 
   for (const item of pulls) {
     const branch = item.pull.head?.ref;
@@ -37,7 +37,7 @@ export const groupPullsByBranch = (pulls: PullWithTags[]): Record<string, PullWi
 };
 
 export const groupRunsByBranch = (runs: Run[], countPerBranch: number): Record<string, Run[]> => {
-  const grouped: Record<string, Run[]> = {};
+  const grouped: Record<string, Run[]> = Object.create(null);
 
   for (const run of runs) {
     const branch = run.head_branch;
