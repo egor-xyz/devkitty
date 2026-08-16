@@ -149,8 +149,11 @@ export const Project: FC<Props> = ({ project }) => {
     const pulls = pullsByBranch[worktree.branch] ?? [];
     if (!worktree.isMain) return buildDetailGroups(pulls, runsByBranch, worktree.branch);
 
-    const groups = buildDetailGroups([...pulls, ...orphans], runsByBranch, worktree.branch);
-    return unpulledOrphanRuns.length > 0 ? [...groups, { runs: unpulledOrphanRuns }] : groups;
+    const own = buildDetailGroups(pulls, runsByBranch, worktree.branch);
+    const stray = buildDetailGroups(orphans, runsByBranch, '').map((group) => ({ ...group, orphan: true }));
+    const strayRuns = unpulledOrphanRuns.length > 0 ? [{ orphan: true, runs: unpulledOrphanRuns }] : [];
+
+    return [...own, ...stray, ...strayRuns];
   };
   const behind = gitStatus?.status?.behind ?? 0;
 

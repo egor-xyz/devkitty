@@ -342,8 +342,16 @@ export const CheckoutCard: FC<Props> = ({
             'shadow-[inset_0_3px_6px_-2px_rgba(0,0,0,0.18)] dark:shadow-[inset_0_3px_6px_-2px_rgba(0,0,0,0.55)]'
           )}
         >
-          {groups.map(({ pull, runs }, index) => (
+          {groups.map(({ orphan, pull, runs }, index) => (
             <Fragment key={pull ? `pull-${pull.pull.id}` : `runs-${index}`}>
+              {orphan && !groups[index - 1]?.orphan && (
+                <div className={cn('flex items-center gap-3 py-1.5 px-4 select-none', Classes.TEXT_MUTED)}>
+                  <span className="flex-1 h-px bg-bp-light-gray-1 dark:bg-bp-dark-gray-4" />
+                  <span className="text-[11px] whitespace-nowrap">not checked out locally</span>
+                  <span className="flex-1 h-px bg-bp-light-gray-1 dark:bg-bp-dark-gray-4" />
+                </div>
+              )}
+
               {pull && (
                 <div className="bg-bp-light-gray-4/70 dark:bg-bp-dark-gray-2/70">
                   <PullRequest

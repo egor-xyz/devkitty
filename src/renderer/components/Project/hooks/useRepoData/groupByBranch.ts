@@ -28,6 +28,9 @@ export const splitDoneRuns = (runs: Run[]): { active: Run[]; done: Run[] } => {
 // What a checkout shows when opened: each pull request followed by its own
 // runs, then any runs that belong to no pull request.
 export type DetailGroup = {
+  // True when the branch is not checked out in any worktree — shown under the
+  // main checkout because it has nowhere else to go.
+  orphan?: boolean;
   pull?: PullWithTags;
   runs: Run[];
 };
