@@ -23,8 +23,6 @@ app.name = 'Devkitty';
 
 const isDev = is.dev;
 
-const devBounds = () => (isDev ? { height: 600, width: 1426 } : {});
-
 const installReactDevTools = async () => {
   const reactDevToolsId = 'fmkadmapgofadopljbjfkapdkoienihi';
   const extensionPath = path.join(app.getPath('userData'), 'extensions', reactDevToolsId);
@@ -48,8 +46,7 @@ const createWindow = (): void => {
       preload: path.join(__dirname, '../preload/index.mjs'),
       sandbox: false
     },
-    ...loadWindowState(),
-    ...devBounds()
+    ...loadWindowState()
   });
 
   // all external links should open in default browser
@@ -73,15 +70,7 @@ const createWindow = (): void => {
   });
 
   mainWindow.once('ready-to-show', () => {
-    if (!isDev) {
-      mainWindow.show();
-      return;
-    }
-
-    setTimeout(() => {
-      mainWindow.showInactive();
-      mainWindow.webContents.openDevTools();
-    }, 500);
+    mainWindow.show();
   });
 };
 
