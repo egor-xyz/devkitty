@@ -27,7 +27,7 @@ vi.mock('../settings', () => ({
 }));
 
 import { settings } from '../settings';
-import { getGit, getRepoInfo, parseWorktreeList } from './git';
+import { getGit, getRepoInfo, getWorktreeGit, parseWorktreeList } from './git';
 
 const mockSettings = vi.mocked(settings);
 
@@ -169,6 +169,47 @@ branch refs/heads/feature2
       expect(result[0].isMain).toBe(true);
       expect(result[1].isMain).toBe(false);
       expect(result[2].isMain).toBe(false);
+    });
+  });
+
+  describe('getWorktreeGit', () => {
+    const worktreeOutput = `worktree /path/to/main
+HEAD abc1234
+branch refs/heads/main
+
+worktree /path/to/feature
+HEAD def5678
+branch refs/heads/feature
+
+`;
+
+    it('should return a git instance bound to the worktree path', async () => {
+      const { simpleGit } = await import('simple-git');
+      mockSettings.get.mockReturnValue([{ filePath: '/path/to/main', id: 'proj-1', name: 'project' }] as any);
+      mockGit.raw.mockResolvedValue(worktreeOutput);
+
+      await getWorktreeGit('proj-1', '/path/to/feature');
+
+      expect(simpleGit).toHaveBeenCalledWith('/path/to/feature');
+    });
+
+    it('should throw when the path is not a worktree of this project', async () => {
+      mockSettings.get.mockReturnValue([{ filePath: '/path/to/main', id: 'proj-1', name: 'project' }] as any);
+      mockGit.raw.mockResolvedValue(worktreeOutput);
+
+      await expect(getWorktreeGit('proj-1', '/somewhere/else')).rejects.toThrow(
+        'Worktree not found for this project'
+      );
+    });
+
+    it('should accept the main worktree path', async () => {
+      const { simpleGit } = await import('simple-git');
+      mockSettings.get.mockReturnValue([{ filePath: '/path/to/main', id: 'proj-1', name: 'project' }] as any);
+      mockGit.raw.mockResolvedValue(worktreeOutput);
+
+      await getWorktreeGit('proj-1', '/path/to/main');
+
+      expect(simpleGit).toHaveBeenCalledWith('/path/to/main');
     });
   });
 
