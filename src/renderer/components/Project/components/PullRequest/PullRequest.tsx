@@ -1,4 +1,4 @@
-import { Button, ButtonGroup, Icon, Menu, MenuItem, Popover, Tooltip } from '@blueprintjs/core';
+import { Button, ButtonGroup, Icon, Menu, MenuItem, Popover, Tag, Tooltip } from '@blueprintjs/core';
 import { readableColor } from 'polished';
 import { type FC, useEffect, useState } from 'react';
 import { cn } from 'renderer/utils/cn';
@@ -30,7 +30,9 @@ const getChecksSummary = (checks: Check[]) => {
 };
 
 export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) => {
-  const { created_at, draft, html_url, labels, number, title, user } = pull;
+  const { created_at, draft, html_url, labels, merged_at, number, state, title, user } = pull;
+  const isMerged = Boolean(merged_at);
+  const isClosed = !isMerged && state === 'closed';
   const [checks, setChecks] = useState<Check[]>([]);
 
   useEffect(() => {
@@ -66,6 +68,22 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
         <div className="overflow-hidden flex flex-col">
           <div className="flex items-center overflow-hidden text-ellipsis whitespace-nowrap mb-0.5 gap-2">
             {draft && '[DRAFT] '}
+
+            {isMerged && (
+              <Tag intent="success"
+                minimal
+              >
+                merged
+              </Tag>
+            )}
+
+            {isClosed && (
+              <Tag intent="danger"
+                minimal
+              >
+                closed
+              </Tag>
+            )}
 
             {user.type === 'Bot' && (
               <div className="rounded border border-black dark:border-bp-gray-3 px-1 py-px text-[10px] text-black dark:text-bp-gray-3">

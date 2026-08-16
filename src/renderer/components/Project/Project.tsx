@@ -1,4 +1,4 @@
-import { Button, ButtonGroup, Classes, Popover } from '@blueprintjs/core';
+import { Button, ButtonGroup, Classes, Collapse, Popover } from '@blueprintjs/core';
 import { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useGit } from 'renderer/hooks/useGit';
@@ -10,6 +10,7 @@ import { type Worktree } from 'types/worktree';
 
 import { CheckoutCard } from './components/CheckoutCard';
 import { Error } from './components/Error';
+import { FoldDivider } from './components/FoldDivider';
 import { ProjectMenu } from './components/ProjectMenu';
 import { QuickActions } from './components/QuickActions';
 import { useRepoData } from './hooks/useRepoData';
@@ -53,6 +54,7 @@ export const Project: FC<Props> = ({ project }) => {
   // Fetching runs costs API budget, so a repo is only polled while at least
   // one of its cards is open.
   const [expandedPaths, setExpandedPaths] = useState<Record<string, boolean>>({});
+  const [showMerged, setShowMerged] = useState(false);
   const openedForPull = useRef<Set<string>>(new Set());
 
   const anyExpanded = worktrees.some(({ path }) => expandedPaths[path]);
@@ -181,6 +183,12 @@ export const Project: FC<Props> = ({ project }) => {
 
     return [...own, ...stray, ...strayRuns];
   };
+  const liveWorktrees = sortedWorktrees.filter(
+    (worktree) => worktree.isMain || !isCheckoutDone(pullsByBranch[worktree.branch])
+  );
+  const mergedWorktrees = sortedWorktrees.filter(
+    (worktree) => !worktree.isMain && isCheckoutDone(pullsByBranch[worktree.branch])
+  );
   const behind = gitStatus?.status?.behind ?? 0;
 
   if (gitStatus && !gitStatus.success) {
@@ -192,6 +200,78 @@ export const Project: FC<Props> = ({ project }) => {
     );
   }
 
+  const renderCheckout = (worktree: Worktree) => (
+    <CheckoutCard
+      done={isCheckoutDone(pullsByBranch[worktree.branch])}
+      expanded={Boolean(expandedPaths[worktree.path])}
+      gitStatus={worktree.isMain ? gitStatus : undefined}
+      groups={groupsFor(worktree)}
+      key={worktree.path}
+      leading={
+          worktree.isMain ? (
+            <div className={cn('flex flex-col shrink-0 max-w-[160px]', loading && !gitStatus && Classes.SKELETON)}>
+              <div className="font-medium truncate">{name}</div>
+
+              <div className="text-[11px] font-light -mt-0.5 truncate dark:text-bp-gray-3">
+                {gitStatus?.organization ?? 'Local git'}
+              </div>
+            </div>
+          ) : undefined
+        }
+      onHidePull={hidePull}
+      onHideRun={hideRun}
+      onIgnoreWorkflow={ignoreWorkflow}
+      onRefresh={updateProject}
+      onToggleExpanded={() => toggleExpanded(worktree.path)}
+      project={project}
+      runsLoaded={runsLoaded}
+      trailing={
+          worktree.isMain ? (
+            <div className={cn('flex items-center gap-2.5', !gitStatus && Classes.SKELETON)}>
+              <QuickActions
+                gitStatus={gitStatus}
+                showDetails={anyExpanded}
+                toggleDetails={toggleAll}
+              />
+
+              <ButtonGroup large>
+                <Button
+                  icon="refresh"
+                  onClick={updateProject}
+                />
+
+                <Popover
+                  content={
+                    <ProjectMenu
+                      clearHiddenPulls={clearHiddenPulls}
+                      clearHiddenRuns={clearHiddenRuns}
+                      filePath={filePath}
+                      getStatus={updateProject}
+                      gitStatus={gitStatus}
+                      groupId={groupId}
+                      hiddenCount={hiddenRunCount}
+                      hiddenPullCount={hiddenPullCount}
+                      id={id}
+                      name={name}
+                      pull={runPull}
+                      removeProject={removeAlert}
+                    />
+                  }
+                  placement="auto-end"
+                >
+                  <Button
+                    icon="caret-down"
+                    intent={behind ? 'warning' : 'none'}
+                  />
+                </Popover>
+              </ButtonGroup>
+            </div>
+          ) : undefined
+        }
+      worktree={worktree}
+    />
+  );
+
   return (
     <>
       {!gitHubToken && worktrees.length > 0 && (
@@ -200,77 +280,18 @@ export const Project: FC<Props> = ({ project }) => {
         </div>
       )}
 
-      {sortedWorktrees.map((worktree) => (
-        <CheckoutCard
-          done={isCheckoutDone(pullsByBranch[worktree.branch])}
-          expanded={Boolean(expandedPaths[worktree.path])}
-          gitStatus={worktree.isMain ? gitStatus : undefined}
-          groups={groupsFor(worktree)}
-          key={worktree.path}
-          leading={
-            worktree.isMain ? (
-              <div className={cn('flex flex-col shrink-0 max-w-[160px]', loading && !gitStatus && Classes.SKELETON)}>
-                <div className="font-medium truncate">{name}</div>
+      {liveWorktrees.map(renderCheckout)}
 
-                <div className="text-[11px] font-light -mt-0.5 truncate dark:text-bp-gray-3">
-                  {gitStatus?.organization ?? 'Local git'}
-                </div>
-              </div>
-            ) : undefined
-          }
-          onHidePull={hidePull}
-          onHideRun={hideRun}
-          onIgnoreWorkflow={ignoreWorkflow}
-          onRefresh={updateProject}
-          onToggleExpanded={() => toggleExpanded(worktree.path)}
-          project={project}
-          runsLoaded={runsLoaded}
-          trailing={
-            worktree.isMain ? (
-              <div className={cn('flex items-center gap-2.5', !gitStatus && Classes.SKELETON)}>
-                <QuickActions
-                  gitStatus={gitStatus}
-                  showDetails={anyExpanded}
-                  toggleDetails={toggleAll}
-                />
-
-                <ButtonGroup large>
-                  <Button
-                    icon="refresh"
-                    onClick={updateProject}
-                  />
-
-                  <Popover
-                    content={
-                      <ProjectMenu
-                        clearHiddenPulls={clearHiddenPulls}
-                        clearHiddenRuns={clearHiddenRuns}
-                        filePath={filePath}
-                        getStatus={updateProject}
-                        gitStatus={gitStatus}
-                        groupId={groupId}
-                        hiddenCount={hiddenRunCount}
-                        hiddenPullCount={hiddenPullCount}
-                        id={id}
-                        name={name}
-                        pull={runPull}
-                        removeProject={removeAlert}
-                      />
-                    }
-                    placement="auto-end"
-                  >
-                    <Button
-                      icon="caret-down"
-                      intent={behind ? 'warning' : 'none'}
-                    />
-                  </Popover>
-                </ButtonGroup>
-              </div>
-            ) : undefined
-          }
-          worktree={worktree}
+      {mergedWorktrees.length > 0 && (
+        <FoldDivider
+          hideLabel={`Hide ${mergedWorktrees.length} merged checkout${mergedWorktrees.length > 1 ? 's' : ''}`}
+          onToggle={() => setShowMerged((prev) => !prev)}
+          open={showMerged}
+          showLabel={`Show ${mergedWorktrees.length} merged checkout${mergedWorktrees.length > 1 ? 's' : ''}`}
         />
-      ))}
+      )}
+
+      <Collapse isOpen={showMerged}>{mergedWorktrees.map(renderCheckout)}</Collapse>
     </>
   );
 };
