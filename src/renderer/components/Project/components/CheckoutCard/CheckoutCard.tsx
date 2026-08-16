@@ -364,12 +364,6 @@ export const CheckoutCard: FC<Props> = ({
 
           {pulls.length === 0 && runRows}
 
-          {!gitHubToken && (
-            <div className={cn('flex justify-between items-center py-2.5 px-4', Classes.TEXT_MUTED)}>
-              <span>Set GitHub token in settings to see actions and pull requests</span>
-            </div>
-          )}
-
           {gitHubToken && isBlank && (
             <div className={cn('flex justify-between items-center py-2.5 px-4', Classes.TEXT_MUTED)}>
               <span>

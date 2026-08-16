@@ -1,5 +1,6 @@
 import { Button, ButtonGroup, Classes, Colors, Icon, Popover } from '@blueprintjs/core';
 import { type FC, Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useGit } from 'renderer/hooks/useGit';
 import { useModal } from 'renderer/hooks/useModal';
 import { useMountEffect } from 'renderer/hooks/useMountEffect';
@@ -27,6 +28,7 @@ const readExpanded = (projectId: string, path: string): boolean | null => {
 
 export const Project: FC<Props> = ({ project }) => {
   const { getStatus, gitStatus, loading, pull } = useGit();
+  const { gitHubToken } = useAppSettings();
   const { openModal } = useModal();
 
   const { filePath, groupId, id, name } = project;
@@ -208,6 +210,12 @@ export const Project: FC<Props> = ({ project }) => {
           />
         </div>
       </div>
+
+      {!gitHubToken && worktrees.length > 0 && (
+        <div className={cn('py-1.5 pl-5 pr-4 text-[11px]', Classes.TEXT_MUTED)}>
+          Set GitHub token in settings to see actions and pull requests
+        </div>
+      )}
 
       {worktrees.map((worktree) => (
         <Fragment key={worktree.path}>
