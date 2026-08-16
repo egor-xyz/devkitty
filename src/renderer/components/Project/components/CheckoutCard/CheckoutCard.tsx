@@ -162,8 +162,10 @@ export const CheckoutCard: FC<Props> = ({
     <>
       <div
         className={cn(
-          'flex relative items-center justify-start min-h-[45px] py-1 pl-5 pr-4 gap-4 w-full box-border shrink-0 mt-0.5',
+          'flex relative items-center justify-start min-h-[45px] py-1 pl-2 pr-4 gap-3 w-full box-border shrink-0 mt-2 first:mt-0.5',
           'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
+          // Pins directly beneath the repo header while its contents scroll.
+          'sticky top-[55px] z-10',
           deleting && 'opacity-50 pointer-events-none'
         )}
       >
@@ -324,10 +326,10 @@ export const CheckoutCard: FC<Props> = ({
       {expanded && (
         <div
           className={cn(
-            // Depth instead of indentation: what belongs to this checkout sits
-            // in a well below it, rather than stepping further right each level.
-            'bg-bp-light-gray-3 dark:bg-bp-dark-gray-1',
-            'shadow-[inset_0_2px_4px_rgba(0,0,0,0.10)] dark:shadow-[inset_0_2px_4px_rgba(0,0,0,0.35)]'
+            // Cards stay flush left; their contents indent one step — never a
+            // cascading staircase — and sit in a recessed well.
+            'pl-5 bg-bp-light-gray-3 dark:bg-bp-dark-gray-1',
+            'shadow-[inset_0_2px_4px_rgba(0,0,0,0.12)] dark:shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]'
           )}
         >
           {groups.map(({ pull, runs }, index) => (

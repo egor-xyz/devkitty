@@ -169,6 +169,9 @@ export const Project: FC<Props> = ({ project }) => {
         className={cn(
           'flex relative items-center gap-2.5 min-h-[55px] py-0.5 pl-5 pr-4',
           'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
+          // Pins above its own checkouts while you scroll them, so you never
+          // lose track of which repo you are looking at.
+          'sticky top-0 z-20',
           '[&+&]:mt-0.5'
         )}
       >
