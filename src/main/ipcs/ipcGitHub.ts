@@ -195,11 +195,15 @@ ipcMain.handle('git:api:getOpenPulls', async (_, id: string) => {
     const { owner, repo } = await getRepoInfo(id);
     if (!owner || !repo) throw new Error('Project not found');
 
+    // 'all' rather than 'open': a merged pull request is how a checkout is
+    // known to be finished. Sorted by recency so the page holds what matters.
     const { data } = await octokit().rest.pulls.list({
+      direction: 'desc',
       owner,
       per_page: 100,
       repo,
-      state: 'open'
+      sort: 'updated',
+      state: 'all'
     });
 
     return { pulls: data, success: true };

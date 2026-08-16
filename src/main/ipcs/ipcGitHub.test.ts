@@ -286,7 +286,7 @@ describe('ipcGitHub', () => {
       mockSettings.get.mockReturnValue({ gitHubToken: Buffer.from('token') } as any);
     });
 
-    it('should list open pull requests with head refs', async () => {
+    it('should list pull requests with head refs, newest first', async () => {
       mockOctokitInstance.rest.pulls.list.mockResolvedValue({
         data: [
           { head: { ref: 'feature' }, id: 10, number: 42 },
@@ -297,10 +297,12 @@ describe('ipcGitHub', () => {
       const result = await handlers['git:api:getOpenPulls']({}, 'proj-1');
 
       expect(mockOctokitInstance.rest.pulls.list).toHaveBeenCalledWith({
+        direction: 'desc',
         owner: 'owner',
         per_page: 100,
         repo: 'repo',
-        state: 'open'
+        sort: 'updated',
+        state: 'all'
       });
       expect(result).toEqual({
         pulls: [

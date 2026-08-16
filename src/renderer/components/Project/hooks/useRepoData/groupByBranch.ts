@@ -66,23 +66,47 @@ export const orphanRuns = (runsByBranch: Record<string, Run[]>, branches: string
   return orphaned;
 };
 
-// A checkout with an open pull request is the most likely thing you came here
-// to look at, one with CI runs the next. The main checkout is exempt: it stays
-// first because the repo's orphan pull requests are anchored beneath it.
+// A checkout whose only pull requests are merged or closed has nothing left to
+// do — it sinks to the bottom of the list and is marked as finished.
+export const isSettledPull = ({ pull }: PullWithTags) => Boolean(pull.merged_at) || pull.state === 'closed';
+
+export const isCheckoutDone = (pulls: PullWithTags[] = []) => pulls.length > 0 && pulls.every(isSettledPull);
+
+const stamp = (value?: null | string) => {
+  const time = value ? new Date(value).getTime() : Number.NaN;
+  return Number.isNaN(time) ? 0 : time;
+};
+
+// Most recently active checkout first, measured across both its CI runs and its
+// pull requests. The main checkout is exempt: it is the repo header, and the
+// repo's orphan pull requests are anchored beneath it.
+export const lastActivityAt = (
+  branch: string,
+  runsByBranch: Record<string, Run[]>,
+  pullsByBranch: Record<string, PullWithTags[]>
+): number => {
+  const times = [
+    ...(runsByBranch[branch] ?? []).map((run) => Math.max(stamp(run.updated_at), stamp(run.created_at))),
+    ...(pullsByBranch[branch] ?? []).map(({ pull }) => Math.max(stamp(pull.updated_at), stamp(pull.created_at)))
+  ];
+
+  return times.length > 0 ? Math.max(...times) : 0;
+};
+
 export const sortWorktreesByActivity = (
   worktrees: Worktree[],
   runsByBranch: Record<string, Run[]>,
   pullsByBranch: Record<string, PullWithTags[]>
-): Worktree[] => {
-  const activity = ({ branch }: Worktree) =>
-    ((pullsByBranch[branch]?.length ?? 0) > 0 ? 2 : 0) + ((runsByBranch[branch]?.length ?? 0) > 0 ? 1 : 0);
-
-  return [...worktrees].sort((a, b) => {
+): Worktree[] =>
+  [...worktrees].sort((a, b) => {
     if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
 
-    return activity(b) - activity(a);
+    const aDone = isCheckoutDone(pullsByBranch[a.branch]);
+    const bDone = isCheckoutDone(pullsByBranch[b.branch]);
+    if (aDone !== bDone) return aDone ? 1 : -1;
+
+    return lastActivityAt(b.branch, runsByBranch, pullsByBranch) - lastActivityAt(a.branch, runsByBranch, pullsByBranch);
   });
-};
 
 export const tagPulls = (
   pulls: Pull[],

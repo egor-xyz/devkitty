@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   buildDetailGroups,
   groupPullsByBranch,
+  isCheckoutDone,
   groupRunsByBranch,
   orphanPulls,
   orphanRuns,
@@ -223,17 +224,56 @@ describe('sortWorktreesByActivity', () => {
     expect(branches(result)[0]).toBe('main');
   });
 
-  it('should rank pull request above runs, and runs above nothing', () => {
+  it('should put the most recently active checkout first', () => {
     const result = sortWorktreesByActivity(
-      [wt('quiet'), wt('runs-only'), wt('pull-only'), wt('both')],
-      { both: [run(1, 'both', '2026-08-16T10:00:00Z')], 'runs-only': [run(2, 'runs-only', '2026-08-16T10:00:00Z')] },
-      { both: tagPulls([pull(1, 1, 'both')], [1], []), 'pull-only': tagPulls([pull(2, 2, 'pull-only')], [2], []) }
+      [wt('stale'), wt('fresh'), wt('middle')],
+      {
+        fresh: [run(1, 'fresh', '2026-08-16T12:00:00Z')],
+        middle: [run(2, 'middle', '2026-08-16T10:00:00Z')],
+        stale: [run(3, 'stale', '2026-08-14T10:00:00Z')]
+      },
+      {}
     );
 
-    expect(branches(result)).toEqual(['both', 'pull-only', 'runs-only', 'quiet']);
+    expect(branches(result)).toEqual(['fresh', 'middle', 'stale']);
   });
 
-  it('should preserve git order between worktrees of equal activity', () => {
+  it('should measure activity across pull requests as well as runs', () => {
+    const result = sortWorktreesByActivity(
+      [wt('old-run'), wt('recent-pull')],
+      { 'old-run': [run(1, 'old-run', '2026-08-15T10:00:00Z')] },
+      { 'recent-pull': tagPulls([{ ...pull(1, 42, 'recent-pull'), updated_at: '2026-08-16T12:00:00Z' }], [42], []) }
+    );
+
+    expect(branches(result)).toEqual(['recent-pull', 'old-run']);
+  });
+
+  it('should rank a checkout with no activity last', () => {
+    const result = sortWorktreesByActivity(
+      [wt('quiet'), wt('busy')],
+      { busy: [run(1, 'busy', '2026-08-16T10:00:00Z')] },
+      {}
+    );
+
+    expect(branches(result)).toEqual(['busy', 'quiet']);
+  });
+
+  it('should use a run updated later than it was created', () => {
+    const result = sortWorktreesByActivity(
+      [wt('created-late'), wt('updated-late')],
+      {
+        'created-late': [run(1, 'created-late', '2026-08-16T11:00:00Z')],
+        'updated-late': [
+          { ...run(2, 'updated-late', '2026-08-16T09:00:00Z'), updated_at: '2026-08-16T13:00:00Z' } as any
+        ]
+      },
+      {}
+    );
+
+    expect(branches(result)).toEqual(['updated-late', 'created-late']);
+  });
+
+  it('should preserve git order between worktrees with no activity', () => {
     const result = sortWorktreesByActivity([wt('a'), wt('b'), wt('c')], {}, {});
 
     expect(branches(result)).toEqual(['a', 'b', 'c']);
@@ -391,5 +431,57 @@ describe('splitDoneRuns', () => {
 
   it('should handle an empty list', () => {
     expect(splitDoneRuns([])).toEqual({ active: [], done: [] });
+  });
+});
+
+describe('isCheckoutDone', () => {
+  const merged = (id: number, number: number, ref: string) =>
+    ({ head: { ref }, id, merged_at: '2026-08-16T10:00:00Z', number, state: 'closed' }) as any;
+  const closed = (id: number, number: number, ref: string) =>
+    ({ head: { ref }, id, merged_at: null, number, state: 'closed' }) as any;
+
+  it('should be false when there are no pull requests', () => {
+    expect(isCheckoutDone([])).toBe(false);
+    expect(isCheckoutDone()).toBe(false);
+  });
+
+  it('should be true when every pull request is merged', () => {
+    expect(isCheckoutDone(tagPulls([merged(1, 42, 'feature')], [42], []))).toBe(true);
+  });
+
+  it('should be true when a pull request is closed without merging', () => {
+    expect(isCheckoutDone(tagPulls([closed(1, 42, 'feature')], [42], []))).toBe(true);
+  });
+
+  it('should be false while any pull request is still open', () => {
+    const pulls = tagPulls([merged(1, 42, 'feature'), pull(2, 43, 'feature')], [42, 43], []);
+
+    expect(isCheckoutDone(pulls)).toBe(false);
+  });
+});
+
+describe('sortWorktreesByActivity — finished checkouts', () => {
+  const wt2 = (branch: string, isMain = false) => ({ branch, isMain, path: `/p/${branch}` });
+  const mergedPull = (ref: string) =>
+    tagPulls([{ head: { ref }, id: 1, merged_at: '2026-08-16T23:00:00Z', number: 1, state: 'closed' } as any], [1], []);
+
+  it('should sink a checkout whose pull request is merged below active ones', () => {
+    const result = sortWorktreesByActivity(
+      [wt2('done'), wt2('busy')],
+      { busy: [run(1, 'busy', '2026-08-10T10:00:00Z')] },
+      { done: mergedPull('done') }
+    );
+
+    expect(result.map((item) => item.branch)).toEqual(['busy', 'done']);
+  });
+
+  it('should keep main first even when its pull request is merged', () => {
+    const result = sortWorktreesByActivity(
+      [wt2('busy'), wt2('main', true)],
+      { busy: [run(1, 'busy', '2026-08-16T10:00:00Z')] },
+      { main: mergedPull('main') }
+    );
+
+    expect(result.map((item) => item.branch)).toEqual(['main', 'busy']);
   });
 });

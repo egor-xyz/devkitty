@@ -23,6 +23,7 @@ type CheckoutStatus = {
 };
 
 type Props = {
+  done?: boolean;
   expanded: boolean;
   gitStatus?: GitStatus;
   groups: DetailGroup[];
@@ -39,6 +40,7 @@ type Props = {
 };
 
 export const CheckoutCard: FC<Props> = ({
+  done,
   expanded,
   gitStatus,
   groups,
@@ -191,8 +193,16 @@ export const CheckoutCard: FC<Props> = ({
 
         <div className="overflow-hidden flex flex-1 text-left justify-start gap-4 items-center min-w-0">
           <div className="overflow-hidden flex flex-col">
-            <div className="overflow-hidden text-ellipsis whitespace-nowrap">
-              <b>{worktree.branch}</b>
+            <div className="overflow-hidden flex gap-2 items-center text-ellipsis whitespace-nowrap">
+              <b className={cn('truncate', done && Classes.TEXT_MUTED)}>{worktree.branch}</b>
+
+              {done && (
+                <Tag intent="success"
+                  minimal
+                >
+                  merged
+                </Tag>
+              )}
             </div>
 
             <Tooltip content={worktree.path}>
