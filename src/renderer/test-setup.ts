@@ -48,7 +48,9 @@ const mockBridge = {
   },
   worktree: {
     add: vi.fn(),
+    getStatus: vi.fn(),
     list: vi.fn(),
+    pull: vi.fn(),
     remove: vi.fn()
   }
 };

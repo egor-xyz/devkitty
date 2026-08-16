@@ -60,6 +60,7 @@ const bridge = {
       ipcRenderer.invoke('git:worktree:add', id, repoName, branch, newBranch, copyEnvLocal),
     getStatus: (worktreePath: string) => ipcRenderer.invoke('git:worktree:status', worktreePath),
     list: (id: string) => ipcRenderer.invoke('git:worktree:list', id),
+    pull: (id: string, worktreePath: string) => ipcRenderer.invoke('git:worktree:pull', id, worktreePath),
     remove: (id: string, path: string, force?: boolean) => ipcRenderer.invoke('git:worktree:remove', id, path, force)
   }
 };
