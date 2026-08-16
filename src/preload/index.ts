@@ -22,7 +22,6 @@ const bridge = {
   },
   gitAPI: {
     cancelRun: (id: string, runId: number) => ipcRenderer.invoke('git:api:cancelRun', id, runId),
-    getAction: (id: string, filterBy: string[]) => ipcRenderer.invoke('git:api:getAction', id, filterBy),
     getJobs: (id: string, runId: number) => ipcRenderer.invoke('git:api:getJobs', id, runId),
     getOpenPulls: (id: string) => ipcRenderer.invoke('git:api:getOpenPulls', id),
     getPRChecks: (id: string, prNumber: number) => ipcRenderer.invoke('git:api:getPRChecks', id, prNumber),

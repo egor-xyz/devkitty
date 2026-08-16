@@ -1,56 +1,54 @@
 import { Button, ButtonGroup, Classes, Colors, Icon, Popover } from '@blueprintjs/core';
-import { type FC, useCallback, useState } from 'react';
+import { type FC, Fragment, useMemo, useState } from 'react';
 import { useGit } from 'renderer/hooks/useGit';
 import { useModal } from 'renderer/hooks/useModal';
 import { useMountEffect } from 'renderer/hooks/useMountEffect';
 import { cn } from 'renderer/utils/cn';
 import { type Project as IProject } from 'types/project';
+import { type Worktree } from 'types/worktree';
 
 import { GitStatusGroup } from '../GitStatusGroup';
-import { CheckoutBranch } from './components/CheckoutBranch';
+import { CheckoutCard } from './components/CheckoutCard';
 import { Error } from './components/Error';
 import { ProjectMenu } from './components/ProjectMenu';
+import { PullRequest } from './components/PullRequest';
 import { QuickActions } from './components/QuickActions';
-import { WorktreeList } from './components/WorktreeList';
-import { useActions } from './hooks/useActions';
-import { usePulls } from './hooks/usePulls';
+import { useRepoData } from './hooks/useRepoData';
 
 type Props = {
   project: IProject;
 };
 
 export const Project: FC<Props> = ({ project }) => {
-  const { getStatus, gitStatus, loading, pull } = useGit();
+  const { getStatus, gitStatus, loading } = useGit();
   const { openModal } = useModal();
-  const [showWorktrees, setShowWorktrees] = useState(() => {
-    const saved = localStorage.getItem(`showWorktrees:${project.id}`);
-    return saved ? JSON.parse(saved) : false;
-  });
   const [pullLoading, setPullLoading] = useState(false);
 
-  const toggleWorktrees = useCallback(() => {
-    setShowWorktrees((prev: boolean) => {
-      const newValue = !prev;
-      localStorage.setItem(`showWorktrees:${project.id}`, JSON.stringify(newValue));
-      return newValue;
-    });
-  }, [project.id]);
-
-  const { Actions, clearHiddenRuns, getActions, hiddenCount, showActions, toggleActions } = useActions(gitStatus, project);
-  const { clearHiddenPulls, hiddenPullCount, Pulls, refreshPulls, showPulls, togglePulls } = usePulls(project);
+  const {
+    clearHiddenPulls,
+    clearHiddenRuns,
+    getOrphanPulls,
+    hiddenPullCount,
+    hiddenRunCount,
+    hidePull,
+    hideRun,
+    pullsByBranch,
+    refresh,
+    runsByBranch
+  } = useRepoData(project);
 
   const { filePath, groupId, id, name } = project;
 
   const updateProject = () => {
-    if (showActions) getActions();
-    if (showPulls) refreshPulls();
+    refresh();
     getStatus(id);
   };
 
   const runPull = async () => {
     setPullLoading(true);
-    await pull(id, name);
+    await window.bridge.git.pull(id);
     setPullLoading(false);
+    updateProject();
   };
 
   const removeAlert = () => {
@@ -60,10 +58,25 @@ export const Project: FC<Props> = ({ project }) => {
     });
   };
 
+  const ignoreWorkflow = (workflowName: string, workflowPath: string) => {
+    openModal({ name: 'ignore:workflow', props: { workflowName, workflowPath } });
+  };
+
   useMountEffect(() => {
     getStatus(id, true);
   });
 
+  // A repo always has at least its main worktree. Older status payloads and
+  // failed `git worktree list` calls leave it undefined — synthesise it so a
+  // zero-worktree repo still renders exactly one card.
+  const worktrees: Worktree[] = useMemo(() => {
+    if (gitStatus?.worktrees?.length) return gitStatus.worktrees;
+    if (!gitStatus?.branchSummary?.current) return [];
+
+    return [{ branch: gitStatus.branchSummary.current, isMain: true, path: filePath }];
+  }, [filePath, gitStatus]);
+
+  const orphans = getOrphanPulls(worktrees.map((worktree) => worktree.branch));
   const behind = gitStatus?.status?.behind ?? 0;
 
   if (gitStatus && !gitStatus.success) {
@@ -99,28 +112,18 @@ export const Project: FC<Props> = ({ project }) => {
           />
         </div>
 
-        <div className="flex flex-2 items-center min-w-[395px] gap-2.5">
-          <CheckoutBranch
-            getStatus={updateProject}
-            gitStatus={gitStatus}
-            id={id}
-            name={name}
-          />
+        <QuickActions
+          gitStatus={gitStatus}
+          onUpdate={updateProject}
+          project={project}
+        />
 
-          <QuickActions
-            gitStatus={gitStatus}
-            onUpdate={updateProject}
-            project={project}
-            showActions={showActions}
-            showPulls={showPulls}
-            showWorktrees={showWorktrees}
-            toggleActions={toggleActions}
-            togglePulls={togglePulls}
-            toggleWorktrees={toggleWorktrees}
-          />
-        </div>
-
-        <div className={cn('flex relative flex-row-reverse min-w-[79px] ml-auto select-none', !gitStatus && Classes.SKELETON)}>
+        <div
+          className={cn(
+            'flex relative flex-row-reverse min-w-[79px] ml-auto select-none',
+            !gitStatus && Classes.SKELETON
+          )}
+        >
           <ButtonGroup large>
             {!behind && (
               <Button
@@ -147,7 +150,7 @@ export const Project: FC<Props> = ({ project }) => {
                   getStatus={updateProject}
                   gitStatus={gitStatus}
                   groupId={groupId}
-                  hiddenCount={hiddenCount}
+                  hiddenCount={hiddenRunCount}
                   hiddenPullCount={hiddenPullCount}
                   id={id}
                   name={name}
@@ -175,17 +178,35 @@ export const Project: FC<Props> = ({ project }) => {
         </div>
       </div>
 
-      {showWorktrees && gitStatus?.worktrees?.length > 0 && (
-        <WorktreeList
-          gitStatus={gitStatus}
-          id={id}
-          name={name}
-          onSuccess={updateProject}
-        />
-      )}
+      {worktrees.map((worktree) => (
+        <Fragment key={worktree.path}>
+          <CheckoutCard
+            gitStatus={worktree.isMain ? gitStatus : undefined}
+            onHidePull={hidePull}
+            onHideRun={hideRun}
+            onIgnoreWorkflow={ignoreWorkflow}
+            onRefresh={updateProject}
+            project={project}
+            pulls={pullsByBranch[worktree.branch] ?? []}
+            runs={runsByBranch[worktree.branch] ?? []}
+            worktree={worktree}
+          />
 
-      {Actions}
-      {Pulls}
+          {worktree.isMain && orphans.length > 0 && (
+            <div className="pl-5">
+              {orphans.map(({ pull, tags }) => (
+                <PullRequest
+                  key={pull.id}
+                  onHide={hidePull}
+                  projectId={id}
+                  pull={pull}
+                  tags={tags}
+                />
+              ))}
+            </div>
+          )}
+        </Fragment>
+      ))}
     </>
   );
 };
