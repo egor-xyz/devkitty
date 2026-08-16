@@ -362,24 +362,34 @@ export const CheckoutCard: FC<Props> = ({
                 </div>
               )}
 
-              {pull && (
-                <div className="bg-bp-light-gray-4/70 dark:bg-bp-dark-gray-2/70">
+              {/* A pull request and its runs are one block: no gaps inside it,
+                  a clear gap before the next one, and a tinted head. */}
+              <div
+                className={cn(
+                  'overflow-hidden mx-2 rounded-md',
+                  index > 0 && 'mt-2',
+                  pull && 'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
+                  pull && 'shadow-[0_0_0_1px_rgba(0,0,0,0.06)] dark:shadow-[0_0_0_1px_rgba(0,0,0,0.35)]',
+                  '[&>*]:mt-0'
+                )}
+              >
+                {pull && (
                   <PullRequest
                     onHide={onHidePull}
                     projectId={project.id}
                     pull={pull.pull}
                     tags={pull.tags}
                   />
-                </div>
-              )}
+                )}
 
-              <GroupRuns
-                onHide={onHideRun}
-                onIgnore={onIgnoreWorkflow}
-                onRefresh={onRefresh}
-                project={project}
-                runs={runs}
-              />
+                <GroupRuns
+                  onHide={onHideRun}
+                  onIgnore={onIgnoreWorkflow}
+                  onRefresh={onRefresh}
+                  project={project}
+                  runs={runs}
+                />
+              </div>
             </Fragment>
           ))}
 
