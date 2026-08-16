@@ -1,5 +1,5 @@
 import { Button, ButtonGroup, Classes, Tag, Tooltip } from '@blueprintjs/core';
-import { type FC, Fragment, useCallback, useEffect, useState } from 'react';
+import { type FC, Fragment, type ReactNode, useCallback, useEffect, useState } from 'react';
 import { FaCopy, FaRegCopy } from 'react-icons/fa';
 import { GitStatusBadge } from 'renderer/components/GitStatusBadge';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
@@ -26,6 +26,7 @@ type Props = {
   expanded: boolean;
   gitStatus?: GitStatus;
   groups: DetailGroup[];
+  leading?: ReactNode;
   onHidePull: (pullId: number) => void;
   onHideRun: (runId: number) => void;
   onIgnoreWorkflow: (workflowName: string, workflowPath: string) => void;
@@ -33,6 +34,7 @@ type Props = {
   onToggleExpanded: () => void;
   project: Project;
   runsLoaded: boolean;
+  trailing?: ReactNode;
   worktree: Worktree;
 };
 
@@ -40,6 +42,7 @@ export const CheckoutCard: FC<Props> = ({
   expanded,
   gitStatus,
   groups,
+  leading,
   onHidePull,
   onHideRun,
   onIgnoreWorkflow,
@@ -47,6 +50,7 @@ export const CheckoutCard: FC<Props> = ({
   onToggleExpanded,
   project,
   runsLoaded,
+  trailing,
   worktree
 }) => {
   const { openModal } = useModal();
@@ -162,13 +166,17 @@ export const CheckoutCard: FC<Props> = ({
     <>
       <div
         className={cn(
-          'flex relative items-center justify-start min-h-[45px] py-1 pl-2 pr-4 gap-3 w-full box-border shrink-0 mt-2 first:mt-0.5',
+          'flex relative items-center justify-start py-1 pl-5 pr-4 gap-3 w-full box-border shrink-0 mt-0.5',
           'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
-          // Pins directly beneath the repo header while its contents scroll.
-          'sticky top-[55px] z-10',
+          // The main checkout IS the repo header, so it is taller and pins to
+          // the top; worktrees pin just beneath it while their contents scroll.
+          isMain ? 'min-h-[55px] sticky top-0 z-20' : 'min-h-[45px] sticky top-[55px] z-10',
+          expanded && 'shadow-[0_2px_6px_-1px_rgba(0,0,0,0.20)] dark:shadow-[0_2px_6px_-1px_rgba(0,0,0,0.6)]',
           deleting && 'opacity-50 pointer-events-none'
         )}
       >
+        {leading}
+
         <Tooltip compact
           content={expanded ? 'Hide actions & pull requests' : 'Show actions & pull requests'}
           hoverOpenDelay={500}
@@ -321,26 +329,30 @@ export const CheckoutCard: FC<Props> = ({
             </Tooltip>
           )}
         </ButtonGroup>
+
+        {trailing}
       </div>
 
       {expanded && (
         <div
           className={cn(
-            // Cards stay flush left; their contents indent one step — never a
-            // cascading staircase — and sit in a recessed well.
-            'pl-5 bg-bp-light-gray-3 dark:bg-bp-dark-gray-1',
-            'shadow-[inset_0_2px_4px_rgba(0,0,0,0.12)] dark:shadow-[inset_0_2px_4px_rgba(0,0,0,0.4)]'
+            // No indentation at any level. What belongs to this checkout reads
+            // as recessed instead: a darker surface, sunk behind the header.
+            'bg-bp-light-gray-3 dark:bg-bp-dark-gray-1',
+            'shadow-[inset_0_3px_6px_-2px_rgba(0,0,0,0.18)] dark:shadow-[inset_0_3px_6px_-2px_rgba(0,0,0,0.55)]'
           )}
         >
           {groups.map(({ pull, runs }, index) => (
             <Fragment key={pull ? `pull-${pull.pull.id}` : `runs-${index}`}>
               {pull && (
-                <PullRequest
-                  onHide={onHidePull}
-                  projectId={project.id}
-                  pull={pull.pull}
-                  tags={pull.tags}
-                />
+                <div className="bg-bp-light-gray-4/70 dark:bg-bp-dark-gray-2/70">
+                  <PullRequest
+                    onHide={onHidePull}
+                    projectId={project.id}
+                    pull={pull.pull}
+                    tags={pull.tags}
+                  />
+                </div>
               )}
 
               {runs.map((run) => (

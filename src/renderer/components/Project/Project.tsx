@@ -1,4 +1,4 @@
-import { Button, ButtonGroup, Classes, Colors, Icon, Popover } from '@blueprintjs/core';
+import { Button, ButtonGroup, Classes, Popover } from '@blueprintjs/core';
 import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useGit } from 'renderer/hooks/useGit';
@@ -165,81 +165,6 @@ export const Project: FC<Props> = ({ project }) => {
 
   return (
     <>
-      <div
-        className={cn(
-          'flex relative items-center gap-2.5 min-h-[55px] py-0.5 pl-5 pr-4',
-          'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
-          // Pins above its own checkouts while you scroll them, so you never
-          // lose track of which repo you are looking at.
-          'sticky top-0 z-20',
-          '[&+&]:mt-0.5'
-        )}
-      >
-        <div className={cn('flex flex-col shrink-0', loading && !gitStatus && Classes.SKELETON)}>
-          <div className="font-medium">{name}</div>
-
-          <div className="text-[11px] font-light -mt-0.5 dark:text-bp-gray-3">
-            {gitStatus?.organization ?? 'Local git'}
-          </div>
-        </div>
-
-        <QuickActions
-          gitStatus={gitStatus}
-          onUpdate={updateProject}
-          project={project}
-          showDetails={anyExpanded}
-          toggleDetails={toggleAll}
-        />
-
-        <div
-          className={cn(
-            'flex relative flex-row-reverse min-w-[79px] select-none',
-            !gitStatus && Classes.SKELETON
-          )}
-        >
-          <ButtonGroup large>
-            <Button
-              icon="refresh"
-              onClick={updateProject}
-            />
-
-            <Popover
-              content={
-                <ProjectMenu
-                  clearHiddenPulls={clearHiddenPulls}
-                  clearHiddenRuns={clearHiddenRuns}
-                  filePath={filePath}
-                  getStatus={updateProject}
-                  gitStatus={gitStatus}
-                  groupId={groupId}
-                  hiddenCount={hiddenRunCount}
-                  hiddenPullCount={hiddenPullCount}
-                  id={id}
-                  name={name}
-                  pull={runPull}
-                  removeProject={removeAlert}
-                />
-              }
-              placement="auto-end"
-            >
-              <Button
-                icon="caret-down"
-                intent={behind ? 'warning' : 'none'}
-              />
-            </Popover>
-          </ButtonGroup>
-
-          <Icon
-            className={cn(
-              'absolute top-1/2 -left-[22px] mr-2.5 -translate-y-1/2 origin-center opacity-0',
-              loading && 'animate-[blink_3s_infinite]'
-            )}
-            color={Colors.ORANGE1}
-            icon="dot"
-          />
-        </div>
-      </div>
-
       {!gitHubToken && worktrees.length > 0 && (
         <div className={cn('py-1.5 pl-5 pr-4 text-[11px]', Classes.TEXT_MUTED)}>
           Set GitHub token in settings to see actions and pull requests
@@ -252,6 +177,19 @@ export const Project: FC<Props> = ({ project }) => {
           gitStatus={worktree.isMain ? gitStatus : undefined}
           groups={groupsFor(worktree)}
           key={worktree.path}
+          leading={
+            worktree.isMain ? (
+              <div className={cn('flex flex-col shrink-0 w-[130px]', loading && !gitStatus && Classes.SKELETON)}>
+                <div className="font-medium truncate">{name}</div>
+
+                <div className="text-[11px] font-light -mt-0.5 truncate dark:text-bp-gray-3">
+                  {gitStatus?.organization ?? 'Local git'}
+                </div>
+              </div>
+            ) : (
+              <div className="w-[130px] shrink-0" />
+            )
+          }
           onHidePull={hidePull}
           onHideRun={hideRun}
           onIgnoreWorkflow={ignoreWorkflow}
@@ -259,6 +197,51 @@ export const Project: FC<Props> = ({ project }) => {
           onToggleExpanded={() => toggleExpanded(worktree.path)}
           project={project}
           runsLoaded={runsLoaded}
+          trailing={
+            worktree.isMain ? (
+              <div className={cn('flex items-center gap-2.5', !gitStatus && Classes.SKELETON)}>
+                <QuickActions
+                  gitStatus={gitStatus}
+                  onUpdate={updateProject}
+                  project={project}
+                  showDetails={anyExpanded}
+                  toggleDetails={toggleAll}
+                />
+
+                <ButtonGroup large>
+                  <Button
+                    icon="refresh"
+                    onClick={updateProject}
+                  />
+
+                  <Popover
+                    content={
+                      <ProjectMenu
+                        clearHiddenPulls={clearHiddenPulls}
+                        clearHiddenRuns={clearHiddenRuns}
+                        filePath={filePath}
+                        getStatus={updateProject}
+                        gitStatus={gitStatus}
+                        groupId={groupId}
+                        hiddenCount={hiddenRunCount}
+                        hiddenPullCount={hiddenPullCount}
+                        id={id}
+                        name={name}
+                        pull={runPull}
+                        removeProject={removeAlert}
+                      />
+                    }
+                    placement="auto-end"
+                  >
+                    <Button
+                      icon="caret-down"
+                      intent={behind ? 'warning' : 'none'}
+                    />
+                  </Popover>
+                </ButtonGroup>
+              </div>
+            ) : undefined
+          }
           worktree={worktree}
         />
       ))}
