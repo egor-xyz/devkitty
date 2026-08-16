@@ -44,10 +44,7 @@ export const useRepoData = (project: Project) => {
     if (!gitHubToken) return;
 
     const res = await window.bridge.gitAPI.getRuns(project.id);
-    if (!res.success) {
-      setRuns([]);
-      return;
-    }
+    if (!res.success) return;
 
     const nextRuns: Run[] = ignoreDependabot
       ? (res.runs ?? []).filter((run: Run) => !run.actor?.login?.toLowerCase().includes('dependabot'))
@@ -80,10 +77,7 @@ export const useRepoData = (project: Project) => {
       window.bridge.gitAPI.getPulls(project.id, 'review-requested')
     ]);
 
-    if (!openRes.success) {
-      setPulls([]);
-      return;
-    }
+    if (!openRes.success) return;
 
     const numbersOf = (res: { pulls?: { number: number }[]; success: boolean }) =>
       res.success ? (res.pulls ?? []).map((item) => item.number) : [];
