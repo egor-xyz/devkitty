@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  buildDetailGroups,
   groupPullsByBranch,
   groupRunsByBranch,
   orphanPulls,
@@ -276,5 +277,64 @@ describe('orphanRuns', () => {
 
   it('should skip branches whose run list is empty', () => {
     expect(orphanRuns({ stray: [] }, ['main'])).toEqual({});
+  });
+});
+
+describe('buildDetailGroups', () => {
+  it('should pair each pull request with the runs on its head branch', () => {
+    const pulls = tagPulls([pull(1, 42, 'feature')], [42], []);
+    const runsByBranch = groupRunsByBranch([run(1, 'feature', '2026-08-16T10:00:00Z')], 5);
+
+    const result = buildDetailGroups(pulls, runsByBranch, 'feature');
+
+    expect(result).toHaveLength(1);
+    expect(result[0].pull?.pull.number).toBe(42);
+    expect(result[0].runs.map((item) => item.id)).toEqual([1]);
+  });
+
+  it('should append runs that belong to no pull request as a trailing group', () => {
+    const runsByBranch = groupRunsByBranch([run(1, 'main', '2026-08-16T10:00:00Z')], 5);
+
+    const result = buildDetailGroups([], runsByBranch, 'main');
+
+    expect(result).toHaveLength(1);
+    expect(result[0].pull).toBeUndefined();
+    expect(result[0].runs.map((item) => item.id)).toEqual([1]);
+  });
+
+  it('should not repeat runs already claimed by a pull request on the same branch', () => {
+    const pulls = tagPulls([pull(1, 42, 'feature')], [42], []);
+    const runsByBranch = groupRunsByBranch([run(1, 'feature', '2026-08-16T10:00:00Z')], 5);
+
+    const result = buildDetailGroups(pulls, runsByBranch, 'feature');
+
+    expect(result).toHaveLength(1);
+  });
+
+  it('should put pull requests before the loose runs', () => {
+    const pulls = tagPulls([pull(1, 42, 'stray')], [42], []);
+    const runsByBranch = groupRunsByBranch(
+      [run(1, 'stray', '2026-08-16T10:00:00Z'), run(2, 'main', '2026-08-16T10:00:00Z')],
+      5
+    );
+
+    const result = buildDetailGroups(pulls, runsByBranch, 'main');
+
+    expect(result.map((group) => group.pull?.pull.number)).toEqual([42, undefined]);
+    expect(result[0].runs.map((item) => item.id)).toEqual([1]);
+    expect(result[1].runs.map((item) => item.id)).toEqual([2]);
+  });
+
+  it('should return an empty list when there is nothing to show', () => {
+    expect(buildDetailGroups([], {}, 'main')).toEqual([]);
+  });
+
+  it('should give a pull request with no runs an empty run list', () => {
+    const pulls = tagPulls([pull(1, 42, 'feature')], [42], []);
+
+    const result = buildDetailGroups(pulls, {}, 'feature');
+
+    expect(result).toHaveLength(1);
+    expect(result[0].runs).toEqual([]);
   });
 });

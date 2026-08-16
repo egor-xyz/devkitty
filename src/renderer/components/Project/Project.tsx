@@ -1,5 +1,5 @@
 import { Button, ButtonGroup, Classes, Colors, Icon, Popover } from '@blueprintjs/core';
-import { type FC, Fragment, useCallback, useEffect, useMemo, useState } from 'react';
+import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useGit } from 'renderer/hooks/useGit';
 import { useModal } from 'renderer/hooks/useModal';
@@ -11,11 +11,9 @@ import { type Worktree } from 'types/worktree';
 import { CheckoutCard } from './components/CheckoutCard';
 import { Error } from './components/Error';
 import { ProjectMenu } from './components/ProjectMenu';
-import { PullRequest } from './components/PullRequest';
 import { QuickActions } from './components/QuickActions';
-import { Workflow } from './components/Workflow';
 import { useRepoData } from './hooks/useRepoData';
-import { sortWorktreesByActivity } from './hooks/useRepoData/groupByBranch';
+import { buildDetailGroups, sortWorktreesByActivity } from './hooks/useRepoData/groupByBranch';
 
 type Props = {
   project: IProject;
@@ -146,6 +144,14 @@ export const Project: FC<Props> = ({ project }) => {
   const unpulledOrphanRuns = Object.entries(orphanedRuns)
     .filter(([branch]) => !orphanPullBranches.has(branch))
     .flatMap(([, runs]) => runs);
+
+  const groupsFor = (worktree: Worktree) => {
+    const pulls = pullsByBranch[worktree.branch] ?? [];
+    if (!worktree.isMain) return buildDetailGroups(pulls, runsByBranch, worktree.branch);
+
+    const groups = buildDetailGroups([...pulls, ...orphans], runsByBranch, worktree.branch);
+    return unpulledOrphanRuns.length > 0 ? [...groups, { runs: unpulledOrphanRuns }] : groups;
+  };
   const behind = gitStatus?.status?.behind ?? 0;
 
   if (gitStatus && !gitStatus.success) {
@@ -238,61 +244,20 @@ export const Project: FC<Props> = ({ project }) => {
       )}
 
       {sortedWorktrees.map((worktree) => (
-        <Fragment key={worktree.path}>
-          <CheckoutCard
-            expanded={Boolean(expandedPaths[worktree.path])}
-            gitStatus={worktree.isMain ? gitStatus : undefined}
-            onHidePull={hidePull}
-            onHideRun={hideRun}
-            onIgnoreWorkflow={ignoreWorkflow}
-            onRefresh={updateProject}
-            onToggleExpanded={() => toggleExpanded(worktree.path)}
-            project={project}
-            pulls={pullsByBranch[worktree.branch] ?? []}
-            runs={runsByBranch[worktree.branch] ?? []}
-            runsLoaded={runsLoaded}
-            worktree={worktree}
-          />
-
-          {worktree.isMain && expandedPaths[worktree.path] && (orphans.length > 0 || unpulledOrphanRuns.length > 0) && (
-            <div className="pl-10">
-              {orphans.map(({ pull, tags }) => (
-                <Fragment key={pull.id}>
-                  <PullRequest
-                    onHide={hidePull}
-                    projectId={id}
-                    pull={pull}
-                    tags={tags}
-                  />
-
-                  <div className="pl-5">
-                    {(orphanedRuns[pull.head?.ref] ?? []).map((run) => (
-                      <Workflow
-                        key={run.id}
-                        onHide={hideRun}
-                        onIgnore={ignoreWorkflow}
-                        onRefresh={updateProject}
-                        project={project}
-                        run={run}
-                      />
-                    ))}
-                  </div>
-                </Fragment>
-              ))}
-
-              {unpulledOrphanRuns.map((run) => (
-                <Workflow
-                  key={run.id}
-                  onHide={hideRun}
-                  onIgnore={ignoreWorkflow}
-                  onRefresh={updateProject}
-                  project={project}
-                  run={run}
-                />
-              ))}
-            </div>
-          )}
-        </Fragment>
+        <CheckoutCard
+          expanded={Boolean(expandedPaths[worktree.path])}
+          gitStatus={worktree.isMain ? gitStatus : undefined}
+          groups={groupsFor(worktree)}
+          key={worktree.path}
+          onHidePull={hidePull}
+          onHideRun={hideRun}
+          onIgnoreWorkflow={ignoreWorkflow}
+          onRefresh={updateProject}
+          onToggleExpanded={() => toggleExpanded(worktree.path)}
+          project={project}
+          runsLoaded={runsLoaded}
+          worktree={worktree}
+        />
       ))}
     </>
   );

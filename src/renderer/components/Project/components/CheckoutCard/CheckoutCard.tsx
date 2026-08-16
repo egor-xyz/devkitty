@@ -6,11 +6,10 @@ import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useModal } from 'renderer/hooks/useModal';
 import { appToaster } from 'renderer/utils/appToaster';
 import { cn } from 'renderer/utils/cn';
-import { type Run } from 'types/gitHub';
 import { type GitStatus, type Project } from 'types/project';
 import { type Worktree } from 'types/worktree';
 
-import { type PullWithTags } from '../../hooks/useRepoData/groupByBranch';
+import { type DetailGroup } from '../../hooks/useRepoData/groupByBranch';
 import { CheckoutBranch } from '../CheckoutBranch';
 import { PullRequest } from '../PullRequest';
 import { Workflow } from '../Workflow';
@@ -26,14 +25,13 @@ type CheckoutStatus = {
 type Props = {
   expanded: boolean;
   gitStatus?: GitStatus;
+  groups: DetailGroup[];
   onHidePull: (pullId: number) => void;
   onHideRun: (runId: number) => void;
   onIgnoreWorkflow: (workflowName: string, workflowPath: string) => void;
   onRefresh: () => void;
   onToggleExpanded: () => void;
   project: Project;
-  pulls: PullWithTags[];
-  runs: Run[];
   runsLoaded: boolean;
   worktree: Worktree;
 };
@@ -41,14 +39,13 @@ type Props = {
 export const CheckoutCard: FC<Props> = ({
   expanded,
   gitStatus,
+  groups,
   onHidePull,
   onHideRun,
   onIgnoreWorkflow,
   onRefresh,
   onToggleExpanded,
   project,
-  pulls,
-  runs,
   runsLoaded,
   worktree
 }) => {
@@ -159,18 +156,7 @@ export const CheckoutCard: FC<Props> = ({
 
   // Pre-fetch state looks exactly like the empty state, so a card expanded from
   // saved storage would flash "No actions were found" on every app start.
-  const isBlank = runsLoaded && runs.length === 0 && pulls.length === 0;
-
-  const runRows = runs.map((run) => (
-    <Workflow
-      key={run.id}
-      onHide={onHideRun}
-      onIgnore={onIgnoreWorkflow}
-      onRefresh={onRefresh}
-      project={project}
-      run={run}
-    />
-  ));
+  const isBlank = runsLoaded && groups.length === 0;
 
   return (
     <>
@@ -344,20 +330,29 @@ export const CheckoutCard: FC<Props> = ({
             'shadow-[inset_0_2px_4px_rgba(0,0,0,0.10)] dark:shadow-[inset_0_2px_4px_rgba(0,0,0,0.35)]'
           )}
         >
-          {pulls.map(({ pull, tags }, index) => (
-            <Fragment key={pull.id}>
-              <PullRequest
-                onHide={onHidePull}
-                projectId={project.id}
-                pull={pull}
-                tags={tags}
-              />
+          {groups.map(({ pull, runs }, index) => (
+            <Fragment key={pull ? `pull-${pull.pull.id}` : `runs-${index}`}>
+              {pull && (
+                <PullRequest
+                  onHide={onHidePull}
+                  projectId={project.id}
+                  pull={pull.pull}
+                  tags={pull.tags}
+                />
+              )}
 
-              {index === 0 && runRows}
+              {runs.map((run) => (
+                <Workflow
+                  key={run.id}
+                  onHide={onHideRun}
+                  onIgnore={onIgnoreWorkflow}
+                  onRefresh={onRefresh}
+                  project={project}
+                  run={run}
+                />
+              ))}
             </Fragment>
           ))}
-
-          {pulls.length === 0 && runRows}
 
           {gitHubToken && isBlank && (
             <div className={cn('flex justify-between items-center py-2.5 px-4', Classes.TEXT_MUTED)}>

@@ -6,6 +6,29 @@ export type PullWithTags = {
   tags: string[];
 };
 
+// What a checkout shows when opened: each pull request followed by its own
+// runs, then any runs that belong to no pull request.
+export type DetailGroup = {
+  pull?: PullWithTags;
+  runs: Run[];
+};
+
+export const buildDetailGroups = (
+  pulls: PullWithTags[],
+  runsByBranch: Record<string, Run[]>,
+  branch: string
+): DetailGroup[] => {
+  const groups: DetailGroup[] = pulls.map((pull) => ({
+    pull,
+    runs: pull.pull.head?.ref ? (runsByBranch[pull.pull.head.ref] ?? []) : []
+  }));
+
+  const claimed = new Set(pulls.map(({ pull }) => pull.head?.ref));
+  const loose = claimed.has(branch) ? [] : (runsByBranch[branch] ?? []);
+
+  return loose.length > 0 ? [...groups, { runs: loose }] : groups;
+};
+
 // Runs on a branch that is not checked out anywhere would otherwise render
 // nowhere at all, so they collect under the main card beside the orphan pulls.
 export const orphanRuns = (runsByBranch: Record<string, Run[]>, branches: string[]): Record<string, Run[]> => {
