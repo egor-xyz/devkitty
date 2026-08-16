@@ -1,4 +1,4 @@
-import { Button, ButtonGroup, Classes, Icon, Tag, Tooltip } from '@blueprintjs/core';
+import { Button, ButtonGroup, Classes, Tag, Tooltip } from '@blueprintjs/core';
 import { type FC, Fragment, useCallback, useEffect, useState } from 'react';
 import { FaCopy, FaRegCopy } from 'react-icons/fa';
 import { ActionsIcon } from 'renderer/assets/gitHubIcons';
@@ -184,16 +184,6 @@ export const CheckoutCard: FC<Props> = ({
         )}
       >
         <div className="overflow-hidden flex text-left justify-start gap-4 items-center flex-1 min-w-0">
-          <div className="w-[30px] shrink-0 flex justify-center">
-            {deleting ? (
-              <Icon className="animate-spin"
-                icon="refresh"
-              />
-            ) : (
-              <Icon icon={isMain ? 'home' : 'diagram-tree'} />
-            )}
-          </div>
-
           <div className="overflow-hidden flex flex-col">
             <div className="overflow-hidden text-ellipsis whitespace-nowrap">
               <b>{worktree.branch}</b>
@@ -248,16 +238,16 @@ export const CheckoutCard: FC<Props> = ({
           )}
         </div>
 
-        {isMain && (
-          <div className="flex min-w-[240px]">
+        <div className="flex min-w-[240px]">
+          {isMain && (
             <CheckoutBranch
               getStatus={onRefresh}
               gitStatus={gitStatus}
               id={project.id}
               name={project.name}
             />
-          </div>
-        )}
+          )}
+        </div>
 
         <ButtonGroup>
           <Tooltip compact
