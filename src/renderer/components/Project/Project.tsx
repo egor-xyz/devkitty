@@ -1,5 +1,5 @@
 import { Button, ButtonGroup, Classes, Colors, Icon, Popover } from '@blueprintjs/core';
-import { type FC, Fragment, useMemo, useState } from 'react';
+import { type FC, Fragment, useMemo } from 'react';
 import { useGit } from 'renderer/hooks/useGit';
 import { useModal } from 'renderer/hooks/useModal';
 import { useMountEffect } from 'renderer/hooks/useMountEffect';
@@ -7,7 +7,6 @@ import { cn } from 'renderer/utils/cn';
 import { type Project as IProject } from 'types/project';
 import { type Worktree } from 'types/worktree';
 
-import { GitStatusGroup } from '../GitStatusGroup';
 import { CheckoutCard } from './components/CheckoutCard';
 import { Error } from './components/Error';
 import { ProjectMenu } from './components/ProjectMenu';
@@ -20,9 +19,8 @@ type Props = {
 };
 
 export const Project: FC<Props> = ({ project }) => {
-  const { getStatus, gitStatus, loading } = useGit();
+  const { getStatus, gitStatus, loading, pull } = useGit();
   const { openModal } = useModal();
-  const [pullLoading, setPullLoading] = useState(false);
 
   const {
     clearHiddenPulls,
@@ -45,10 +43,8 @@ export const Project: FC<Props> = ({ project }) => {
   };
 
   const runPull = async () => {
-    setPullLoading(true);
-    await window.bridge.git.pull(id);
-    setPullLoading(false);
-    updateProject();
+    await pull(id, name);
+    refresh();
   };
 
   const removeAlert = () => {
@@ -76,7 +72,7 @@ export const Project: FC<Props> = ({ project }) => {
     return [{ branch: gitStatus.branchSummary.current, isMain: true, path: filePath }];
   }, [filePath, gitStatus]);
 
-  const orphans = getOrphanPulls(worktrees.map((worktree) => worktree.branch));
+  const orphans = getOrphanPulls(worktrees.map((worktree) => worktree.branch)).filter(({ tags }) => tags.length > 0);
   const behind = gitStatus?.status?.behind ?? 0;
 
   if (gitStatus && !gitStatus.success) {
@@ -105,11 +101,6 @@ export const Project: FC<Props> = ({ project }) => {
               {gitStatus?.organization ?? 'Local git'}
             </div>
           </div>
-
-          <GitStatusGroup
-            gitStatus={gitStatus}
-            name={name}
-          />
         </div>
 
         <QuickActions
@@ -125,21 +116,10 @@ export const Project: FC<Props> = ({ project }) => {
           )}
         >
           <ButtonGroup large>
-            {!behind && (
-              <Button
-                icon="refresh"
-                onClick={updateProject}
-              />
-            )}
-
-            {Boolean(behind) && (
-              <Button
-                icon="arrow-down"
-                intent="warning"
-                loading={pullLoading}
-                onClick={runPull}
-              />
-            )}
+            <Button
+              icon="refresh"
+              onClick={updateProject}
+            />
 
             <Popover
               content={

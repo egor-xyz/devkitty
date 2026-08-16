@@ -31,7 +31,7 @@ export const useRepoData = (project: Project) => {
 
   const {
     fetchInterval,
-    gitHubActions: { count, ignoreDependabot, notifications = true },
+    gitHubActions: { count, hideDone, ignoreDependabot, notifications = true },
     gitHubPulls,
     gitHubToken
   } = useAppSettings();
@@ -173,8 +173,21 @@ export const useRepoData = (project: Project) => {
   }, [project.id]);
 
   const runsByBranch = useMemo(
-    () => groupRunsByBranch(runs.filter((run) => !hiddenRuns.has(run.id)), count),
-    [count, hiddenRuns, runs]
+    () =>
+      groupRunsByBranch(
+        runs
+          .filter((run) => !hiddenRuns.has(run.id))
+          .filter(
+            (run) =>
+              !hideDone ||
+              !run.conclusion ||
+              run.status === 'in_progress' ||
+              run.status === 'queued' ||
+              run.status === 'pending'
+          ),
+        count
+      ),
+    [count, hiddenRuns, hideDone, runs]
   );
 
   const pullsByBranch = useMemo(

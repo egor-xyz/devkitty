@@ -4,6 +4,7 @@ import { ActionsIcon } from 'renderer/assets/gitHubIcons';
 import { GitStatusBadge } from 'renderer/components/GitStatusBadge';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useModal } from 'renderer/hooks/useModal';
+import { appToaster } from 'renderer/utils/appToaster';
 import { cn } from 'renderer/utils/cn';
 import { type Run } from 'types/gitHub';
 import { type GitStatus, type Project } from 'types/project';
@@ -112,12 +113,20 @@ export const CheckoutCard: FC<Props> = ({
 
   const runPull = async () => {
     setPullLoading(true);
-    if (isMain) {
-      await window.bridge.git.pull(project.id);
-    } else {
-      await window.bridge.worktree.pull(project.id, worktree.path);
-    }
+    const res = isMain
+      ? await window.bridge.git.pull(project.id)
+      : await window.bridge.worktree.pull(project.id, worktree.path);
     setPullLoading(false);
+
+    if (!res.success) {
+      (await appToaster).show({
+        icon: 'info-sign',
+        intent: 'warning',
+        message: `${project.name} pull ${res.message}`,
+        timeout: 0
+      });
+    }
+
     await fetchStatus();
     onRefresh();
   };
