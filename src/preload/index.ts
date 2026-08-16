@@ -26,6 +26,7 @@ const bridge = {
     getJobs: (id: string, runId: number) => ipcRenderer.invoke('git:api:getJobs', id, runId),
     getPRChecks: (id: string, prNumber: number) => ipcRenderer.invoke('git:api:getPRChecks', id, prNumber),
     getPulls: (id: string, type: (typeof pullTypes)[number]) => ipcRenderer.invoke('git:api:getPulls', id, type),
+    getRuns: (id: string) => ipcRenderer.invoke('git:api:getRuns', id),
     rerunFailedJobs: (id: string, runId: number) => ipcRenderer.invoke('git:api:rerunFailedJobs', id, runId),
     rerunWorkflow: (id: string, runId: number) => ipcRenderer.invoke('git:api:rerunWorkflow', id, runId),
     reset: (id: string, origin: string, target: string) => ipcRenderer.invoke('git:api:reset', id, origin, target)

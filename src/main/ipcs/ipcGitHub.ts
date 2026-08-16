@@ -93,6 +93,35 @@ ipcMain.handle('git:api:getAction', async (_, id: string, filterBy: string[]) =>
   }
 });
 
+ipcMain.handle('git:api:getRuns', async (_, id: string) => {
+  try {
+    const { gitHubActions } = settings.get('appSettings');
+    const { ignoredWorkflows = [], inProgress } = gitHubActions;
+
+    const { owner, repo } = await getRepoInfo(id);
+    if (!owner || !repo) throw new Error('Project not found');
+
+    const { data } = await octokit().rest.actions.listWorkflowRunsForRepo({
+      owner,
+      per_page: 100,
+      repo
+    });
+
+    const runs = data.workflow_runs
+      .filter((run) => new Date(run.created_at).getTime() > Date.now() - 86400000)
+      .filter(
+        (run) =>
+          !inProgress || run.status === 'in_progress' || new Date(run.created_at).getTime() > Date.now() - 1800000
+      )
+      .filter((run) => !ignoredWorkflows.includes(run.path));
+
+    return { runs, success: true };
+  } catch (e) {
+    log.error(e);
+    return { message: e.message, success: false };
+  }
+});
+
 ipcMain.handle('git:api:getJobs', async (_, id: string, runId: number) => {
   try {
     const { owner, repo } = await getRepoInfo(id);

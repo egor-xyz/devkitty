@@ -24,6 +24,7 @@ const mockBridge = {
     getAction: vi.fn(),
     getJobs: vi.fn(),
     getPulls: vi.fn(),
+    getRuns: vi.fn(),
     reset: vi.fn()
   },
   launch: {

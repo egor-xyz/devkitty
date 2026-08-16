@@ -242,6 +242,81 @@ describe('ipcGitHub', () => {
     });
   });
 
+  describe('git:api:getRuns', () => {
+    const recent = new Date().toISOString();
+    const old = new Date(Date.now() - 90000000).toISOString();
+
+    beforeEach(() => {
+      mockGetRepoInfo.mockResolvedValue({ owner: 'owner', repo: 'repo' });
+      mockSettings.get.mockReturnValue({
+        gitHubActions: { count: 5, inProgress: false },
+        gitHubToken: Buffer.from('token')
+      } as any);
+    });
+
+    it('should return runs from every branch without slicing', async () => {
+      mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockResolvedValue({
+        data: {
+          total_count: 3,
+          workflow_runs: [
+            { created_at: recent, head_branch: 'main', id: 1, path: '.github/workflows/ci.yml' },
+            { created_at: recent, head_branch: 'feature', id: 2, path: '.github/workflows/ci.yml' },
+            { created_at: recent, head_branch: 'other', id: 3, path: '.github/workflows/ci.yml' }
+          ]
+        }
+      });
+
+      const result = await handlers['git:api:getRuns']({}, 'proj-1');
+
+      expect(result.success).toBe(true);
+      expect(result.runs.map((run: any) => run.id)).toEqual([1, 2, 3]);
+    });
+
+    it('should drop runs older than 24 hours', async () => {
+      mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockResolvedValue({
+        data: {
+          total_count: 2,
+          workflow_runs: [
+            { created_at: recent, head_branch: 'main', id: 1, path: '.github/workflows/ci.yml' },
+            { created_at: old, head_branch: 'main', id: 2, path: '.github/workflows/ci.yml' }
+          ]
+        }
+      });
+
+      const result = await handlers['git:api:getRuns']({}, 'proj-1');
+
+      expect(result.runs.map((run: any) => run.id)).toEqual([1]);
+    });
+
+    it('should drop ignored workflows', async () => {
+      mockSettings.get.mockReturnValue({
+        gitHubActions: { count: 5, ignoredWorkflows: ['.github/workflows/noisy.yml'], inProgress: false },
+        gitHubToken: Buffer.from('token')
+      } as any);
+      mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockResolvedValue({
+        data: {
+          total_count: 2,
+          workflow_runs: [
+            { created_at: recent, head_branch: 'main', id: 1, path: '.github/workflows/ci.yml' },
+            { created_at: recent, head_branch: 'main', id: 2, path: '.github/workflows/noisy.yml' }
+          ]
+        }
+      });
+
+      const result = await handlers['git:api:getRuns']({}, 'proj-1');
+
+      expect(result.runs.map((run: any) => run.id)).toEqual([1]);
+    });
+
+    it('should fail when the repo cannot be resolved', async () => {
+      mockGetRepoInfo.mockResolvedValue({});
+
+      const result = await handlers['git:api:getRuns']({}, 'proj-1');
+
+      expect(result).toEqual({ message: 'Project not found', success: false });
+    });
+  });
+
   describe('git:api:getJobs', () => {
     it('should return jobs for a workflow run', async () => {
       mockOctokitInstance.rest.actions.listJobsForWorkflowRun.mockResolvedValue({
