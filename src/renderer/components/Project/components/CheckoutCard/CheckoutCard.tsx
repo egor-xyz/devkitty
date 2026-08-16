@@ -30,6 +30,7 @@ type Props = {
   onHideRun: (runId: number) => void;
   onIgnoreWorkflow: (workflowName: string, workflowPath: string) => void;
   onRefresh: () => void;
+  onToggleExpanded: () => void;
   project: Project;
   pulls: PullWithTags[];
   runs: Run[];
@@ -44,6 +45,7 @@ export const CheckoutCard: FC<Props> = ({
   onHideRun,
   onIgnoreWorkflow,
   onRefresh,
+  onToggleExpanded,
   project,
   pulls,
   runs,
@@ -174,11 +176,23 @@ export const CheckoutCard: FC<Props> = ({
     <>
       <div
         className={cn(
-          'flex relative items-center justify-start min-h-[45px] py-1 pl-10 pr-4 gap-4 w-full box-border shrink-0 mt-0.5',
+          'flex relative items-center justify-start min-h-[45px] py-1 pl-5 pr-4 gap-4 w-full box-border shrink-0 mt-0.5',
           'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
           deleting && 'opacity-50 pointer-events-none'
         )}
       >
+        <Tooltip compact
+          content={expanded ? 'Hide actions & pull requests' : 'Show actions & pull requests'}
+          hoverOpenDelay={500}
+          placement="bottom"
+        >
+          <Button
+            icon={expanded ? 'chevron-down' : 'chevron-right'}
+            minimal
+            onClick={onToggleExpanded}
+          />
+        </Tooltip>
+
         <div className="overflow-hidden flex text-left justify-start gap-4 items-center min-w-0 max-w-[420px]">
           <div className="overflow-hidden flex flex-col">
             <div className="overflow-hidden text-ellipsis whitespace-nowrap">
@@ -322,7 +336,14 @@ export const CheckoutCard: FC<Props> = ({
       </div>
 
       {expanded && (
-        <div className="pl-5">
+        <div
+          className={cn(
+            // Depth instead of indentation: what belongs to this checkout sits
+            // in a well below it, rather than stepping further right each level.
+            'bg-bp-light-gray-3 dark:bg-bp-dark-gray-1',
+            'shadow-[inset_0_2px_4px_rgba(0,0,0,0.10)] dark:shadow-[inset_0_2px_4px_rgba(0,0,0,0.35)]'
+          )}
+        >
           {pulls.map(({ pull, tags }, index) => (
             <Fragment key={pull.id}>
               <PullRequest
@@ -332,7 +353,7 @@ export const CheckoutCard: FC<Props> = ({
                 tags={tags}
               />
 
-              {index === 0 && <div className="pl-5">{runRows}</div>}
+              {index === 0 && runRows}
             </Fragment>
           ))}
 
