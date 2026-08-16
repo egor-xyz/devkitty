@@ -1,5 +1,6 @@
 import { Button, ButtonGroup, Icon, Tooltip } from '@blueprintjs/core';
 import { type FC, Fragment, useCallback, useEffect, useState } from 'react';
+import { FaCopy, FaRegCopy } from 'react-icons/fa';
 import { ActionsIcon } from 'renderer/assets/gitHubIcons';
 import { GitStatusBadge } from 'renderer/components/GitStatusBadge';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
@@ -14,6 +15,8 @@ import { type PullWithTags } from '../../hooks/useRepoData/groupByBranch';
 import { CheckoutBranch } from '../CheckoutBranch';
 import { PullRequest } from '../PullRequest';
 import { Workflow } from '../Workflow';
+
+const size = 16;
 
 type CheckoutStatus = {
   ahead: number;
@@ -53,6 +56,12 @@ export const CheckoutCard: FC<Props> = ({
   const [status, setStatus] = useState<CheckoutStatus | null>(null);
   const [pullLoading, setPullLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [copyIcon, setCopyIcon] = useState(
+    <FaRegCopy
+      className="text-bp-gray-1 dark:text-bp-gray-4"
+      size={size}
+    />
+  );
 
   const { isMain } = worktree;
   const abbreviated = worktree.path.replace(/^.*\//, '.../');
@@ -86,6 +95,27 @@ export const CheckoutCard: FC<Props> = ({
 
     fetchStatus();
   }, [fetchStatus, gitStatus, isMain]);
+
+  const copyToClipboard = () => {
+    setCopyIcon(
+      <FaCopy
+        className="text-bp-gray-1 dark:text-bp-gray-4"
+        size={size}
+      />
+    );
+    setTimeout(
+      () =>
+        setCopyIcon(
+          <FaRegCopy
+            className="text-bp-gray-1 dark:text-bp-gray-4"
+            size={size}
+          />
+        ),
+      1000
+    );
+
+    navigator.clipboard.writeText(worktree.branch);
+  };
 
   const runPull = async () => {
     setPullLoading(true);
@@ -246,6 +276,18 @@ export const CheckoutCard: FC<Props> = ({
               />
             </Tooltip>
           )}
+
+          <Tooltip compact
+            content="Copy branch name"
+            hoverOpenDelay={500}
+            placement="bottom"
+          >
+            <Button
+              disabled={deleting}
+              icon={copyIcon}
+              onClick={copyToClipboard}
+            />
+          </Tooltip>
 
           {selectedEditor && (
             <Tooltip compact
