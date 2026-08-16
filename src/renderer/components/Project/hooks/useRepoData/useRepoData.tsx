@@ -33,6 +33,7 @@ const getHidden = (key: string): Set<number> => {
  */
 export const useRepoData = (project: Project, pollRuns: boolean) => {
   const [runs, setRuns] = useState<Run[]>([]);
+  const [runsLoaded, setRunsLoaded] = useState(false);
   const [pulls, setPulls] = useState<PullWithTags[]>([]);
   const [hiddenRuns, setHiddenRuns] = useState(() => getHidden(hiddenRunsKey(project.id)));
   const [hiddenPulls, setHiddenPulls] = useState(() => getHidden(hiddenPullsKey(project.id)));
@@ -48,11 +49,20 @@ export const useRepoData = (project: Project, pollRuns: boolean) => {
   const pullsIntervalId = useRef<null | number>(null);
   const prevConclusions = useRef<Map<number, null | string>>(new Map());
   const initialRunsFetched = useRef(false);
+  const notifyArmed = useRef(false);
 
-  const getRuns = useCallback(async () => {
+  /**
+   * `arm` is passed only by the *polling* fetch. The mount fetch runs for every
+   * repo, collapsed ones included, so it primes `prevConclusions` with `null`
+   * for anything still in flight. Notifying off that map would fire a burst of
+   * hours-old results the moment a card is first expanded — so notifications
+   * stay disarmed until a polling fetch has primed the map itself.
+   */
+  const getRuns = useCallback(async (arm = false) => {
     if (!gitHubToken) return;
 
     const res = await window.bridge.gitAPI.getRuns(project.id);
+    setRunsLoaded(true);
     if (!res.success) return;
 
     const nextRuns: Run[] = ignoreDependabot
@@ -63,7 +73,7 @@ export const useRepoData = (project: Project, pollRuns: boolean) => {
       const prev = prevConclusions.current.get(run.id);
       if (prev === undefined && prevConclusions.current.size > 0 && run.conclusion) {
         // New run that already has a conclusion — skip notification
-      } else if (prev !== undefined && !prev && run.conclusion && notifications) {
+      } else if (notifyArmed.current && prev !== undefined && !prev && run.conclusion && notifications) {
         const status = run.conclusion === 'success' ? 'passed' : 'failed';
         const event = run.event !== 'workflow_dispatch' ? run.event : 'manual';
         window.bridge.notification.show(
@@ -73,6 +83,8 @@ export const useRepoData = (project: Project, pollRuns: boolean) => {
       }
       prevConclusions.current.set(run.id, run.conclusion ?? null);
     }
+
+    if (arm) notifyArmed.current = true;
 
     setRuns(nextRuns);
   }, [gitHubToken, ignoreDependabot, notifications, project.id, project.name]);
@@ -101,7 +113,7 @@ export const useRepoData = (project: Project, pollRuns: boolean) => {
     // Expanding a card refetches immediately, then keeps polling.
     if (!initialRunsFetched.current || pollRuns) {
       initialRunsFetched.current = true;
-      getRuns();
+      getRuns(pollRuns);
     }
 
     if (!pollRuns) return;
@@ -231,6 +243,7 @@ export const useRepoData = (project: Project, pollRuns: boolean) => {
     hideRun,
     pullsByBranch,
     refresh,
-    runsByBranch
+    runsByBranch,
+    runsLoaded
   };
 };

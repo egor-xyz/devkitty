@@ -35,6 +35,7 @@ type Props = {
   project: Project;
   pulls: PullWithTags[];
   runs: Run[];
+  runsLoaded: boolean;
   worktree: Worktree;
 };
 
@@ -49,6 +50,7 @@ export const CheckoutCard: FC<Props> = ({
   project,
   pulls,
   runs,
+  runsLoaded,
   worktree
 }) => {
   const { openModal } = useModal();
@@ -157,7 +159,9 @@ export const CheckoutCard: FC<Props> = ({
     });
   };
 
-  const isBlank = runs.length === 0 && pulls.length === 0;
+  // Pre-fetch state looks exactly like the empty state, so a card expanded from
+  // saved storage would flash "No actions were found" on every app start.
+  const isBlank = runsLoaded && runs.length === 0 && pulls.length === 0;
 
   const runRows = runs.map((run) => (
     <Workflow

@@ -58,7 +58,8 @@ export const Project: FC<Props> = ({ project }) => {
     hideRun,
     pullsByBranch,
     refresh,
-    runsByBranch
+    runsByBranch,
+    runsLoaded
   } = useRepoData(project, anyExpanded);
 
   // Worktrees arrive asynchronously — seed each new card from its saved state.
@@ -221,6 +222,7 @@ export const Project: FC<Props> = ({ project }) => {
             project={project}
             pulls={pullsByBranch[worktree.branch] ?? []}
             runs={runsByBranch[worktree.branch] ?? []}
+            runsLoaded={runsLoaded}
             worktree={worktree}
           />
 
