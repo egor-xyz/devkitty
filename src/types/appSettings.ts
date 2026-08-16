@@ -11,6 +11,7 @@ export type AppSettings = {
     ignoreDependabot: boolean;
     ignoredWorkflows: string[];
     inProgress: boolean;
+    pinnedWorkflows: string[];
     notifications: boolean;
   };
   gitHubPulls: {

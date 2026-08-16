@@ -10,19 +10,28 @@ export type PullWithTags = {
 // Cancelled and timed-out runs stay visible — they usually want a re-run.
 const settledConclusions = new Set(['neutral', 'skipped', 'success']);
 
-export const splitDoneRuns = (runs: Run[]): { active: Run[]; done: Run[] } => {
+export const splitDoneRuns = (
+  runs: Run[],
+  pinnedWorkflows: string[] = []
+): { active: Run[]; done: Run[]; pinned: Run[] } => {
+  const pinnedPaths = new Set(pinnedWorkflows);
   const active: Run[] = [];
   const done: Run[] = [];
+  const pinned: Run[] = [];
 
   for (const run of runs) {
-    if (run.conclusion && settledConclusions.has(run.conclusion)) {
+    // A pinned workflow — a deploy, usually — always stays in view, whatever
+    // it concluded. That is the whole point of pinning it.
+    if (run.path && pinnedPaths.has(run.path)) {
+      pinned.push(run);
+    } else if (run.conclusion && settledConclusions.has(run.conclusion)) {
       done.push(run);
     } else {
       active.push(run);
     }
   }
 
-  return { active, done };
+  return { active, done, pinned };
 };
 
 // What a checkout shows when opened: each pull request followed by its own

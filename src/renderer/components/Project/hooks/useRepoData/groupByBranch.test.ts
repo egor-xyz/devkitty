@@ -430,7 +430,7 @@ describe('splitDoneRuns', () => {
   });
 
   it('should handle an empty list', () => {
-    expect(splitDoneRuns([])).toEqual({ active: [], done: [] });
+    expect(splitDoneRuns([])).toEqual({ active: [], done: [], pinned: [] });
   });
 });
 
@@ -483,5 +483,36 @@ describe('sortWorktreesByActivity — finished checkouts', () => {
     );
 
     expect(result.map((item) => item.branch)).toEqual(['main', 'busy']);
+  });
+});
+
+describe('splitDoneRuns — pinned workflows', () => {
+  const withPath = (id: number, conclusion: null | string, path: string) =>
+    ({ conclusion, created_at: '2026-08-16T10:00:00Z', head_branch: 'main', id, path, status: 'completed' }) as any;
+
+  it('should keep a pinned workflow out of the folded bucket even when it succeeded', () => {
+    const result = splitDoneRuns(
+      [withPath(1, 'success', '.github/workflows/deploy.yml'), withPath(2, 'success', '.github/workflows/ci.yml')],
+      ['.github/workflows/deploy.yml']
+    );
+
+    expect(result.pinned.map((item) => item.id)).toEqual([1]);
+    expect(result.done.map((item) => item.id)).toEqual([2]);
+  });
+
+  it('should pin a failing workflow too', () => {
+    const result = splitDoneRuns([withPath(1, 'failure', '.github/workflows/deploy.yml')], [
+      '.github/workflows/deploy.yml'
+    ]);
+
+    expect(result.pinned.map((item) => item.id)).toEqual([1]);
+    expect(result.active).toEqual([]);
+  });
+
+  it('should leave everything unpinned when no workflow is pinned', () => {
+    const result = splitDoneRuns([withPath(1, 'success', '.github/workflows/deploy.yml')]);
+
+    expect(result.pinned).toEqual([]);
+    expect(result.done.map((item) => item.id)).toEqual([1]);
   });
 });

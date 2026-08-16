@@ -1,5 +1,6 @@
-import { Classes } from '@blueprintjs/core';
+import { Classes, Collapse } from '@blueprintjs/core';
 import { type FC, useState } from 'react';
+import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { cn } from 'renderer/utils/cn';
 import { type Run } from 'types/gitHub';
 import { type Project } from 'types/project';
@@ -19,7 +20,8 @@ type Props = {
 // attention stays on screen, the rest is one click away.
 export const GroupRuns: FC<Props> = ({ onHide, onIgnore, onRefresh, project, runs }) => {
   const [showDone, setShowDone] = useState(false);
-  const { active, done } = splitDoneRuns(runs);
+  const { gitHubActions } = useAppSettings();
+  const { active, done, pinned } = splitDoneRuns(runs, gitHubActions.pinnedWorkflows);
 
   const row = (run: Run) => (
     <Workflow
@@ -34,6 +36,7 @@ export const GroupRuns: FC<Props> = ({ onHide, onIgnore, onRefresh, project, run
 
   return (
     <>
+      {pinned.map(row)}
       {active.map(row)}
 
       {done.length > 0 && (
@@ -57,7 +60,7 @@ export const GroupRuns: FC<Props> = ({ onHide, onIgnore, onRefresh, project, run
         </button>
       )}
 
-      {showDone && done.map(row)}
+      <Collapse isOpen={showDone}>{done.map(row)}</Collapse>
     </>
   );
 };

@@ -26,7 +26,8 @@ export const settings = new Store<Settings>({
         ignoreDependabot: false,
         ignoredWorkflows: [],
         inProgress: false,
-        notifications: true
+        notifications: true,
+        pinnedWorkflows: []
       },
       gitHubPulls: {
         pollInterval: 300000

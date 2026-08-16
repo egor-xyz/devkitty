@@ -1,4 +1,4 @@
-import { Button, ButtonGroup, Classes, Tag, Tooltip } from '@blueprintjs/core';
+import { Button, ButtonGroup, Classes, Collapse, Tag, Tooltip } from '@blueprintjs/core';
 import { type FC, Fragment, type ReactNode, useCallback, useEffect, useState } from 'react';
 import { FaCopy, FaRegCopy } from 'react-icons/fa';
 import { GitStatusBadge } from 'renderer/components/GitStatusBadge';
@@ -172,7 +172,7 @@ export const CheckoutCard: FC<Props> = ({
           'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
           // The main checkout IS the repo header, so it is taller and pins to
           // the top; worktrees pin just beneath it while their contents scroll.
-          isMain ? 'min-h-[55px] sticky top-0 z-20' : 'min-h-[45px] sticky top-[55px] z-10',
+          isMain ? 'h-[55px] sticky top-0 z-20' : 'h-[45px] sticky top-[55px] z-10',
           expanded && 'shadow-[0_2px_6px_-1px_rgba(0,0,0,0.20)] dark:shadow-[0_2px_6px_-1px_rgba(0,0,0,0.6)]',
           deleting && 'opacity-50 pointer-events-none'
         )}
@@ -343,7 +343,7 @@ export const CheckoutCard: FC<Props> = ({
         {trailing}
       </div>
 
-      {expanded && (
+      <Collapse isOpen={expanded}>
         <div
           className={cn(
             // No indentation at any level. What belongs to this checkout reads
@@ -394,7 +394,7 @@ export const CheckoutCard: FC<Props> = ({
             </div>
           )}
         </div>
-      )}
+      </Collapse>
     </>
   );
 };

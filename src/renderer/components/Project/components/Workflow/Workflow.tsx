@@ -1,6 +1,7 @@
 import { Button, ButtonGroup, Collapse, Menu, MenuDivider, MenuItem, Popover, Tooltip } from '@blueprintjs/core';
 import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { getStatusIcon } from 'renderer/assets/gitHubStatusUtils';
+import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useModal } from 'renderer/hooks/useModal';
 import { cn } from 'renderer/utils/cn';
 import { type Run } from 'types/gitHub';
@@ -59,6 +60,19 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, onRefresh, project, run 
     updated_at
   } = run;
   const { openModal } = useModal();
+  const { gitHubActions, set } = useAppSettings();
+  const pinnedWorkflows = gitHubActions.pinnedWorkflows ?? [];
+  const isPinned = pinnedWorkflows.includes(path);
+
+  const togglePinned = () => {
+    set({
+      gitHubActions: {
+        ...gitHubActions,
+        pinnedWorkflows: isPinned ? pinnedWorkflows.filter((item) => item !== path) : [...pinnedWorkflows, path]
+      }
+    });
+  };
+
   const [isOpen, setIsOpen] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
 
@@ -271,6 +285,12 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, onRefresh, project, run 
                     text="Hide this action"
                   />
                 )}
+
+                <MenuItem
+                  icon={isPinned ? 'unpin' : 'pin'}
+                  onClick={togglePinned}
+                  text={isPinned ? 'Unpin workflow' : 'Pin workflow'}
+                />
 
                 {onIgnore && (
                   <MenuItem
