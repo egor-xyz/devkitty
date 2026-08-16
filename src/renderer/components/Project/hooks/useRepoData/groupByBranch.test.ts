@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { groupPullsByBranch, groupRunsByBranch, orphanPulls, tagPulls } from './groupByBranch';
+import { groupPullsByBranch, groupRunsByBranch, orphanPulls, sortWorktreesByActivity, tagPulls } from './groupByBranch';
 
 const pull = (id: number, number: number, ref: string) => ({ head: { ref }, id, number }) as any;
 const run = (id: number, branch: string, createdAt: string) =>
@@ -81,8 +81,10 @@ describe('groupPullsByBranch', () => {
     expect(() => groupPullsByBranch(items)).not.toThrow();
 
     const result = groupPullsByBranch(items);
-    expect(result.constructor).toHaveLength(1);
-    expect(result.constructor[0].pull.number).toBe(42);
+    // eslint-disable-next-line dot-notation -- dot access resolves to Object.prototype.constructor's type
+    expect(result['constructor']).toHaveLength(1);
+    // eslint-disable-next-line dot-notation -- as above
+    expect(result['constructor'][0].pull.number).toBe(42);
   });
 });
 
@@ -164,8 +166,10 @@ describe('groupRunsByBranch', () => {
     expect(() => groupRunsByBranch(runs, 5)).not.toThrow();
 
     const result = groupRunsByBranch(runs, 5);
-    expect(result.constructor).toHaveLength(1);
-    expect(result.constructor[0].id).toBe(1);
+    // eslint-disable-next-line dot-notation -- dot access resolves to Object.prototype.constructor's type
+    expect(result['constructor']).toHaveLength(1);
+    // eslint-disable-next-line dot-notation -- as above
+    expect(result['constructor'][0].id).toBe(1);
   });
 });
 
@@ -187,5 +191,55 @@ describe('orphanPulls', () => {
 
   it('should return an empty array for an empty grouping', () => {
     expect(orphanPulls({}, ['main'])).toEqual([]);
+  });
+});
+
+describe('sortWorktreesByActivity', () => {
+  const wt = (branch: string, isMain = false) => ({ branch, isMain, path: `/p/${branch}` });
+  const branches = (result: ReturnType<typeof sortWorktreesByActivity>) => result.map((w) => w.branch);
+
+  it('should keep the main worktree first even with no activity', () => {
+    const result = sortWorktreesByActivity(
+      [wt('main', true), wt('busy')],
+      { busy: [run(1, 'busy', '2026-08-16T10:00:00Z')] },
+      { busy: tagPulls([pull(1, 42, 'busy')], [42], []) }
+    );
+
+    expect(branches(result)).toEqual(['main', 'busy']);
+  });
+
+  it('should move the main worktree to the front from any position', () => {
+    const result = sortWorktreesByActivity([wt('a'), wt('main', true), wt('b')], {}, {});
+
+    expect(branches(result)[0]).toBe('main');
+  });
+
+  it('should rank pull request above runs, and runs above nothing', () => {
+    const result = sortWorktreesByActivity(
+      [wt('quiet'), wt('runs-only'), wt('pull-only'), wt('both')],
+      { both: [run(1, 'both', '2026-08-16T10:00:00Z')], 'runs-only': [run(2, 'runs-only', '2026-08-16T10:00:00Z')] },
+      { both: tagPulls([pull(1, 1, 'both')], [1], []), 'pull-only': tagPulls([pull(2, 2, 'pull-only')], [2], []) }
+    );
+
+    expect(branches(result)).toEqual(['both', 'pull-only', 'runs-only', 'quiet']);
+  });
+
+  it('should preserve git order between worktrees of equal activity', () => {
+    const result = sortWorktreesByActivity([wt('a'), wt('b'), wt('c')], {}, {});
+
+    expect(branches(result)).toEqual(['a', 'b', 'c']);
+  });
+
+  it('should not mutate the input array', () => {
+    const input = [wt('quiet'), wt('busy')];
+    sortWorktreesByActivity(input, { busy: [run(1, 'busy', '2026-08-16T10:00:00Z')] }, {});
+
+    expect(input.map((w) => w.branch)).toEqual(['quiet', 'busy']);
+  });
+
+  it('should treat empty branch groupings as no activity', () => {
+    const result = sortWorktreesByActivity([wt('a'), wt('b')], { a: [] }, { b: [] });
+
+    expect(branches(result)).toEqual(['a', 'b']);
   });
 });

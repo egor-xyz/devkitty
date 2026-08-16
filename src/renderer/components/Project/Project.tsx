@@ -1,5 +1,5 @@
 import { Button, ButtonGroup, Classes, Colors, Icon, Popover } from '@blueprintjs/core';
-import { type FC, Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { type FC, Fragment, useCallback, useMemo, useState } from 'react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useGit } from 'renderer/hooks/useGit';
 import { useModal } from 'renderer/hooks/useModal';
@@ -14,16 +14,17 @@ import { ProjectMenu } from './components/ProjectMenu';
 import { PullRequest } from './components/PullRequest';
 import { QuickActions } from './components/QuickActions';
 import { useRepoData } from './hooks/useRepoData';
+import { sortWorktreesByActivity } from './hooks/useRepoData/groupByBranch';
 
 type Props = {
   project: IProject;
 };
 
-const expandedKey = (projectId: string, path: string) => `showChecks:${projectId}:${path}`;
+const detailsKey = (projectId: string) => `showActions:${projectId}`;
 
-const readExpanded = (projectId: string, path: string): boolean | null => {
-  const saved = localStorage.getItem(expandedKey(projectId, path));
-  return saved ? JSON.parse(saved) : null;
+const readDetails = (projectId: string): boolean => {
+  const saved = localStorage.getItem(detailsKey(projectId));
+  return saved ? JSON.parse(saved) : false;
 };
 
 export const Project: FC<Props> = ({ project }) => {
@@ -43,12 +44,9 @@ export const Project: FC<Props> = ({ project }) => {
     return [{ branch: gitStatus.branchSummary.current, isMain: true, path: filePath }];
   }, [filePath, gitStatus]);
 
-  // Expand state lives here, not in the cards: fetching runs costs API budget,
-  // so a repo is only polled while at least one of its cards is expanded.
-  const [expandedPaths, setExpandedPaths] = useState<Record<string, boolean>>({});
-  const autoExpanded = useRef<Set<string>>(new Set());
-
-  const anyExpanded = worktrees.some(({ path }) => expandedPaths[path]);
+  // One switch for the whole repo, not one per card: fetching runs costs API
+  // budget, so a repo is only polled while its details are shown.
+  const [showDetails, setShowDetails] = useState(() => readDetails(id));
 
   const {
     clearHiddenPulls,
@@ -62,42 +60,20 @@ export const Project: FC<Props> = ({ project }) => {
     refresh,
     runsByBranch,
     runsLoaded
-  } = useRepoData(project, anyExpanded);
+  } = useRepoData(project, showDetails);
 
-  // Worktrees arrive asynchronously — seed each new card from its saved state.
-  useEffect(() => {
-    setExpandedPaths((prev) => {
-      const unseen = worktrees.filter(({ path }) => !(path in prev));
-      if (unseen.length === 0) return prev;
-
-      const next = { ...prev };
-      for (const { path } of unseen) next[path] = readExpanded(id, path) ?? false;
+  const toggleDetails = useCallback(() => {
+    setShowDetails((prev) => {
+      const next = !prev;
+      localStorage.setItem(detailsKey(id), JSON.stringify(next));
       return next;
     });
-  }, [id, worktrees]);
+  }, [id]);
 
-  // Auto-expand a card once when its checkout has a failing run, unless the
-  // user already made an explicit choice for that card.
-  useEffect(() => {
-    for (const { branch, path } of worktrees) {
-      if (autoExpanded.current.has(path)) continue;
-      if (readExpanded(id, path) !== null) continue;
-      if (!(runsByBranch[branch] ?? []).some((run) => run.conclusion === 'failure')) continue;
-
-      autoExpanded.current.add(path);
-      setExpandedPaths((prev) => ({ ...prev, [path]: true }));
-    }
-  }, [id, runsByBranch, worktrees]);
-
-  const toggleExpanded = useCallback(
-    (path: string) => {
-      setExpandedPaths((prev) => {
-        const next = !prev[path];
-        localStorage.setItem(expandedKey(id, path), JSON.stringify(next));
-        return { ...prev, [path]: next };
-      });
-    },
-    [id]
+  // Checkouts with an open pull request, then ones with CI runs, come first.
+  const sortedWorktrees = useMemo(
+    () => sortWorktreesByActivity(worktrees, runsByBranch, pullsByBranch),
+    [pullsByBranch, runsByBranch, worktrees]
   );
 
   const updateProject = () => {
@@ -160,6 +136,8 @@ export const Project: FC<Props> = ({ project }) => {
           gitStatus={gitStatus}
           onUpdate={updateProject}
           project={project}
+          showDetails={showDetails}
+          toggleDetails={toggleDetails}
         />
 
         <div
@@ -217,16 +195,15 @@ export const Project: FC<Props> = ({ project }) => {
         </div>
       )}
 
-      {worktrees.map((worktree) => (
+      {sortedWorktrees.map((worktree) => (
         <Fragment key={worktree.path}>
           <CheckoutCard
-            expanded={Boolean(expandedPaths[worktree.path])}
+            expanded={showDetails}
             gitStatus={worktree.isMain ? gitStatus : undefined}
             onHidePull={hidePull}
             onHideRun={hideRun}
             onIgnoreWorkflow={ignoreWorkflow}
             onRefresh={updateProject}
-            onToggleExpanded={() => toggleExpanded(worktree.path)}
             project={project}
             pulls={pullsByBranch[worktree.branch] ?? []}
             runs={runsByBranch[worktree.branch] ?? []}

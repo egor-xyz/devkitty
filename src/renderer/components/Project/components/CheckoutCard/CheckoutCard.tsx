@@ -1,7 +1,6 @@
 import { Button, ButtonGroup, Classes, Tag, Tooltip } from '@blueprintjs/core';
 import { type FC, Fragment, useCallback, useEffect, useState } from 'react';
 import { FaCopy, FaRegCopy } from 'react-icons/fa';
-import { ActionsIcon } from 'renderer/assets/gitHubIcons';
 import { GitStatusBadge } from 'renderer/components/GitStatusBadge';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useModal } from 'renderer/hooks/useModal';
@@ -31,7 +30,6 @@ type Props = {
   onHideRun: (runId: number) => void;
   onIgnoreWorkflow: (workflowName: string, workflowPath: string) => void;
   onRefresh: () => void;
-  onToggleExpanded: () => void;
   project: Project;
   pulls: PullWithTags[];
   runs: Run[];
@@ -46,7 +44,6 @@ export const CheckoutCard: FC<Props> = ({
   onHideRun,
   onIgnoreWorkflow,
   onRefresh,
-  onToggleExpanded,
   project,
   pulls,
   runs,
@@ -250,18 +247,6 @@ export const CheckoutCard: FC<Props> = ({
         </div>
 
         <ButtonGroup>
-          <Tooltip compact
-            content="Actions & pull requests"
-            hoverOpenDelay={500}
-            placement="bottom"
-          >
-            <Button
-              active={expanded}
-              icon={<ActionsIcon />}
-              onClick={onToggleExpanded}
-            />
-          </Tooltip>
-
           {Boolean(status?.behind) && (
             <Tooltip compact
               content="Pull"

@@ -1,8 +1,27 @@
 import { type Pull, type Run } from 'types/gitHub';
+import { type Worktree } from 'types/worktree';
 
 export type PullWithTags = {
   pull: Pull;
   tags: string[];
+};
+
+// A checkout with an open pull request is the most likely thing you came here
+// to look at, one with CI runs the next. The main checkout is exempt: it stays
+// first because the repo's orphan pull requests are anchored beneath it.
+export const sortWorktreesByActivity = (
+  worktrees: Worktree[],
+  runsByBranch: Record<string, Run[]>,
+  pullsByBranch: Record<string, PullWithTags[]>
+): Worktree[] => {
+  const activity = ({ branch }: Worktree) =>
+    ((pullsByBranch[branch]?.length ?? 0) > 0 ? 2 : 0) + ((runsByBranch[branch]?.length ?? 0) > 0 ? 1 : 0);
+
+  return [...worktrees].sort((a, b) => {
+    if (a.isMain !== b.isMain) return a.isMain ? -1 : 1;
+
+    return activity(b) - activity(a);
+  });
 };
 
 export const tagPulls = (
