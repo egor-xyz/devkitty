@@ -1,4 +1,4 @@
-import { Button, ButtonGroup, Icon, Tooltip } from '@blueprintjs/core';
+import { Button, ButtonGroup, Classes, Icon, Tag, Tooltip } from '@blueprintjs/core';
 import { type FC, Fragment, useCallback, useEffect, useState } from 'react';
 import { FaCopy, FaRegCopy } from 'react-icons/fa';
 import { ActionsIcon } from 'renderer/assets/gitHubIcons';
@@ -52,7 +52,12 @@ export const CheckoutCard: FC<Props> = ({
   worktree
 }) => {
   const { openModal } = useModal();
-  const { selectedEditor, selectedShell } = useAppSettings();
+  const {
+    gitHubActions: { inProgress },
+    gitHubToken,
+    selectedEditor,
+    selectedShell
+  } = useAppSettings();
   const [status, setStatus] = useState<CheckoutStatus | null>(null);
   const [pullLoading, setPullLoading] = useState(false);
   const [deleting, setDeleting] = useState(false);
@@ -151,6 +156,8 @@ export const CheckoutCard: FC<Props> = ({
       }
     });
   };
+
+  const isBlank = runs.length === 0 && pulls.length === 0;
 
   const runRows = runs.map((run) => (
     <Workflow
@@ -352,6 +359,23 @@ export const CheckoutCard: FC<Props> = ({
           ))}
 
           {pulls.length === 0 && runRows}
+
+          {!gitHubToken && (
+            <div className={cn('flex justify-between items-center py-2.5 px-4', Classes.TEXT_MUTED)}>
+              <span>Set GitHub token in settings to see actions and pull requests</span>
+            </div>
+          )}
+
+          {gitHubToken && isBlank && (
+            <div className={cn('flex justify-between items-center py-2.5 px-4', Classes.TEXT_MUTED)}>
+              <span>
+                No actions {inProgress && 'in progress'} were found for the <b>{worktree.branch}</b> branch in the last{' '}
+                {inProgress ? '30 minutes' : '24 hours'}
+              </span>
+
+              <Tag minimal>watcher is active</Tag>
+            </div>
+          )}
         </div>
       )}
     </>
