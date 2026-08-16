@@ -108,19 +108,25 @@ export const useRepoData = (project: Project, pollRuns: boolean) => {
   useEffect(() => {
     if (!gitHubToken) return;
 
-    // One fetch per mount even while every card is collapsed — `Project` needs
-    // the runs to know whether a card should auto-expand on a failing run.
-    // Expanding a card refetches immediately, then keeps polling.
+    // One fetch per mount even while details are hidden, so the repo has
+    // something to show the moment they are switched on.
     if (!initialRunsFetched.current || pollRuns) {
       initialRunsFetched.current = true;
       getRuns(pollRuns);
     }
 
-    if (!pollRuns) return;
+    // `notifyArmed` means "prevConclusions was primed by a fetch inside the
+    // current continuous polling session". Whenever polling stops the map goes
+    // stale, so disarm — otherwise resuming fires a burst of notifications for
+    // runs that concluded while nobody was watching.
+    if (!pollRuns) {
+      notifyArmed.current = false;
+      return;
+    }
 
     const startPolling = () => {
       if (!runsIntervalId.current && fetchInterval > 2000) {
-        runsIntervalId.current = window.setInterval(getRuns, fetchInterval);
+        runsIntervalId.current = window.setInterval(() => getRuns(), fetchInterval);
       }
     };
 
@@ -134,8 +140,9 @@ export const useRepoData = (project: Project, pollRuns: boolean) => {
     const handleVisibilityChange = () => {
       if (document.hidden) {
         stopPolling();
+        notifyArmed.current = false;
       } else {
-        getRuns();
+        getRuns(true);
         startPolling();
       }
     };
