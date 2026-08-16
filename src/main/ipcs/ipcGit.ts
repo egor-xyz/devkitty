@@ -1,6 +1,7 @@
 import { ipcMain } from 'electron';
 import { CleanOptions, ResetMode } from 'simple-git';
 import { type GitStatus } from 'types/project';
+import { type Worktree } from 'types/worktree';
 
 import { getGit, parseWorktreeList } from '../libs/git';
 
@@ -26,13 +27,10 @@ ipcMain.handle('git:getStatus', async (_, id: string): Promise<GitStatus> => {
     const branchSummary = await git.branch();
 
     // Get worktrees
-    let worktrees;
+    let worktrees: Worktree[];
     try {
       const raw = await git.raw(['worktree', 'list', '--porcelain']);
-      const parsed = parseWorktreeList(raw);
-      if (parsed.length > 1) {
-        worktrees = parsed;
-      }
+      worktrees = parseWorktreeList(raw);
     } catch {
       /* worktree list not supported or failed */
     }
