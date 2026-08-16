@@ -7,6 +7,7 @@ import {
   orphanPulls,
   orphanRuns,
   sortWorktreesByActivity,
+  splitDoneRuns,
   tagPulls
 } from './groupByBranch';
 
@@ -336,5 +337,59 @@ describe('buildDetailGroups', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0].runs).toEqual([]);
+  });
+});
+
+describe('splitDoneRuns', () => {
+  const concluded = (id: number, conclusion: null | string, status = 'completed') =>
+    ({ conclusion, created_at: '2026-08-16T10:00:00Z', head_branch: 'main', id, status }) as any;
+
+  it('should treat a successful run as done', () => {
+    const result = splitDoneRuns([concluded(1, 'success')]);
+
+    expect(result.done.map((item) => item.id)).toEqual([1]);
+    expect(result.active).toEqual([]);
+  });
+
+  it('should keep a failing run active', () => {
+    const result = splitDoneRuns([concluded(1, 'failure')]);
+
+    expect(result.active.map((item) => item.id)).toEqual([1]);
+    expect(result.done).toEqual([]);
+  });
+
+  it('should keep a run with no conclusion active', () => {
+    const result = splitDoneRuns([concluded(1, null, 'in_progress')]);
+
+    expect(result.active.map((item) => item.id)).toEqual([1]);
+  });
+
+  it('should keep cancelled and timed-out runs active', () => {
+    const result = splitDoneRuns([concluded(1, 'cancelled'), concluded(2, 'timed_out')]);
+
+    expect(result.active.map((item) => item.id)).toEqual([1, 2]);
+    expect(result.done).toEqual([]);
+  });
+
+  it('should treat neutral and skipped as done', () => {
+    const result = splitDoneRuns([concluded(1, 'neutral'), concluded(2, 'skipped')]);
+
+    expect(result.done.map((item) => item.id)).toEqual([1, 2]);
+  });
+
+  it('should preserve order within each bucket', () => {
+    const result = splitDoneRuns([
+      concluded(1, 'success'),
+      concluded(2, 'failure'),
+      concluded(3, 'success'),
+      concluded(4, null, 'queued')
+    ]);
+
+    expect(result.done.map((item) => item.id)).toEqual([1, 3]);
+    expect(result.active.map((item) => item.id)).toEqual([2, 4]);
+  });
+
+  it('should handle an empty list', () => {
+    expect(splitDoneRuns([])).toEqual({ active: [], done: [] });
   });
 });

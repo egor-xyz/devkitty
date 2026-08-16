@@ -12,7 +12,7 @@ import { type Worktree } from 'types/worktree';
 import { type DetailGroup } from '../../hooks/useRepoData/groupByBranch';
 import { CheckoutBranch } from '../CheckoutBranch';
 import { PullRequest } from '../PullRequest';
-import { Workflow } from '../Workflow';
+import { GroupRuns } from './GroupRuns';
 
 const size = 16;
 
@@ -355,16 +355,13 @@ export const CheckoutCard: FC<Props> = ({
                 </div>
               )}
 
-              {runs.map((run) => (
-                <Workflow
-                  key={run.id}
-                  onHide={onHideRun}
-                  onIgnore={onIgnoreWorkflow}
-                  onRefresh={onRefresh}
-                  project={project}
-                  run={run}
-                />
-              ))}
+              <GroupRuns
+                onHide={onHideRun}
+                onIgnore={onIgnoreWorkflow}
+                onRefresh={onRefresh}
+                project={project}
+                runs={runs}
+              />
             </Fragment>
           ))}
 

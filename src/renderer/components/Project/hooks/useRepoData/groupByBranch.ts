@@ -6,6 +6,25 @@ export type PullWithTags = {
   tags: string[];
 };
 
+// A run nobody needs to look at again: it finished and it did not fail.
+// Cancelled and timed-out runs stay visible — they usually want a re-run.
+const settledConclusions = new Set(['neutral', 'skipped', 'success']);
+
+export const splitDoneRuns = (runs: Run[]): { active: Run[]; done: Run[] } => {
+  const active: Run[] = [];
+  const done: Run[] = [];
+
+  for (const run of runs) {
+    if (run.conclusion && settledConclusions.has(run.conclusion)) {
+      done.push(run);
+    } else {
+      active.push(run);
+    }
+  }
+
+  return { active, done };
+};
+
 // What a checkout shows when opened: each pull request followed by its own
 // runs, then any runs that belong to no pull request.
 export type DetailGroup = {
