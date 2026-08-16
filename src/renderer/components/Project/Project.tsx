@@ -1,4 +1,4 @@
-import { Button, Classes, Colors, Icon, Popover } from '@blueprintjs/core';
+import { Button, ButtonGroup, Classes, Colors, Icon, Popover } from '@blueprintjs/core';
 import { type FC, Fragment, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useGit } from 'renderer/hooks/useGit';
 import { useModal } from 'renderer/hooks/useModal';
@@ -11,6 +11,7 @@ import { CheckoutCard } from './components/CheckoutCard';
 import { Error } from './components/Error';
 import { ProjectMenu } from './components/ProjectMenu';
 import { PullRequest } from './components/PullRequest';
+import { QuickActions } from './components/QuickActions';
 import { useRepoData } from './hooks/useRepoData';
 
 type Props = {
@@ -44,10 +45,6 @@ export const Project: FC<Props> = ({ project }) => {
   // so a repo is only polled while at least one of its cards is expanded.
   const [expandedPaths, setExpandedPaths] = useState<Record<string, boolean>>({});
   const autoExpanded = useRef<Set<string>>(new Set());
-
-  // The menu opens in a portal, so focus leaves the header and `focus-within`
-  // drops — without this the ⋯ would fade out under its own open menu.
-  const [menuOpen, setMenuOpen] = useState(false);
 
   const anyExpanded = worktrees.some(({ path }) => expandedPaths[path]);
 
@@ -142,66 +139,73 @@ export const Project: FC<Props> = ({ project }) => {
     <>
       <div
         className={cn(
-          'group flex relative items-center justify-between min-h-[40px] py-1 pl-5 pr-4 gap-2.5',
+          'flex relative items-center justify-between min-h-[55px] py-0.5 pl-5 pr-4',
           'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
-          'mt-1.5 first:mt-0'
+          '[&+&]:mt-0.5'
         )}
       >
-        <div
-          className={cn(
-            'flex items-baseline min-w-0 gap-2 overflow-hidden',
-            loading && !gitStatus && Classes.SKELETON
-          )}
-        >
-          <div className="font-medium truncate">{name}</div>
+        <div className="flex flex-1 items-center justify-between w-full pr-2.5 gap-2.5">
+          <div className={cn('flex flex-col', loading && !gitStatus && Classes.SKELETON)}>
+            <div className="font-medium">{name}</div>
 
-          <div className={cn('text-[11px] font-light truncate', Classes.TEXT_MUTED)}>
-            {gitStatus?.organization ?? 'Local git'}
+            <div className="text-[11px] font-light -mt-0.5 dark:text-bp-gray-3">
+              {gitStatus?.organization ?? 'Local git'}
+            </div>
           </div>
         </div>
 
-        <div className="flex items-center shrink-0 gap-1 select-none">
+        <QuickActions
+          gitStatus={gitStatus}
+          onUpdate={updateProject}
+          project={project}
+        />
+
+        <div
+          className={cn(
+            'flex relative flex-row-reverse min-w-[79px] ml-auto select-none',
+            !gitStatus && Classes.SKELETON
+          )}
+        >
+          <ButtonGroup large>
+            <Button
+              icon="refresh"
+              onClick={updateProject}
+            />
+
+            <Popover
+              content={
+                <ProjectMenu
+                  clearHiddenPulls={clearHiddenPulls}
+                  clearHiddenRuns={clearHiddenRuns}
+                  filePath={filePath}
+                  getStatus={updateProject}
+                  gitStatus={gitStatus}
+                  groupId={groupId}
+                  hiddenCount={hiddenRunCount}
+                  hiddenPullCount={hiddenPullCount}
+                  id={id}
+                  name={name}
+                  pull={runPull}
+                  removeProject={removeAlert}
+                />
+              }
+              placement="auto-end"
+            >
+              <Button
+                icon="caret-down"
+                intent={behind ? 'warning' : 'none'}
+              />
+            </Popover>
+          </ButtonGroup>
+
           <Icon
-            className={cn('opacity-0', loading && 'animate-[blink_3s_infinite]')}
+            className={cn(
+              'absolute top-1/2 -left-[22px] mr-2.5 -translate-y-1/2 origin-center opacity-0',
+              loading && 'animate-[blink_3s_infinite]'
+            )}
             color={Colors.ORANGE1}
             icon="dot"
           />
-
-          {/* The ⋯ stays mounted and is only faded, so revealing it never moves
-              the row. An opacity-0 button is still tabbable, and focus-within
-              reveals it for keyboard users. */}
-          <Popover
-            content={
-              <ProjectMenu
-                clearHiddenPulls={clearHiddenPulls}
-                clearHiddenRuns={clearHiddenRuns}
-                filePath={filePath}
-                getStatus={updateProject}
-                gitStatus={gitStatus}
-                groupId={groupId}
-                hiddenCount={hiddenRunCount}
-                hiddenPullCount={hiddenPullCount}
-                id={id}
-                name={name}
-                pull={runPull}
-                removeProject={removeAlert}
-              />
-            }
-            onClosing={() => setMenuOpen(false)}
-            onOpening={() => setMenuOpen(true)}
-            placement="auto-end"
-          >
-            <Button
-              className={cn(
-                'opacity-0 transition-opacity focus-visible:opacity-100 group-hover:opacity-100 group-focus-within:opacity-100',
-                menuOpen && 'opacity-100'
-              )}
-              icon="more"
-              intent={behind ? 'warning' : 'none'}
-              minimal
-              title="Project actions"
-            />
-          </Popover>
         </div>
       </div>
 
