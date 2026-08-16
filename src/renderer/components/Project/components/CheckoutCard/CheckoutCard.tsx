@@ -177,21 +177,18 @@ export const CheckoutCard: FC<Props> = ({
     <>
       <div
         className={cn(
-          'flex relative items-center justify-between min-h-[45px] py-1 pl-5 pr-4 gap-2 w-full box-border shrink-0 mt-0.5',
+          'flex relative items-center justify-between min-h-[40px] py-1 pl-5 pr-4 gap-2 w-full box-border shrink-0',
           'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
+          'border-t border-bp-light-gray-1 dark:border-bp-dark-gray-4',
           deleting && 'opacity-50 pointer-events-none'
         )}
       >
-        <div className="overflow-hidden flex text-left justify-start gap-4 items-center flex-1 min-w-0">
-          <div className="overflow-hidden flex flex-col">
-            <div className="overflow-hidden text-ellipsis whitespace-nowrap">
-              <b>{worktree.branch}</b>
-            </div>
+        <div className="overflow-hidden flex text-left justify-start gap-3 items-center flex-1 min-w-0">
+          <div className="overflow-hidden flex items-baseline min-w-0 gap-3">
+            <div className="font-mono text-[13px] font-medium truncate">{worktree.branch}</div>
 
             <Tooltip content={worktree.path}>
-              <div className="overflow-hidden whitespace-nowrap text-ellipsis -mt-0.5 text-[11px] font-light dark:text-bp-gray-3">
-                {abbreviated}
-              </div>
+              <div className={cn('text-[11px] font-light truncate', Classes.TEXT_MUTED)}>{abbreviated}</div>
             </Tooltip>
           </div>
 
