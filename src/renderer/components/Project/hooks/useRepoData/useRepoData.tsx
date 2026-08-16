@@ -6,6 +6,8 @@ import { type Project } from 'types/project';
 import {
   groupPullsByBranch,
   groupRunsByBranch,
+  mergeRuns,
+  notifiableBranches,
   orphanPulls,
   orphanRuns,
   type PullWithTags,
@@ -31,8 +33,12 @@ const getHidden = (key: string): Set<number> => {
  * `pollRuns` gates the *repeating* runs poll: the caller passes `true` only
  * while at least one of the repo's checkout cards is expanded. Runs are still
  * fetched once on mount so a failing run can auto-expand its card.
+ *
+ * `worktreeBranches` scopes desktop notifications: the fetch covers the whole
+ * repo, but only checkouts on this machine — and pull requests you opened —
+ * are worth interrupting you for.
  */
-export const useRepoData = (project: Project, pollRuns: boolean) => {
+export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranches: string[]) => {
   const [runs, setRuns] = useState<Run[]>([]);
   const [runsLoaded, setRunsLoaded] = useState(false);
   const [pulls, setPulls] = useState<PullWithTags[]>([]);
@@ -41,7 +47,7 @@ export const useRepoData = (project: Project, pollRuns: boolean) => {
 
   const {
     fetchInterval,
-    gitHubActions: { count, hideDone, ignoreDependabot, notifications = true },
+    gitHubActions: { count, hideDone, ignoreDependabot, inProgress, notifications = true },
     gitHubPulls,
     gitHubToken
   } = useAppSettings();
@@ -51,6 +57,13 @@ export const useRepoData = (project: Project, pollRuns: boolean) => {
   const prevConclusions = useRef<Map<number, null | string>>(new Map());
   const initialRunsFetched = useRef(false);
   const notifyArmed = useRef(false);
+  const notifyBranches = useRef<Set<string>>(new Set());
+
+  // A ref, not state: `getRuns` reads it at fire time and must not be rebuilt
+  // (and so restart the poll) every time a branch list changes identity.
+  useEffect(() => {
+    notifyBranches.current = notifiableBranches(worktreeBranches, pulls);
+  }, [pulls, worktreeBranches]);
 
   /**
    * `arm` is passed only by the *polling* fetch. The mount fetch runs for every
@@ -59,10 +72,10 @@ export const useRepoData = (project: Project, pollRuns: boolean) => {
    * hours-old results the moment a card is first expanded — so notifications
    * stay disarmed until a polling fetch has primed the map itself.
    */
-  const getRuns = useCallback(async (arm = false) => {
+  const getRuns = useCallback(async (arm = false, deep = false) => {
     if (!gitHubToken) return;
 
-    const res = await window.bridge.gitAPI.getRuns(project.id);
+    const res = await window.bridge.gitAPI.getRuns(project.id, deep);
     setRunsLoaded(true);
     if (!res.success) return;
 
@@ -74,7 +87,14 @@ export const useRepoData = (project: Project, pollRuns: boolean) => {
       const prev = prevConclusions.current.get(run.id);
       if (prev === undefined && prevConclusions.current.size > 0 && run.conclusion) {
         // New run that already has a conclusion — skip notification
-      } else if (notifyArmed.current && prev !== undefined && !prev && run.conclusion && notifications) {
+      } else if (
+        notifyArmed.current &&
+        prev !== undefined &&
+        !prev &&
+        run.conclusion &&
+        notifications &&
+        notifyBranches.current.has(run.head_branch ?? '')
+      ) {
         const status = run.conclusion === 'success' ? 'passed' : 'failed';
         const event = run.event !== 'workflow_dispatch' ? run.event : 'manual';
         window.bridge.notification.show(
@@ -87,8 +107,11 @@ export const useRepoData = (project: Project, pollRuns: boolean) => {
 
     if (arm) notifyArmed.current = true;
 
-    setRuns(nextRuns);
-  }, [gitHubToken, ignoreDependabot, notifications, project.id, project.name]);
+    // "In progress only" is a live view of what is running right now, so it
+    // replaces rather than accumulates. Everything else merges, so a run does
+    // not vanish the moment a busy repo pushes it off the first page.
+    setRuns((prev) => (inProgress ? nextRuns : mergeRuns(prev, nextRuns, Date.now())));
+  }, [gitHubToken, ignoreDependabot, inProgress, notifications, project.id, project.name]);
 
   const getPulls = useCallback(async () => {
     if (!gitHubToken) return;
@@ -111,9 +134,12 @@ export const useRepoData = (project: Project, pollRuns: boolean) => {
 
     // One fetch per mount even while details are hidden, so the repo has
     // something to show the moment they are switched on.
+    // The first fetch walks back through pages so a quiet branch has its runs
+    // from the start; the polls that follow only need the newest page.
     if (!initialRunsFetched.current || pollRuns) {
+      const first = !initialRunsFetched.current;
       initialRunsFetched.current = true;
-      getRuns(pollRuns);
+      getRuns(pollRuns, first);
     }
 
     // `notifyArmed` means "prevConclusions was primed by a fetch inside the
@@ -242,7 +268,7 @@ export const useRepoData = (project: Project, pollRuns: boolean) => {
   );
 
   const refresh = useCallback(() => {
-    getRuns();
+    getRuns(false, true);
     getPulls();
   }, [getPulls, getRuns]);
 

@@ -117,6 +117,50 @@ export const sortWorktreesByActivity = (
     return lastActivityAt(b.branch, runsByBranch, pullsByBranch) - lastActivityAt(a.branch, runsByBranch, pullsByBranch);
   });
 
+// Beyond this many rows in one list the card stops being scannable, so the
+// tail folds away behind a "show more" the same way finished checks do.
+export const overflowLimit = 10;
+
+/**
+ * Splits a list into what stays on screen and what hides behind a toggle.
+ * A list at or under the limit hides nothing — one extra row is not worth a
+ * divider.
+ */
+export const splitOverflow = <T,>(items: T[], limit = overflowLimit): { hidden: T[]; visible: T[] } =>
+  items.length <= limit ? { hidden: [], visible: items } : { hidden: items.slice(limit), visible: items.slice(0, limit) };
+
+const dayMs = 86400000;
+
+/**
+ * A poll only sees the newest page of a repo's runs, and a busy repo pushes a
+ * branch off that page within the hour. Merging each poll into what is already
+ * on screen keeps a checkout's runs visible for the full 24h window instead of
+ * blinking out as soon as the repo gets loud. Fresh copies win, so a run that
+ * finished between polls updates in place.
+ */
+export const mergeRuns = (previous: Run[], incoming: Run[], now: number): Run[] => {
+  const byId = new Map<number, Run>();
+
+  for (const run of previous) byId.set(run.id, run);
+  for (const run of incoming) byId.set(run.id, run);
+
+  return [...byId.values()].filter((run) => new Date(run.created_at).getTime() > now - dayMs);
+};
+
+// Runs are fetched for the whole repo, so every branch every teammate pushes
+// lands in the poll. Only what this machine has checked out — plus the pull
+// requests you opened yourself — deserves a desktop notification; the rest is
+// somebody else's CI and reads as spam.
+export const notifiableBranches = (worktreeBranches: string[], pulls: PullWithTags[]): Set<string> => {
+  const branches = new Set(worktreeBranches);
+
+  for (const { pull, tags } of pulls) {
+    if (tags.includes('My') && pull.head?.ref) branches.add(pull.head.ref);
+  }
+
+  return branches;
+};
+
 export const tagPulls = (
   pulls: Pull[],
   authoredNumbers: number[],

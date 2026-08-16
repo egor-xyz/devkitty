@@ -3,12 +3,15 @@ import { describe, expect, it } from 'vitest';
 import {
   buildDetailGroups,
   groupPullsByBranch,
-  isCheckoutDone,
   groupRunsByBranch,
+  isCheckoutDone,
+  mergeRuns,
+  notifiableBranches,
   orphanPulls,
   orphanRuns,
   sortWorktreesByActivity,
   splitDoneRuns,
+  splitOverflow,
   tagPulls
 } from './groupByBranch';
 
@@ -514,5 +517,98 @@ describe('splitDoneRuns — pinned workflows', () => {
 
     expect(result.pinned).toEqual([]);
     expect(result.done.map((item) => item.id)).toEqual([1]);
+  });
+});
+
+describe('notifiableBranches', () => {
+  it('should include every locally checked out branch', () => {
+    const result = notifiableBranches(['main', 'feature'], []);
+
+    expect([...result].sort()).toEqual(['feature', 'main']);
+  });
+
+  it('should include branches of pulls the user authored', () => {
+    const result = notifiableBranches(['main'], [{ pull: pull(1, 10, 'mine'), tags: ['My'] }]);
+
+    expect(result.has('mine')).toBe(true);
+  });
+
+  it('should exclude branches of pulls the user did not author', () => {
+    const result = notifiableBranches(['main'], [{ pull: pull(1, 10, 'theirs'), tags: [] }]);
+
+    expect(result.has('theirs')).toBe(false);
+  });
+
+  it('should exclude review requested pulls without an authored tag', () => {
+    const result = notifiableBranches([], [{ pull: pull(1, 10, 'review'), tags: ['Review requested'] }]);
+
+    expect(result.size).toBe(0);
+  });
+
+  it('should skip pulls with no head ref', () => {
+    const result = notifiableBranches([], [{ pull: { head: undefined, id: 1, number: 2 } as any, tags: ['My'] }]);
+
+    expect(result.size).toBe(0);
+  });
+});
+
+describe('mergeRuns', () => {
+  const now = new Date('2026-08-16T12:00:00Z').getTime();
+  const at = (id: number, createdAt: string) => run(id, 'main', createdAt);
+
+  it('should keep runs that a later fetch no longer returns', () => {
+    const result = mergeRuns([at(1, '2026-08-16T11:00:00Z')], [at(2, '2026-08-16T11:59:00Z')], now);
+
+    expect(result.map((item) => item.id).sort()).toEqual([1, 2]);
+  });
+
+  it('should let the incoming copy win for the same run', () => {
+    const previous = [{ ...at(1, '2026-08-16T11:00:00Z'), conclusion: null }];
+    const incoming = [{ ...at(1, '2026-08-16T11:00:00Z'), conclusion: 'success' }];
+
+    const result = mergeRuns(previous, incoming, now);
+
+    expect(result).toHaveLength(1);
+    expect(result[0].conclusion).toBe('success');
+  });
+
+  it('should drop runs older than 24 hours', () => {
+    const result = mergeRuns([at(1, '2026-08-15T11:00:00Z')], [at(2, '2026-08-16T11:00:00Z')], now);
+
+    expect(result.map((item) => item.id)).toEqual([2]);
+  });
+
+  it('should return the incoming runs when nothing was held before', () => {
+    expect(mergeRuns([], [at(1, '2026-08-16T11:00:00Z')], now).map((item) => item.id)).toEqual([1]);
+  });
+});
+
+describe('splitOverflow', () => {
+  const items = (count: number) => Array.from({ length: count }, (_, index) => index);
+
+  it('should hide nothing when the list is under the limit', () => {
+    expect(splitOverflow(items(3), 10)).toEqual({ hidden: [], visible: [0, 1, 2] });
+  });
+
+  it('should hide nothing when the list is exactly at the limit', () => {
+    const result = splitOverflow(items(10), 10);
+
+    expect(result.hidden).toEqual([]);
+    expect(result.visible).toHaveLength(10);
+  });
+
+  it('should hide the tail past the limit', () => {
+    const result = splitOverflow(items(13), 10);
+
+    expect(result.visible).toHaveLength(10);
+    expect(result.hidden).toEqual([10, 11, 12]);
+  });
+
+  it('should default to a limit of 10', () => {
+    expect(splitOverflow(items(12)).hidden).toEqual([10, 11]);
+  });
+
+  it('should handle an empty list', () => {
+    expect(splitOverflow([], 10)).toEqual({ hidden: [], visible: [] });
   });
 });

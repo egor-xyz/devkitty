@@ -1,20 +1,46 @@
 import { Button, ButtonGroup, Classes, Icon, Navbar } from '@blueprintjs/core';
 import clsx from 'clsx';
+import { useEffect, useRef } from 'react';
 import { NavLink } from 'react-router';
 import Devkitty from 'renderer/assets/devkitty.svg?react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useDarkMode } from 'renderer/hooks/useDarkMode';
+import { useFilter } from 'renderer/hooks/useFilter';
 import { useModal } from 'renderer/hooks/useModal';
 import { useProjects } from 'renderer/hooks/useProjects';
 import { cn } from 'renderer/utils/cn';
 
 import { ShinyText } from '../ShinyText';
+import { SearchInput } from './SearchInput';
 
 export const AppNavbar = () => {
   const { themeSource, toggleDarkMode } = useDarkMode();
   const { showLogo } = useAppSettings();
   const { addProject } = useProjects();
   const { openModal } = useModal();
+  const { clear, query, setQuery } = useFilter();
+  const searchRef = useRef<HTMLInputElement>(null);
+
+  // ⌘F jumps to the filter, Escape drops it — the shortcuts anything with a
+  // search field is expected to answer to.
+  useEffect(() => {
+    const onKeyDown = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
+        event.preventDefault();
+        searchRef.current?.focus();
+        searchRef.current?.select();
+      }
+
+      if (event.key === 'Escape' && document.activeElement === searchRef.current) {
+        clear();
+        searchRef.current?.blur();
+      }
+    };
+
+    document.addEventListener('keydown', onKeyDown);
+
+    return () => document.removeEventListener('keydown', onKeyDown);
+  }, [clear]);
 
   const addSticker = () => {
     openModal({
@@ -59,6 +85,15 @@ export const AppNavbar = () => {
         align="right"
         className="app-region-no-drag ml-[70px] [&>button+button]:ml-2 [&>button+a]:ml-2"
       >
+        <div className="flex items-center self-center mr-2">
+          <SearchInput
+            inputRef={searchRef}
+            onChange={setQuery}
+            onClear={clear}
+            value={query}
+          />
+        </div>
+
         <Button
           icon="refresh"
           minimal

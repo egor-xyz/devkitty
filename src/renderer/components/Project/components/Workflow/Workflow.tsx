@@ -185,7 +185,9 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, onRefresh, project, run 
     <>
       <div
         className={cn(
-          'flex relative items-center justify-between min-h-[45px] py-1 pl-5 pr-4 gap-2 w-full box-border shrink-0 mt-0.5 cursor-pointer',
+          // pr-2, not pr-4: the group around this row is inset by mx-2, so the
+          // buttons still line up with the checkout row's buttons above.
+          'flex relative items-center justify-between min-h-[45px] py-1 pl-5 pr-2 gap-2 w-full box-border shrink-0 mt-0.5 cursor-pointer',
           'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2 hover:opacity-90'
         )}
         onClick={toggleJobs}

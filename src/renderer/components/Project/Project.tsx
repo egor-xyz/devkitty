@@ -1,10 +1,12 @@
 import { Button, ButtonGroup, Classes, Collapse, Popover } from '@blueprintjs/core';
 import { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
+import { useFilter } from 'renderer/hooks/useFilter';
 import { useGit } from 'renderer/hooks/useGit';
 import { useModal } from 'renderer/hooks/useModal';
 import { useMountEffect } from 'renderer/hooks/useMountEffect';
 import { cn } from 'renderer/utils/cn';
+import { filterWorktrees, matchesQuery } from 'renderer/utils/filter';
 import { type Project as IProject } from 'types/project';
 import { type Worktree } from 'types/worktree';
 
@@ -37,6 +39,7 @@ export const Project: FC<Props> = ({ project }) => {
   const { getStatus, gitStatus, loading, pull } = useGit();
   const { gitHubToken } = useAppSettings();
   const { openModal } = useModal();
+  const { query } = useFilter();
 
   const { filePath, groupId, id, name } = project;
 
@@ -58,6 +61,8 @@ export const Project: FC<Props> = ({ project }) => {
   const openedForPull = useRef<Set<string>>(new Set());
 
   const anyExpanded = worktrees.some(({ path }) => expandedPaths[path]);
+  const allExpanded = worktrees.length > 0 && worktrees.every(({ path }) => expandedPaths[path]);
+  const worktreeBranches = useMemo(() => worktrees.map((worktree) => worktree.branch), [worktrees]);
 
   const {
     clearHiddenPulls,
@@ -72,7 +77,7 @@ export const Project: FC<Props> = ({ project }) => {
     refresh,
     runsByBranch,
     runsLoaded
-  } = useRepoData(project, anyExpanded);
+  } = useRepoData(project, anyExpanded, worktreeBranches);
 
   // Worktrees arrive asynchronously — seed each new card from its saved state,
   // defaulting to open when the checkout has an open pull request.
@@ -82,9 +87,11 @@ export const Project: FC<Props> = ({ project }) => {
       if (unseen.length === 0) return prev;
 
       const next = { ...prev };
-      for (const { branch, path } of unseen) {
+      for (const { branch, isMain, path } of unseen) {
         const hasOpen = (pullsByBranch[branch] ?? []).some((item) => !isSettledPull(item));
-        next[path] = readExpanded(id, path) ?? hasOpen;
+        // Main opens by default: it holds the repo's own runs and every pull
+        // request no worktree claims, which is the first thing worth seeing.
+        next[path] = readExpanded(id, path) ?? (isMain || hasOpen);
       }
       return next;
     });
@@ -117,7 +124,9 @@ export const Project: FC<Props> = ({ project }) => {
   // The repo switch is a master: open everything, or close everything.
   const toggleAll = useCallback(() => {
     setExpandedPaths((prev) => {
-      const next = !worktrees.some(({ path }) => prev[path]);
+      // Expand unless everything is already expanded. Keyed off `some`, a half
+      // open list collapsed on the first click and only opened on the second.
+      const next = !worktrees.every(({ path }) => prev[path]);
       const updated = { ...prev };
 
       for (const { path } of worktrees) {
@@ -129,10 +138,19 @@ export const Project: FC<Props> = ({ project }) => {
     });
   }, [id, worktrees]);
 
+  // The navbar filter narrows the list: a repo whose own name matches keeps
+  // every checkout, otherwise only matching checkouts (and main, the header)
+  // survive — and a repo with no survivors renders nothing at all.
+  const projectMatched = matchesQuery(`${name} ${gitStatus?.organization ?? ''}`, query);
+  const visibleWorktrees = useMemo(
+    () => filterWorktrees(worktrees, query, projectMatched),
+    [projectMatched, query, worktrees]
+  );
+
   // Checkouts with an open pull request, then ones with CI runs, come first.
   const sortedWorktrees = useMemo(
-    () => sortWorktreesByActivity(worktrees, runsByBranch, pullsByBranch),
-    [pullsByBranch, runsByBranch, worktrees]
+    () => sortWorktreesByActivity(visibleWorktrees, runsByBranch, pullsByBranch),
+    [pullsByBranch, runsByBranch, visibleWorktrees]
   );
 
   const updateProject = () => {
@@ -160,7 +178,6 @@ export const Project: FC<Props> = ({ project }) => {
     getStatus(id, true);
   });
 
-  const worktreeBranches = worktrees.map((worktree) => worktree.branch);
   const orphans = getOrphanPulls(worktreeBranches)
     .filter(({ tags }) => tags.length > 0)
     .filter((item) => !isSettledPull(item));
@@ -190,6 +207,9 @@ export const Project: FC<Props> = ({ project }) => {
     (worktree) => !worktree.isMain && isCheckoutDone(pullsByBranch[worktree.branch])
   );
   const behind = gitStatus?.status?.behind ?? 0;
+
+  // Nothing in this repo answers the filter — drop it out of the list.
+  if (query.trim() && visibleWorktrees.length === 0) return null;
 
   if (gitStatus && !gitStatus.success) {
     return (
@@ -230,15 +250,27 @@ export const Project: FC<Props> = ({ project }) => {
             <div className={cn('flex items-center gap-2.5', !gitStatus && Classes.SKELETON)}>
               <QuickActions
                 gitStatus={gitStatus}
-                showDetails={anyExpanded}
+                showDetails={allExpanded}
                 toggleDetails={toggleAll}
               />
 
               <ButtonGroup large>
-                <Button
-                  icon="refresh"
-                  onClick={updateProject}
-                />
+                {/* One slot, one action: behind commits make pulling the only
+                    thing worth clicking, so it takes the refresh button's
+                    place. Both stay in the menu. */}
+                {behind > 0 ? (
+                  <Button
+                    icon="arrow-down"
+                    intent="warning"
+                    loading={loading}
+                    onClick={runPull}
+                  />
+                ) : (
+                  <Button
+                    icon="refresh"
+                    onClick={updateProject}
+                  />
+                )}
 
                 <Popover
                   content={

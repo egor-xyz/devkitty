@@ -54,19 +54,21 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
   return (
     <div
       className={cn(
-        'flex relative items-center justify-between min-h-[45px] py-1 pl-5 pr-4 mt-0.5',
+        // pr-2, not pr-4: the group around this row is inset by mx-2, so the
+        // buttons still line up with the checkout row's buttons above.
+        'flex relative items-center justify-between min-h-[45px] py-1 pl-5 pr-2 gap-3 mt-0.5',
         'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2'
       )}
     >
-      <div className="overflow-hidden flex text-left justify-start gap-4 items-center">
+      <div className="overflow-hidden flex flex-1 min-w-0 text-left justify-start gap-4 items-center">
         <img
           alt={user.login}
-          className="w-[30px] h-[30px] rounded-full object-cover"
+          className="w-[30px] h-[30px] rounded-full object-cover shrink-0"
           src={user.avatar_url}
         />
 
-        <div className="overflow-hidden flex flex-col">
-          <div className="flex items-center overflow-hidden text-ellipsis whitespace-nowrap mb-0.5 gap-2">
+        <div className="overflow-hidden flex flex-col min-w-0">
+          <div className="flex items-center overflow-hidden mb-0.5 gap-2">
             {draft && '[DRAFT] '}
 
             {isMerged && (
@@ -91,11 +93,14 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
               </div>
             )}
 
-            {title}
+            {/* The title is the only part that may shrink — badges and labels
+                keep their width so a long title never slides under the
+                buttons on the right. It wraps to two lines before it clips. */}
+            <span className="line-clamp-2 break-words min-w-0">{title}</span>
 
             {labels.map((label: { color: string; id: number; name: string }) => (
               <div
-                className="rounded px-1 py-px text-xs"
+                className="rounded px-1 py-px text-xs shrink-0"
                 key={label.id}
                 style={{
                   backgroundColor: `#${label.color}`,

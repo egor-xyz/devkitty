@@ -24,9 +24,7 @@ export const FoldDivider: FC<Props> = ({ hideLabel, onToggle, open, showLabel })
     type="button"
   >
     <span className="flex-1 h-px bg-bp-light-gray-1 dark:bg-bp-dark-gray-4" />
-
     <span className="text-[11px] whitespace-nowrap">{open ? hideLabel : showLabel}</span>
-
     <span className="flex-1 h-px bg-bp-light-gray-1 dark:bg-bp-dark-gray-4" />
   </button>
 );

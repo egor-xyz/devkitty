@@ -1,7 +1,7 @@
 import { ipcMain, safeStorage } from 'electron';
 import log from 'electron-log';
 import { Octokit } from 'octokit';
-import { type PullType } from 'types/gitHub';
+import { type PullType, type Run } from 'types/gitHub';
 
 import { getRepoInfo } from '../libs/git';
 import { settings } from '../settings';
@@ -55,7 +55,14 @@ ipcMain.handle('git:api:reset', async (_, id: string, origin: string, target: st
   }
 });
 
-ipcMain.handle('git:api:getRuns', async (_, id: string) => {
+// A busy repo produces more than 100 runs an hour, so a single page covers
+// barely the last few minutes and older branches come back empty. A deep fetch
+// walks pages until it reaches runs older than the 24h window it would filter
+// out anyway; polls stay on one page and merge into what the renderer already
+// holds.
+const maxPages = 5;
+
+ipcMain.handle('git:api:getRuns', async (_, id: string, deep = false) => {
   try {
     const { gitHubActions } = settings.get('appSettings');
     const { ignoredWorkflows = [], inProgress } = gitHubActions;
@@ -63,14 +70,25 @@ ipcMain.handle('git:api:getRuns', async (_, id: string) => {
     const { owner, repo } = await getRepoInfo(id);
     if (!owner || !repo) throw new Error('Project not found');
 
-    const { data } = await octokit().rest.actions.listWorkflowRunsForRepo({
-      owner,
-      per_page: 100,
-      repo
-    });
+    const since = Date.now() - 86400000;
+    const collected: Run[] = [];
 
-    const runs = data.workflow_runs
-      .filter((run) => new Date(run.created_at).getTime() > Date.now() - 86400000)
+    for (let page = 1; page <= (deep ? maxPages : 1); page += 1) {
+      const { data } = await octokit().rest.actions.listWorkflowRunsForRepo({
+        owner,
+        page,
+        per_page: 100,
+        repo
+      });
+
+      collected.push(...data.workflow_runs);
+
+      const oldest = data.workflow_runs.at(-1);
+      if (data.workflow_runs.length < 100 || !oldest || new Date(oldest.created_at).getTime() <= since) break;
+    }
+
+    const runs = collected
+      .filter((run) => new Date(run.created_at).getTime() > since)
       .filter(
         (run) =>
           !inProgress || run.status === 'in_progress' || new Date(run.created_at).getTime() > Date.now() - 1800000
