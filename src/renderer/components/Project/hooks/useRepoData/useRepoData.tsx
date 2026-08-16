@@ -7,6 +7,7 @@ import {
   groupPullsByBranch,
   groupRunsByBranch,
   orphanPulls,
+  orphanRuns,
   type PullWithTags,
   tagPulls
 } from './groupByBranch';
@@ -230,6 +231,11 @@ export const useRepoData = (project: Project, pollRuns: boolean) => {
     [hiddenPulls, pulls]
   );
 
+  const getOrphanRuns = useCallback(
+    (branches: string[]) => orphanRuns(runsByBranch, branches),
+    [runsByBranch]
+  );
+
   const getOrphanPulls = useCallback(
     (branches: string[]) => orphanPulls(pullsByBranch, branches),
     [pullsByBranch]
@@ -244,6 +250,7 @@ export const useRepoData = (project: Project, pollRuns: boolean) => {
     clearHiddenPulls,
     clearHiddenRuns,
     getOrphanPulls,
+    getOrphanRuns,
     hiddenPullCount: hiddenPulls.size,
     hiddenRunCount: hiddenRuns.size,
     hidePull,

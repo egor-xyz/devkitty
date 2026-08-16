@@ -6,6 +6,21 @@ export type PullWithTags = {
   tags: string[];
 };
 
+// Runs on a branch that is not checked out anywhere would otherwise render
+// nowhere at all, so they collect under the main card beside the orphan pulls.
+export const orphanRuns = (runsByBranch: Record<string, Run[]>, branches: string[]): Record<string, Run[]> => {
+  const owned = new Set(branches);
+  const orphaned: Record<string, Run[]> = Object.create(null);
+
+  for (const [branch, runs] of Object.entries(runsByBranch)) {
+    if (owned.has(branch) || runs.length === 0) continue;
+
+    orphaned[branch] = runs;
+  }
+
+  return orphaned;
+};
+
 // A checkout with an open pull request is the most likely thing you came here
 // to look at, one with CI runs the next. The main checkout is exempt: it stays
 // first because the repo's orphan pull requests are anchored beneath it.

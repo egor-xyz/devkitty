@@ -13,6 +13,7 @@ import { Error } from './components/Error';
 import { ProjectMenu } from './components/ProjectMenu';
 import { PullRequest } from './components/PullRequest';
 import { QuickActions } from './components/QuickActions';
+import { Workflow } from './components/Workflow';
 import { useRepoData } from './hooks/useRepoData';
 import { sortWorktreesByActivity } from './hooks/useRepoData/groupByBranch';
 
@@ -52,6 +53,7 @@ export const Project: FC<Props> = ({ project }) => {
     clearHiddenPulls,
     clearHiddenRuns,
     getOrphanPulls,
+    getOrphanRuns,
     hiddenPullCount,
     hiddenRunCount,
     hidePull,
@@ -101,7 +103,16 @@ export const Project: FC<Props> = ({ project }) => {
     getStatus(id, true);
   });
 
-  const orphans = getOrphanPulls(worktrees.map((worktree) => worktree.branch)).filter(({ tags }) => tags.length > 0);
+  const worktreeBranches = worktrees.map((worktree) => worktree.branch);
+  const orphans = getOrphanPulls(worktreeBranches).filter(({ tags }) => tags.length > 0);
+
+  // Runs on branches nobody has checked out. Those matching an orphan pull
+  // nest under it; the rest render on their own beneath the main card.
+  const orphanedRuns = getOrphanRuns(worktreeBranches);
+  const orphanPullBranches = new Set(orphans.map(({ pull }) => pull.head?.ref));
+  const unpulledOrphanRuns = Object.entries(orphanedRuns)
+    .filter(([branch]) => !orphanPullBranches.has(branch))
+    .flatMap(([, runs]) => runs);
   const behind = gitStatus?.status?.behind ?? 0;
 
   if (gitStatus && !gitStatus.success) {
@@ -211,15 +222,40 @@ export const Project: FC<Props> = ({ project }) => {
             worktree={worktree}
           />
 
-          {worktree.isMain && orphans.length > 0 && (
-            <div className="pl-5">
+          {worktree.isMain && showDetails && (orphans.length > 0 || unpulledOrphanRuns.length > 0) && (
+            <div className="pl-10">
               {orphans.map(({ pull, tags }) => (
-                <PullRequest
-                  key={pull.id}
-                  onHide={hidePull}
-                  projectId={id}
-                  pull={pull}
-                  tags={tags}
+                <Fragment key={pull.id}>
+                  <PullRequest
+                    onHide={hidePull}
+                    projectId={id}
+                    pull={pull}
+                    tags={tags}
+                  />
+
+                  <div className="pl-5">
+                    {(orphanedRuns[pull.head?.ref] ?? []).map((run) => (
+                      <Workflow
+                        key={run.id}
+                        onHide={hideRun}
+                        onIgnore={ignoreWorkflow}
+                        onRefresh={updateProject}
+                        project={project}
+                        run={run}
+                      />
+                    ))}
+                  </div>
+                </Fragment>
+              ))}
+
+              {unpulledOrphanRuns.map((run) => (
+                <Workflow
+                  key={run.id}
+                  onHide={hideRun}
+                  onIgnore={ignoreWorkflow}
+                  onRefresh={updateProject}
+                  project={project}
+                  run={run}
                 />
               ))}
             </div>

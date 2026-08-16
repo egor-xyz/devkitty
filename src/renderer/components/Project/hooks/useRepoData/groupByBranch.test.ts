@@ -1,6 +1,13 @@
 import { describe, expect, it } from 'vitest';
 
-import { groupPullsByBranch, groupRunsByBranch, orphanPulls, sortWorktreesByActivity, tagPulls } from './groupByBranch';
+import {
+  groupPullsByBranch,
+  groupRunsByBranch,
+  orphanPulls,
+  orphanRuns,
+  sortWorktreesByActivity,
+  tagPulls
+} from './groupByBranch';
 
 const pull = (id: number, number: number, ref: string) => ({ head: { ref }, id, number }) as any;
 const run = (id: number, branch: string, createdAt: string) =>
@@ -241,5 +248,33 @@ describe('sortWorktreesByActivity', () => {
     const result = sortWorktreesByActivity([wt('a'), wt('b')], { a: [] }, { b: [] });
 
     expect(branches(result)).toEqual(['a', 'b']);
+  });
+});
+
+describe('orphanRuns', () => {
+  it('should return runs whose branch has no worktree', () => {
+    const grouped = groupRunsByBranch(
+      [run(1, 'feature', '2026-08-16T10:00:00Z'), run(2, 'stray', '2026-08-16T10:00:00Z')],
+      5
+    );
+
+    const result = orphanRuns(grouped, ['main', 'feature']);
+
+    expect(Object.keys(result)).toEqual(['stray']);
+    expect(result.stray.map((item) => item.id)).toEqual([2]);
+  });
+
+  it('should return an empty object when every branch has a worktree', () => {
+    const grouped = groupRunsByBranch([run(1, 'feature', '2026-08-16T10:00:00Z')], 5);
+
+    expect(orphanRuns(grouped, ['feature'])).toEqual({});
+  });
+
+  it('should return an empty object for an empty grouping', () => {
+    expect(orphanRuns({}, ['main'])).toEqual({});
+  });
+
+  it('should skip branches whose run list is empty', () => {
+    expect(orphanRuns({ stray: [] }, ['main'])).toEqual({});
   });
 });
