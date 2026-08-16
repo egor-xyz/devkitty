@@ -12,6 +12,10 @@ const mockOctokitInstance = {
       getRef: vi.fn(),
       updateRef: vi.fn()
     },
+    pulls: {
+      get: vi.fn(),
+      list: vi.fn()
+    },
     search: {
       issuesAndPullRequests: vi.fn()
     }
@@ -390,6 +394,46 @@ describe('ipcGitHub', () => {
       const result = await handlers['git:api:getPulls']({}, 'proj-1', 'author');
 
       expect(result).toEqual({ message: 'Rate limited', success: false });
+    });
+  });
+
+  describe('git:api:getOpenPulls', () => {
+    beforeEach(() => {
+      mockGetRepoInfo.mockResolvedValue({ owner: 'owner', repo: 'repo' });
+      mockSettings.get.mockReturnValue({ gitHubToken: Buffer.from('token') } as any);
+    });
+
+    it('should list open pull requests with head refs', async () => {
+      mockOctokitInstance.rest.pulls.list.mockResolvedValue({
+        data: [
+          { head: { ref: 'feature' }, id: 10, number: 42 },
+          { head: { ref: 'fix' }, id: 11, number: 43 }
+        ]
+      });
+
+      const result = await handlers['git:api:getOpenPulls']({}, 'proj-1');
+
+      expect(mockOctokitInstance.rest.pulls.list).toHaveBeenCalledWith({
+        owner: 'owner',
+        per_page: 100,
+        repo: 'repo',
+        state: 'open'
+      });
+      expect(result).toEqual({
+        pulls: [
+          { head: { ref: 'feature' }, id: 10, number: 42 },
+          { head: { ref: 'fix' }, id: 11, number: 43 }
+        ],
+        success: true
+      });
+    });
+
+    it('should fail when the repo cannot be resolved', async () => {
+      mockGetRepoInfo.mockResolvedValue({});
+
+      const result = await handlers['git:api:getOpenPulls']({}, 'proj-1');
+
+      expect(result).toEqual({ message: 'Project not found', success: false });
     });
   });
 });
