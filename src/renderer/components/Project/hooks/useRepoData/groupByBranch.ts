@@ -19,10 +19,22 @@ export const splitDoneRuns = (
   const done: Run[] = [];
   const pinned: Run[] = [];
 
+  // Pinning a workflow means "keep an eye on this deploy", not "show me every
+  // deploy that ever ran": only its newest run is pinned, the earlier ones fall
+  // back to the normal buckets and fold away with everything else.
+  const latestPinned = new Map<string, Run>();
+
   for (const run of runs) {
-    // A pinned workflow — a deploy, usually — always stays in view, whatever
-    // it concluded. That is the whole point of pinning it.
-    if (run.path && pinnedPaths.has(run.path)) {
+    if (!run.path || !pinnedPaths.has(run.path)) continue;
+
+    const current = latestPinned.get(run.path);
+    if (!current || new Date(run.created_at).getTime() > new Date(current.created_at).getTime()) {
+      latestPinned.set(run.path, run);
+    }
+  }
+
+  for (const run of runs) {
+    if (run.path && latestPinned.get(run.path)?.id === run.id) {
       pinned.push(run);
     } else if (run.conclusion && settledConclusions.has(run.conclusion)) {
       done.push(run);
@@ -192,7 +204,9 @@ export const groupPullsByBranch = (pulls: PullWithTags[]): Record<string, PullWi
   return grouped;
 };
 
-export const groupRunsByBranch = (runs: Run[], countPerBranch: number): Record<string, Run[]> => {
+// `countPerBranch` caps how many runs a branch keeps; left out, it keeps them
+// all and the card decides what to show.
+export const groupRunsByBranch = (runs: Run[], countPerBranch?: number): Record<string, Run[]> => {
   const grouped: Record<string, Run[]> = Object.create(null);
 
   for (const run of runs) {
@@ -204,9 +218,8 @@ export const groupRunsByBranch = (runs: Run[], countPerBranch: number): Record<s
   }
 
   for (const branch of Object.keys(grouped)) {
-    grouped[branch] = grouped[branch]
-      .sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime())
-      .slice(0, countPerBranch);
+    const sorted = grouped[branch].sort((a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+    grouped[branch] = countPerBranch === undefined ? sorted : sorted.slice(0, countPerBranch);
   }
 
   return grouped;

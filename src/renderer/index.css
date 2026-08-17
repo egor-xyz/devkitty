@@ -179,8 +179,13 @@
 
 .settings-root .bp6-tab-panel {
   width: 100%;
+  height: 100%;
   padding: 14px 20px 20px 20px;
   background-color: #f6f7f9;
+  /* A long panel — the hidden lists, say — scrolls inside itself instead of
+     running off the bottom of the window. */
+  overflow-y: auto;
+  box-sizing: border-box;
 }
 
 .settings-root .bp6-tab-panel .bp6-divider {

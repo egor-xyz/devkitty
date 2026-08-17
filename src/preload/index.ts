@@ -24,12 +24,14 @@ const bridge = {
     cancelRun: (id: string, runId: number) => ipcRenderer.invoke('git:api:cancelRun', id, runId),
     getJobs: (id: string, runId: number) => ipcRenderer.invoke('git:api:getJobs', id, runId),
     getOpenPulls: (id: string) => ipcRenderer.invoke('git:api:getOpenPulls', id),
+    getPinnedRuns: (id: string) => ipcRenderer.invoke('git:api:getPinnedRuns', id),
     getPRChecks: (id: string, prNumber: number) => ipcRenderer.invoke('git:api:getPRChecks', id, prNumber),
     getPulls: (id: string, type: (typeof pullTypes)[number]) => ipcRenderer.invoke('git:api:getPulls', id, type),
     getRuns: (id: string, deep = false) => ipcRenderer.invoke('git:api:getRuns', id, deep),
     rerunFailedJobs: (id: string, runId: number) => ipcRenderer.invoke('git:api:rerunFailedJobs', id, runId),
     rerunWorkflow: (id: string, runId: number) => ipcRenderer.invoke('git:api:rerunWorkflow', id, runId),
-    reset: (id: string, origin: string, target: string) => ipcRenderer.invoke('git:api:reset', id, origin, target)
+    reset: (id: string, origin: string, target: string) => ipcRenderer.invoke('git:api:reset', id, origin, target),
+    searchRuns: (id: string, query: string) => ipcRenderer.invoke('git:api:searchRuns', id, query)
   },
   launch: {
     editor: (fullPath: string, editor: FoundEditor) => ipcRenderer.invoke('launch:editor', { editor, fullPath }),

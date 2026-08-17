@@ -6,7 +6,7 @@ import { useGit } from 'renderer/hooks/useGit';
 import { useModal } from 'renderer/hooks/useModal';
 import { useMountEffect } from 'renderer/hooks/useMountEffect';
 import { cn } from 'renderer/utils/cn';
-import { filterWorktrees, matchesQuery } from 'renderer/utils/filter';
+import { filterGroups, filterWorktrees, matchesQuery, worktreeHaystack } from 'renderer/utils/filter';
 import { type Project as IProject } from 'types/project';
 import { type Worktree } from 'types/worktree';
 
@@ -66,18 +66,15 @@ export const Project: FC<Props> = ({ project }) => {
 
   const {
     clearHiddenPulls,
-    clearHiddenRuns,
     getOrphanPulls,
     getOrphanRuns,
     hiddenPullCount,
-    hiddenRunCount,
     hidePull,
-    hideRun,
     pullsByBranch,
     refresh,
     runsByBranch,
     runsLoaded
-  } = useRepoData(project, anyExpanded, worktreeBranches);
+  } = useRepoData(project, anyExpanded, worktreeBranches, query);
 
   // Worktrees arrive asynchronously — seed each new card from its saved state,
   // defaulting to open when the checkout has an open pull request.
@@ -143,8 +140,15 @@ export const Project: FC<Props> = ({ project }) => {
   // survive — and a repo with no survivors renders nothing at all.
   const projectMatched = matchesQuery(`${name} ${gitStatus?.organization ?? ''}`, query);
   const visibleWorktrees = useMemo(
-    () => filterWorktrees(worktrees, query, projectMatched),
-    [projectMatched, query, worktrees]
+    () =>
+      filterWorktrees(worktrees, query, projectMatched, (worktree) =>
+        // Main is the repo's catch-all, so it answers for every run and pull
+        // request no worktree claims as well as its own.
+        worktree.isMain
+          ? worktreeHaystack(worktree, Object.values(runsByBranch).flat(), Object.values(pullsByBranch).flat())
+          : worktreeHaystack(worktree, runsByBranch[worktree.branch], pullsByBranch[worktree.branch])
+      ),
+    [projectMatched, pullsByBranch, query, runsByBranch, worktrees]
   );
 
   // Checkouts with an open pull request, then ones with CI runs, come first.
@@ -170,10 +174,6 @@ export const Project: FC<Props> = ({ project }) => {
     });
   };
 
-  const ignoreWorkflow = (workflowName: string, workflowPath: string) => {
-    openModal({ name: 'ignore:workflow', props: { workflowName, workflowPath } });
-  };
-
   useMountEffect(() => {
     getStatus(id, true);
   });
@@ -192,13 +192,18 @@ export const Project: FC<Props> = ({ project }) => {
 
   const groupsFor = (worktree: Worktree) => {
     const pulls = pullsByBranch[worktree.branch] ?? [];
-    if (!worktree.isMain) return buildDetailGroups(pulls, runsByBranch, worktree.branch);
+    // A checkout kept because its branch matched shows everything it has; one
+    // kept because a workflow or pull request inside it matched shows only that.
+    const narrow = (groups: ReturnType<typeof buildDetailGroups>) =>
+      filterGroups(groups, query, projectMatched || matchesQuery(worktree.branch, query));
+
+    if (!worktree.isMain) return narrow(buildDetailGroups(pulls, runsByBranch, worktree.branch));
 
     const own = buildDetailGroups(pulls, runsByBranch, worktree.branch);
     const stray = buildDetailGroups(orphans, runsByBranch, '').map((group) => ({ ...group, orphan: true }));
     const strayRuns = unpulledOrphanRuns.length > 0 ? [{ orphan: true, runs: unpulledOrphanRuns }] : [];
 
-    return [...own, ...stray, ...strayRuns];
+    return narrow([...own, ...stray, ...strayRuns]);
   };
   const liveWorktrees = sortedWorktrees.filter(
     (worktree) => worktree.isMain || !isCheckoutDone(pullsByBranch[worktree.branch])
@@ -239,8 +244,6 @@ export const Project: FC<Props> = ({ project }) => {
           ) : undefined
         }
       onHidePull={hidePull}
-      onHideRun={hideRun}
-      onIgnoreWorkflow={ignoreWorkflow}
       onRefresh={updateProject}
       onToggleExpanded={() => toggleExpanded(worktree.path)}
       project={project}
@@ -276,12 +279,10 @@ export const Project: FC<Props> = ({ project }) => {
                   content={
                     <ProjectMenu
                       clearHiddenPulls={clearHiddenPulls}
-                      clearHiddenRuns={clearHiddenRuns}
                       filePath={filePath}
                       getStatus={updateProject}
                       gitStatus={gitStatus}
                       groupId={groupId}
-                      hiddenCount={hiddenRunCount}
                       hiddenPullCount={hiddenPullCount}
                       id={id}
                       name={name}
@@ -316,10 +317,10 @@ export const Project: FC<Props> = ({ project }) => {
 
       {mergedWorktrees.length > 0 && (
         <FoldDivider
-          hideLabel={`Hide ${mergedWorktrees.length} merged checkout${mergedWorktrees.length > 1 ? 's' : ''}`}
+          hideLabel={`Hide ${mergedWorktrees.length} merged worktree${mergedWorktrees.length > 1 ? 's' : ''}`}
           onToggle={() => setShowMerged((prev) => !prev)}
           open={showMerged}
-          showLabel={`Show ${mergedWorktrees.length} merged checkout${mergedWorktrees.length > 1 ? 's' : ''}`}
+          showLabel={`Show ${mergedWorktrees.length} merged worktree${mergedWorktrees.length > 1 ? 's' : ''}`}
         />
       )}
 

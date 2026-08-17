@@ -7,12 +7,10 @@ export type AppSettings = {
   gitHubActions: {
     all: boolean;
     count: number;
-    hideDone: boolean;
     ignoreDependabot: boolean;
     ignoredWorkflows: string[];
-    inProgress: boolean;
-    pinnedWorkflows: string[];
     notifications: boolean;
+    pinnedWorkflows: string[];
   };
   gitHubPulls: {
     pollInterval: number;

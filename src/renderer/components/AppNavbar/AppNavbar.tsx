@@ -1,7 +1,7 @@
 import { Button, ButtonGroup, Classes, Icon, Navbar } from '@blueprintjs/core';
 import clsx from 'clsx';
 import { useEffect, useRef } from 'react';
-import { NavLink } from 'react-router';
+import { NavLink, useLocation } from 'react-router';
 import Devkitty from 'renderer/assets/devkitty.svg?react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useDarkMode } from 'renderer/hooks/useDarkMode';
@@ -20,6 +20,13 @@ export const AppNavbar = () => {
   const { openModal } = useModal();
   const { clear, query, setQuery } = useFilter();
   const searchRef = useRef<HTMLInputElement>(null);
+  const onHome = useLocation().pathname === '/';
+
+  // Leaving the project list drops the filter, so coming back is never
+  // silently narrowed by something typed a page ago.
+  useEffect(() => {
+    if (!onHome) clear();
+  }, [clear, onHome]);
 
   // ⌘F jumps to the filter, Escape drops it — the shortcuts anything with a
   // search field is expected to answer to.
@@ -85,14 +92,17 @@ export const AppNavbar = () => {
         align="right"
         className="app-region-no-drag ml-[70px] [&>button+button]:ml-2 [&>button+a]:ml-2"
       >
-        <div className="flex items-center self-center mr-2">
-          <SearchInput
-            inputRef={searchRef}
-            onChange={setQuery}
-            onClear={clear}
-            value={query}
-          />
-        </div>
+        {/* Nothing to filter anywhere but the project list. */}
+        {onHome && (
+          <div className="flex items-center self-center mr-2">
+            <SearchInput
+              inputRef={searchRef}
+              onChange={setQuery}
+              onClear={clear}
+              value={query}
+            />
+          </div>
+        )}
 
         <Button
           icon="refresh"

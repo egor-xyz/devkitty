@@ -13,7 +13,7 @@ type Check = {
 };
 
 type Props = {
-  onHide?: (pullId: number) => void;
+  onHide?: (pullId: number, label: string) => void;
   projectId: string;
   pull: Pull;
   tags?: string[];
@@ -184,7 +184,7 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
               {onHide && (
                 <MenuItem
                   icon="eye-off"
-                  onClick={() => onHide(pull.id)}
+                  onClick={() => onHide(pull.id, `#${number} ${title}`)}
                   text="Hide this PR"
                 />
               )}

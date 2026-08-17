@@ -65,7 +65,7 @@ const maxPages = 5;
 ipcMain.handle('git:api:getRuns', async (_, id: string, deep = false) => {
   try {
     const { gitHubActions } = settings.get('appSettings');
-    const { ignoredWorkflows = [], inProgress } = gitHubActions;
+    const { ignoredWorkflows = [] } = gitHubActions;
 
     const { owner, repo } = await getRepoInfo(id);
     if (!owner || !repo) throw new Error('Project not found');
@@ -89,11 +89,82 @@ ipcMain.handle('git:api:getRuns', async (_, id: string, deep = false) => {
 
     const runs = collected
       .filter((run) => new Date(run.created_at).getTime() > since)
-      .filter(
-        (run) =>
-          !inProgress || run.status === 'in_progress' || new Date(run.created_at).getTime() > Date.now() - 1800000
-      )
       .filter((run) => !ignoredWorkflows.includes(run.path));
+
+    return { runs, success: true };
+  } catch (e) {
+    log.error(e);
+    return { message: e.message, success: false };
+  }
+});
+
+// A pinned workflow has to stay on screen even when its last run predates the
+// 24h window the poll covers — a deploy that ran on Friday is exactly the one
+// you pinned it for. Its latest run is fetched by workflow, not by page.
+ipcMain.handle('git:api:getPinnedRuns', async (_, id: string) => {
+  try {
+    const { pinnedWorkflows = [] } = settings.get('appSettings').gitHubActions;
+    if (pinnedWorkflows.length === 0) return { runs: [], success: true };
+
+    const { owner, repo } = await getRepoInfo(id);
+    if (!owner || !repo) throw new Error('Project not found');
+
+    const runs: Run[] = [];
+
+    for (const path of pinnedWorkflows.slice(0, 5)) {
+      const { data } = await octokit().rest.actions.listWorkflowRuns({
+        owner,
+        per_page: 1,
+        repo,
+        workflow_id: path.replace(/^.*\//, '')
+      });
+
+      runs.push(...data.workflow_runs);
+    }
+
+    return { runs, success: true };
+  } catch (e) {
+    log.error(e);
+    return { message: e.message, success: false };
+  }
+});
+
+// The runs poll only reaches back 24 hours, so a workflow that last ran a week
+// ago is unfindable locally. Searching goes at it from the other end: match the
+// query against the repo's workflow names, then ask GitHub for those workflows'
+// runs directly.
+const searchedWorkflows = 3;
+const searchedRunsPerWorkflow = 10;
+
+ipcMain.handle('git:api:searchRuns', async (_, id: string, query: string) => {
+  try {
+    const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
+    if (terms.length === 0) return { runs: [], success: true };
+
+    const { ignoredWorkflows = [] } = settings.get('appSettings').gitHubActions;
+
+    const { owner, repo } = await getRepoInfo(id);
+    if (!owner || !repo) throw new Error('Project not found');
+
+    const { data } = await octokit().rest.actions.listRepoWorkflows({ owner, per_page: 100, repo });
+
+    const matched = data.workflows
+      .filter((workflow) => !ignoredWorkflows.includes(workflow.path))
+      .filter((workflow) => terms.every((term) => workflow.name.toLowerCase().includes(term)))
+      .slice(0, searchedWorkflows);
+
+    const runs: Run[] = [];
+
+    for (const workflow of matched) {
+      const { data: page } = await octokit().rest.actions.listWorkflowRuns({
+        owner,
+        per_page: searchedRunsPerWorkflow,
+        repo,
+        workflow_id: workflow.id
+      });
+
+      runs.push(...page.workflow_runs);
+    }
 
     return { runs, success: true };
   } catch (e) {

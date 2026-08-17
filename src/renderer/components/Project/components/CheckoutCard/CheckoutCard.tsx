@@ -1,4 +1,4 @@
-import { Button, ButtonGroup, Classes, Collapse, Tag, Tooltip } from '@blueprintjs/core';
+import { Button, ButtonGroup, Classes, Collapse, Spinner, Tag, Tooltip } from '@blueprintjs/core';
 import { type FC, type ReactNode, useCallback, useEffect, useState } from 'react';
 import { FaCopy, FaRegCopy } from 'react-icons/fa';
 import { GitStatusBadge } from 'renderer/components/GitStatusBadge';
@@ -28,9 +28,7 @@ type Props = {
   gitStatus?: GitStatus;
   groups: DetailGroup[];
   leading?: ReactNode;
-  onHidePull: (pullId: number) => void;
-  onHideRun: (runId: number) => void;
-  onIgnoreWorkflow: (workflowName: string, workflowPath: string) => void;
+  onHidePull: (pullId: number, label: string) => void;
   onRefresh: () => void;
   onToggleExpanded: () => void;
   project: Project;
@@ -46,8 +44,6 @@ export const CheckoutCard: FC<Props> = ({
   groups,
   leading,
   onHidePull,
-  onHideRun,
-  onIgnoreWorkflow,
   onRefresh,
   onToggleExpanded,
   project,
@@ -57,7 +53,7 @@ export const CheckoutCard: FC<Props> = ({
 }) => {
   const { openModal } = useModal();
   const {
-    gitHubActions: { inProgress },
+    gitHubActions: { count },
     gitHubToken,
     selectedEditor,
     selectedShell
@@ -133,10 +129,9 @@ export const CheckoutCard: FC<Props> = ({
       props: {
         branch: worktree.branch,
         id: project.id,
-        onSuccess: async () => {
-          setDeleting(true);
-          onRefresh();
-        },
+        onFailure: () => setDeleting(false),
+        onStart: () => setDeleting(true),
+        onSuccess: onRefresh,
         worktreePath: worktree.path
       }
     });
@@ -160,7 +155,9 @@ export const CheckoutCard: FC<Props> = ({
   const renderGroup = ({ pull, runs }: DetailGroup, index: number) => (
     <div
       className={cn(
-        'overflow-hidden mx-2 rounded-md',
+        // No overflow-hidden here: it would make this box the scrollport for
+        // the sticky run rows inside, which kills their pinning.
+        'mx-2 rounded-md',
         index > 0 && 'mt-2',
         pull && 'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
         pull && 'shadow-[0_0_0_1px_rgba(0,0,0,0.06)] dark:shadow-[0_0_0_1px_rgba(0,0,0,0.35)]',
@@ -177,12 +174,14 @@ export const CheckoutCard: FC<Props> = ({
         />
       )}
 
+      {/* Main carries the whole repo's traffic, so it gets the configured cap;
+          a worktree only ever shows its own branch and keeps the default. */}
       <GroupRuns
-        onHide={onHideRun}
-        onIgnore={onIgnoreWorkflow}
+        limit={isMain ? count : undefined}
         onRefresh={onRefresh}
         project={project}
         runs={runs}
+        stickyTop={isMain ? 55 : 100}
       />
     </div>
   );
@@ -218,11 +217,20 @@ export const CheckoutCard: FC<Props> = ({
                 <b className={cn('truncate', done && Classes.TEXT_MUTED)}>{worktree.branch}</b>
               </div>
 
-              <Tooltip content={worktree.path}>
-                <div className="overflow-hidden whitespace-nowrap text-ellipsis -mt-0.5 text-[11px] font-light dark:text-bp-gray-3">
-                  {abbreviated}
+              {/* Removing a worktree takes a moment, and the row is the only
+                  place that can say so. */}
+              {deleting ? (
+                <div className="flex items-center gap-1.5 -mt-0.5 text-[11px] font-light dark:text-bp-gray-3">
+                  <Spinner size={10} />
+                  Removing…
                 </div>
-              </Tooltip>
+              ) : (
+                <Tooltip content={worktree.path}>
+                  <div className="overflow-hidden whitespace-nowrap text-ellipsis -mt-0.5 text-[11px] font-light dark:text-bp-gray-3">
+                    {abbreviated}
+                  </div>
+                </Tooltip>
+              )}
             </div>
           )}
 
@@ -376,8 +384,7 @@ export const CheckoutCard: FC<Props> = ({
           {gitHubToken && isBlank && (
             <div className={cn('flex justify-between items-center py-2.5 px-4', Classes.TEXT_MUTED)}>
               <span>
-                No actions {inProgress && 'in progress'} were found for the <b>{worktree.branch}</b> branch in the last{' '}
-                {inProgress ? '30 minutes' : '24 hours'}
+                No actions were found for the <b>{worktree.branch}</b> branch in the last 24 hours
               </span>
 
               <Tag minimal>watcher is active</Tag>

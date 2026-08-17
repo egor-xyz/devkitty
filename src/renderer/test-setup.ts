@@ -23,9 +23,11 @@ const mockBridge = {
   gitAPI: {
     getJobs: vi.fn(),
     getOpenPulls: vi.fn(),
+    getPinnedRuns: vi.fn(),
     getPulls: vi.fn(),
     getRuns: vi.fn(),
-    reset: vi.fn()
+    reset: vi.fn(),
+    searchRuns: vi.fn()
   },
   launch: {
     editor: vi.fn(),

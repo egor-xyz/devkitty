@@ -612,3 +612,46 @@ describe('splitOverflow', () => {
     expect(splitOverflow([], 10)).toEqual({ hidden: [], visible: [] });
   });
 });
+
+describe('splitDoneRuns — only the latest pinned run', () => {
+  const pinnedRun = (id: number, createdAt: string, conclusion: null | string = 'success') =>
+    ({ conclusion, created_at: createdAt, head_branch: 'main', id, path: '.github/deploy.yml' }) as any;
+
+  it('should pin only the newest run of a pinned workflow', () => {
+    const result = splitDoneRuns(
+      [pinnedRun(1, '2026-08-16T10:00:00Z'), pinnedRun(2, '2026-08-16T12:00:00Z'), pinnedRun(3, '2026-08-16T11:00:00Z')],
+      ['.github/deploy.yml']
+    );
+
+    expect(result.pinned.map((run) => run.id)).toEqual([2]);
+  });
+
+  it('should fold the older pinned runs in with the rest', () => {
+    const result = splitDoneRuns(
+      [pinnedRun(1, '2026-08-16T10:00:00Z'), pinnedRun(2, '2026-08-16T12:00:00Z')],
+      ['.github/deploy.yml']
+    );
+
+    expect(result.done.map((run) => run.id)).toEqual([1]);
+  });
+
+  it('should keep an older pinned run that is still running out of the done pile', () => {
+    const result = splitDoneRuns(
+      [pinnedRun(1, '2026-08-16T10:00:00Z', null), pinnedRun(2, '2026-08-16T12:00:00Z')],
+      ['.github/deploy.yml']
+    );
+
+    expect(result.pinned.map((run) => run.id)).toEqual([2]);
+    expect(result.active.map((run) => run.id)).toEqual([1]);
+  });
+
+  it('should pin the newest run of each pinned workflow separately', () => {
+    const other = { ...pinnedRun(9, '2026-08-16T09:00:00Z'), path: '.github/release.yml' } as any;
+    const result = splitDoneRuns(
+      [pinnedRun(1, '2026-08-16T10:00:00Z'), pinnedRun(2, '2026-08-16T12:00:00Z'), other],
+      ['.github/deploy.yml', '.github/release.yml']
+    );
+
+    expect(result.pinned.map((run) => run.id).sort()).toEqual([2, 9]);
+  });
+});

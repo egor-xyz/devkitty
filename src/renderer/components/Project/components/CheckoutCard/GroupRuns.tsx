@@ -1,31 +1,38 @@
-import { Collapse } from '@blueprintjs/core';
 import { type FC, useState } from 'react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
+import { useFilter } from 'renderer/hooks/useFilter';
 import { type Run } from 'types/gitHub';
 import { type Project } from 'types/project';
 
-import { splitDoneRuns, splitOverflow } from '../../hooks/useRepoData/groupByBranch';
+import { overflowLimit, splitDoneRuns } from '../../hooks/useRepoData/groupByBranch';
 import { FoldDivider } from '../FoldDivider';
 import { Workflow } from '../Workflow';
 
 const pageSize = 50;
 
 type Props = {
-  onHide: (runId: number) => void;
-  onIgnore: (workflowName: string, workflowPath: string) => void;
+  limit?: number;
   onRefresh: () => void;
   project: Project;
   runs: Run[];
+  stickyTop?: number;
 };
 
 // Runs that finished cleanly are folded away behind a divider: what needs
 // attention stays on screen, the rest is one click away.
-export const GroupRuns: FC<Props> = ({ onHide, onIgnore, onRefresh, project, runs }) => {
+export const GroupRuns: FC<Props> = ({ limit, onRefresh, project, runs, stickyTop }) => {
   const [showDone, setShowDone] = useState(false);
-  const [showAllActive, setShowAllActive] = useState(false);
   const [donePage, setDonePage] = useState(pageSize);
   const { gitHubActions } = useAppSettings();
+  const { query } = useFilter();
   const { active, done, pinned } = splitDoneRuns(runs, gitHubActions.pinnedWorkflows);
+
+  // How many runs a page of the active list holds. Loading more grows it a page
+  // at a time, with no ceiling; hiding drops back to exactly one page.
+  const step = limit ?? overflowLimit;
+  const [activePage, setActivePage] = useState(step);
+  const shownActive = active.slice(0, Math.max(activePage, step));
+  const remainingActive = active.length - shownActive.length;
 
   // A busy branch can settle hundreds of green runs in a day. Opening the fold
   // renders a page of them, not the lot.
@@ -37,33 +44,44 @@ export const GroupRuns: FC<Props> = ({ onHide, onIgnore, onRefresh, project, run
     setDonePage(pageSize);
   };
 
-  // A branch that fans out over a dozen jobs would otherwise push everything
-  // below it off the screen, so the tail of the active list folds too.
-  const { hidden: hiddenActive, visible: visibleActive } = splitOverflow(active);
 
   const row = (run: Run) => (
     <Workflow
       key={run.id}
-      onHide={onHide}
-      onIgnore={onIgnore}
       onRefresh={onRefresh}
       project={project}
       run={run}
+      stickyTop={stickyTop}
     />
   );
 
+  // Filtering already narrowed these runs to the ones you asked for, so folding
+  // the successful ones away would hide the answer.
+  if (query.trim()) return <>{runs.map(row)}</>;
+
   return (
     <>
+      {/* Rendered directly, not through Collapse: these lists run to dozens of
+          rows and a poll landing mid-animation makes Collapse remeasure, which
+          flickers and drags the scroll position with it. */}
       {pinned.map(row)}
-      {visibleActive.map(row)}
-      <Collapse isOpen={showAllActive}>{hiddenActive.map(row)}</Collapse>
+      {shownActive.map(row)}
 
-      {hiddenActive.length > 0 && (
+      {remainingActive > 0 && (
         <FoldDivider
-          hideLabel={`Hide ${hiddenActive.length} more check${hiddenActive.length > 1 ? 's' : ''}`}
-          onToggle={() => setShowAllActive((prev) => !prev)}
-          open={showAllActive}
-          showLabel={`Show ${hiddenActive.length} more check${hiddenActive.length > 1 ? 's' : ''}`}
+          hideLabel={`Load ${Math.min(remainingActive, step)} more of ${remainingActive}`}
+          onToggle={() => setActivePage((prev) => Math.max(prev, step) + step)}
+          open={false}
+          showLabel={`Load ${Math.min(remainingActive, step)} more of ${remainingActive}`}
+        />
+      )}
+
+      {shownActive.length > step && (
+        <FoldDivider
+          hideLabel={`Hide ${shownActive.length - step} check${shownActive.length - step > 1 ? 's' : ''}`}
+          onToggle={() => setActivePage(step)}
+          open
+          showLabel={`Hide ${shownActive.length - step} check${shownActive.length - step > 1 ? 's' : ''}`}
         />
       )}
 
@@ -76,18 +94,20 @@ export const GroupRuns: FC<Props> = ({ onHide, onIgnore, onRefresh, project, run
         />
       )}
 
-      <Collapse isOpen={showDone}>
-        {shownDone.map(row)}
+      {showDone && (
+        <>
+          {shownDone.map(row)}
 
-        {remainingDone > 0 && (
-          <FoldDivider
-            hideLabel={`Load ${Math.min(remainingDone, pageSize)} more of ${remainingDone}`}
-            onToggle={() => setDonePage((prev) => prev + pageSize)}
-            open={false}
-            showLabel={`Load ${Math.min(remainingDone, pageSize)} more of ${remainingDone}`}
-          />
-        )}
-      </Collapse>
+          {remainingDone > 0 && (
+            <FoldDivider
+              hideLabel={`Load ${Math.min(remainingDone, pageSize)} more of ${remainingDone}`}
+              onToggle={() => setDonePage((prev) => prev + pageSize)}
+              open={false}
+              showLabel={`Load ${Math.min(remainingDone, pageSize)} more of ${remainingDone}`}
+            />
+          )}
+        </>
+      )}
     </>
   );
 };

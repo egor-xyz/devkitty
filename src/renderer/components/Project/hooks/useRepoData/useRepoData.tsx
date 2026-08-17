@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
+import { addHidden, hiddenPullsKey, hiddenRunsKey, parseHidden } from 'renderer/utils/hidden';
+import { unhideEvent } from 'renderer/utils/unhide';
 import { type Run } from 'types/gitHub';
 import { type Project } from 'types/project';
 
@@ -14,16 +16,18 @@ import {
   tagPulls
 } from './groupByBranch';
 
-const hiddenRunsKey = (id: string) => `hiddenActions:${id}`;
-const hiddenPullsKey = (id: string) => `hiddenPulls:${id}`;
+// A pinned workflow costs one API call each, so it refreshes once a minute
+// rather than on every poll.
+const pinnedInterval = 60000;
 
-const getHidden = (key: string): Set<number> => {
-  try {
-    const raw = sessionStorage.getItem(key);
-    return raw ? new Set(JSON.parse(raw)) : new Set();
-  } catch {
-    return new Set();
-  }
+const getHidden = (key: string): Set<number> =>
+  new Set(parseHidden(sessionStorage.getItem(key)).map((entry) => entry.id));
+
+// Hiding stores a label alongside the id so Settings can list what was hidden
+// and put a single item back.
+const hide = (key: string, id: number, label: string) => {
+  const entries = addHidden(parseHidden(sessionStorage.getItem(key)), { id, label });
+  sessionStorage.setItem(key, JSON.stringify(entries));
 };
 
 /**
@@ -38,16 +42,17 @@ const getHidden = (key: string): Set<number> => {
  * repo, but only checkouts on this machine — and pull requests you opened —
  * are worth interrupting you for.
  */
-export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranches: string[]) => {
+export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranches: string[], query = '') => {
   const [runs, setRuns] = useState<Run[]>([]);
+  const [searchedRuns, setSearchedRuns] = useState<Run[]>([]);
+  const [pinnedRuns, setPinnedRuns] = useState<Run[]>([]);
   const [runsLoaded, setRunsLoaded] = useState(false);
   const [pulls, setPulls] = useState<PullWithTags[]>([]);
-  const [hiddenRuns, setHiddenRuns] = useState(() => getHidden(hiddenRunsKey(project.id)));
   const [hiddenPulls, setHiddenPulls] = useState(() => getHidden(hiddenPullsKey(project.id)));
 
   const {
     fetchInterval,
-    gitHubActions: { count, hideDone, ignoreDependabot, inProgress, notifications = true },
+    gitHubActions: { ignoreDependabot, ignoredWorkflows = [], notifications = true },
     gitHubPulls,
     gitHubToken
   } = useAppSettings();
@@ -107,11 +112,10 @@ export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranche
 
     if (arm) notifyArmed.current = true;
 
-    // "In progress only" is a live view of what is running right now, so it
-    // replaces rather than accumulates. Everything else merges, so a run does
-    // not vanish the moment a busy repo pushes it off the first page.
-    setRuns((prev) => (inProgress ? nextRuns : mergeRuns(prev, nextRuns, Date.now())));
-  }, [gitHubToken, ignoreDependabot, inProgress, notifications, project.id, project.name]);
+    // Merge rather than replace, so a run does not vanish the moment a busy
+    // repo pushes it off the first page.
+    setRuns((prev) => mergeRuns(prev, nextRuns, Date.now()));
+  }, [gitHubToken, ignoreDependabot, notifications, project.id, project.name]);
 
   const getPulls = useCallback(async () => {
     if (!gitHubToken) return;
@@ -200,33 +204,28 @@ export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranche
     };
   }, [getPulls, gitHubPulls.pollInterval, gitHubToken]);
 
-  const hideRun = useCallback(
-    (runId: number) => {
-      setHiddenRuns((prev) => {
-        const next = new Set(prev);
-        next.add(runId);
-        sessionStorage.setItem(hiddenRunsKey(project.id), JSON.stringify([...next]));
-        return next;
-      });
-    },
-    [project.id]
-  );
-
   const hidePull = useCallback(
-    (pullId: number) => {
-      setHiddenPulls((prev) => {
-        const next = new Set(prev);
-        next.add(pullId);
-        sessionStorage.setItem(hiddenPullsKey(project.id), JSON.stringify([...next]));
-        return next;
-      });
+    (pullId: number, label = `#${pullId}`) => {
+      hide(hiddenPullsKey(project.id), pullId, label);
+      setHiddenPulls((prev) => new Set(prev).add(pullId));
     },
     [project.id]
   );
 
-  const clearHiddenRuns = useCallback(() => {
+  // Runs used to be hidden one at a time; hiding is per workflow now, so any
+  // leftover per-run entries are dropped rather than filtering forever.
+  useEffect(() => {
     sessionStorage.removeItem(hiddenRunsKey(project.id));
-    setHiddenRuns(new Set());
+  }, [project.id]);
+
+  // Settings can clear the hidden pulls for every repo at once; the set lives
+  // in state, so it has to be told to re-read storage.
+  useEffect(() => {
+    const onUnhide = () => setHiddenPulls(getHidden(hiddenPullsKey(project.id)));
+
+    window.addEventListener(unhideEvent, onUnhide);
+
+    return () => window.removeEventListener(unhideEvent, onUnhide);
   }, [project.id]);
 
   const clearHiddenPulls = useCallback(() => {
@@ -234,23 +233,61 @@ export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranche
     setHiddenPulls(new Set());
   }, [project.id]);
 
-  const runsByBranch = useMemo(
-    () =>
-      groupRunsByBranch(
-        runs
-          .filter((run) => !hiddenRuns.has(run.id))
-          .filter(
-            (run) =>
-              !hideDone ||
-              !run.conclusion ||
-              run.status === 'in_progress' ||
-              run.status === 'queued' ||
-              run.status === 'pending'
-          ),
-        count
-      ),
-    [count, hiddenRuns, hideDone, runs]
-  );
+  /**
+   * Pinned workflows are fetched by workflow rather than by page, so a deploy
+   * that last ran days ago still shows. One call per pinned workflow, so this
+   * runs on its own slow clock rather than with the poll.
+   */
+  const getPinnedRuns = useCallback(async () => {
+    if (!gitHubToken) return;
+
+    const res = await window.bridge.gitAPI.getPinnedRuns(project.id);
+    if (res.success) setPinnedRuns(res.runs ?? []);
+  }, [gitHubToken, project.id]);
+
+  useEffect(() => {
+    getPinnedRuns();
+
+    if (!pollRuns) return;
+
+    const timer = window.setInterval(getPinnedRuns, pinnedInterval);
+
+    return () => window.clearInterval(timer);
+  }, [getPinnedRuns, pollRuns]);
+
+  /**
+   * Typing a workflow name asks GitHub for that workflow's runs directly, which
+   * reaches past the 24h window the poll is limited to. Debounced, because it
+   * costs two API calls and fires on every keystroke otherwise.
+   */
+  useEffect(() => {
+    const term = query.trim();
+    if (!gitHubToken || term.length < 2) {
+      setSearchedRuns([]);
+      return;
+    }
+
+    const timer = window.setTimeout(async () => {
+      const res = await window.bridge.gitAPI.searchRuns(project.id, term);
+      if (res.success) setSearchedRuns(res.runs ?? []);
+    }, 400);
+
+    return () => window.clearTimeout(timer);
+  }, [gitHubToken, project.id, query]);
+
+  // No per-branch cap: the card folds finished checks away and pages them.
+  // Searched runs join the polled ones and skip the 24h prune — they were asked
+  // for by name, so their age is beside the point.
+  const runsByBranch = useMemo(() => {
+    const byId = new Map(runs.map((run) => [run.id, run]));
+    for (const run of [...pinnedRuns, ...searchedRuns]) if (!byId.has(run.id)) byId.set(run.id, run);
+
+    // Hiding a workflow has to apply here too, not only to the next fetch:
+    // runs already merged into state would otherwise keep showing forever.
+    const hiddenWorkflows = new Set(ignoredWorkflows);
+
+    return groupRunsByBranch([...byId.values()].filter((run) => !hiddenWorkflows.has(run.path)));
+  }, [ignoredWorkflows, pinnedRuns, runs, searchedRuns]);
 
   const pullsByBranch = useMemo(
     () => groupPullsByBranch(pulls.filter(({ pull }) => !hiddenPulls.has(pull.id))),
@@ -270,17 +307,15 @@ export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranche
   const refresh = useCallback(() => {
     getRuns(false, true);
     getPulls();
-  }, [getPulls, getRuns]);
+    getPinnedRuns();
+  }, [getPinnedRuns, getPulls, getRuns]);
 
   return {
     clearHiddenPulls,
-    clearHiddenRuns,
     getOrphanPulls,
     getOrphanRuns,
     hiddenPullCount: hiddenPulls.size,
-    hiddenRunCount: hiddenRuns.size,
     hidePull,
-    hideRun,
     pullsByBranch,
     refresh,
     runsByBranch,
