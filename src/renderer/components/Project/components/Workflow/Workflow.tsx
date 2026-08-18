@@ -194,6 +194,7 @@ export const Workflow: FC<Props> = ({ onRefresh, project, run, stickyTop = 55 })
   return (
     <>
       <div
+        aria-expanded={isOpen}
         className={cn(
           // pr-2, not pr-4: the group around this row is inset by mx-2, so the
           // buttons still line up with the checkout row's buttons above.
@@ -205,7 +206,15 @@ export const Workflow: FC<Props> = ({ onRefresh, project, run, stickyTop = 55 })
           isOpen && 'sticky z-[5]'
         )}
         onClick={toggleJobs}
+        onKeyDown={(event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+
+          event.preventDefault();
+          toggleJobs();
+        }}
+        role="button"
         style={isOpen ? { top: stickyTop } : undefined}
+        tabIndex={0}
       >
         <div className="overflow-hidden flex text-left justify-start gap-4 items-center flex-1 min-w-0">
           <div className="w-[30px] shrink-0 flex justify-center"
@@ -253,6 +262,7 @@ export const Workflow: FC<Props> = ({ onRefresh, project, run, stickyTop = 55 })
             placement="bottom"
           >
             <Button
+              aria-label="Copy run link"
               icon={copied ? 'tick' : 'link'}
               intent={copied ? 'success' : 'none'}
               onClick={copyLink}
@@ -265,6 +275,7 @@ export const Workflow: FC<Props> = ({ onRefresh, project, run, stickyTop = 55 })
             placement="bottom"
           >
             <Button
+              aria-label="Open run in browser"
               icon="globe"
               onClick={openInBrowser}
             />
@@ -322,7 +333,9 @@ export const Workflow: FC<Props> = ({ onRefresh, project, run, stickyTop = 55 })
             }
             placement="bottom-end"
           >
-            <Button icon="caret-down" />
+            <Button aria-label="Run actions"
+              icon="caret-down"
+            />
           </Popover>
         </ButtonGroup>
       </div>

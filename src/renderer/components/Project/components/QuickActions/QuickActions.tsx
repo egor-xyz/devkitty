@@ -7,19 +7,44 @@ type Props = {
   gitStatus: GitStatus;
   loading?: boolean;
   showDetails: boolean;
+  showWorktrees: boolean;
   toggleDetails: () => void;
+  toggleWorktrees: () => void;
 };
 
-export const QuickActions: FC<Props> = ({ gitStatus, loading, showDetails, toggleDetails }) => (
+export const QuickActions: FC<Props> = ({
+  gitStatus,
+  loading,
+  showDetails,
+  showWorktrees,
+  toggleDetails,
+  toggleWorktrees
+}) => (
   <div className="flex gap-2 items-center">
     <ButtonGroup className={!gitStatus && Classes.SKELETON}>
       <Tooltip compact
-        content={showDetails ? 'Collapse all' : 'Expand all'}
+        content={showWorktrees ? 'Hide worktrees' : 'Show worktrees'}
+        hoverOpenDelay={500}
+        placement="bottom"
+      >
+        <Button
+          active={showWorktrees}
+          aria-label={showWorktrees ? 'Hide worktrees' : 'Show worktrees'}
+          aria-pressed={showWorktrees}
+          icon="git-branch"
+          onClick={toggleWorktrees}
+        />
+      </Tooltip>
+
+      <Tooltip compact
+        content={showDetails ? 'Hide actions & pull requests' : 'Show actions & pull requests'}
         hoverOpenDelay={500}
         placement="bottom"
       >
         <Button
           active={showDetails}
+          aria-label={showDetails ? 'Hide actions & pull requests' : 'Show actions & pull requests'}
+          aria-pressed={showDetails}
           icon={<ActionsIcon />}
           loading={loading}
           onClick={toggleDetails}

@@ -37,7 +37,7 @@ const readExpanded = (projectId: string, path: string): boolean | null => {
 
 export const Project: FC<Props> = ({ project }) => {
   const { getStatus, gitStatus, loading, pull } = useGit();
-  const { gitHubToken } = useAppSettings();
+  const { gitHubToken, set, showWorktrees } = useAppSettings();
   const { openModal } = useModal();
   const { query } = useFilter();
 
@@ -58,11 +58,12 @@ export const Project: FC<Props> = ({ project }) => {
   // one of its cards is open.
   const [expandedPaths, setExpandedPaths] = useState<Record<string, boolean>>({});
   const [showMerged, setShowMerged] = useState(false);
+  const [pulling, setPulling] = useState(false);
   const openedForPull = useRef<Set<string>>(new Set());
   const collapsedOnMerge = useRef<Set<string>>(new Set());
 
   const anyExpanded = worktrees.some(({ path }) => expandedPaths[path]);
-  const allExpanded = worktrees.length > 0 && worktrees.every(({ path }) => expandedPaths[path]);
+
   const worktreeBranches = useMemo(() => worktrees.map((worktree) => worktree.branch), [worktrees]);
 
   const {
@@ -137,22 +138,21 @@ export const Project: FC<Props> = ({ project }) => {
     [id]
   );
 
-  // The repo switch is a master: open everything, or close everything.
-  const toggleAll = useCallback(() => {
+  // The header switch belongs to the repo's own checkout: worktree cards each
+  // toggle themselves, and a master switch over all of them only ever fought
+  // whatever the user had just opened.
+  const mainPath = worktrees.find(({ isMain }) => isMain)?.path;
+
+  const toggleMain = useCallback(() => {
+    if (!mainPath) return;
+
     setExpandedPaths((prev) => {
-      // Expand unless everything is already expanded. Keyed off `some`, a half
-      // open list collapsed on the first click and only opened on the second.
-      const next = !worktrees.every(({ path }) => prev[path]);
-      const updated = { ...prev };
+      const next = !prev[mainPath];
+      localStorage.setItem(expandedKey(id, mainPath), JSON.stringify(next));
 
-      for (const { path } of worktrees) {
-        updated[path] = next;
-        localStorage.setItem(expandedKey(id, path), JSON.stringify(next));
-      }
-
-      return updated;
+      return { ...prev, [mainPath]: next };
     });
-  }, [id, worktrees]);
+  }, [id, mainPath]);
 
   // The navbar filter narrows the list: a repo whose own name matches keeps
   // every checkout, otherwise only matching checkouts (and main, the header)
@@ -181,8 +181,12 @@ export const Project: FC<Props> = ({ project }) => {
     getStatus(id);
   };
 
+  // `useGit.pull` never touched `loading`, so the button sat there looking
+  // untouched for the whole fetch-merge round trip.
   const runPull = async () => {
+    setPulling(true);
     await pull(id, name);
+    setPulling(false);
     refresh();
   };
 
@@ -224,12 +228,14 @@ export const Project: FC<Props> = ({ project }) => {
 
     return narrow([...own, ...stray, ...strayRuns]);
   };
+  // Worktrees can be switched off entirely — the repo then shows only its main
+  // checkout, which is what someone who works in one clone wants to see.
   const liveWorktrees = sortedWorktrees.filter(
-    (worktree) => worktree.isMain || !isCheckoutDone(pullsByBranch[worktree.branch])
+    (worktree) => worktree.isMain || (showWorktrees && !isCheckoutDone(pullsByBranch[worktree.branch]))
   );
-  const mergedWorktrees = sortedWorktrees.filter(
-    (worktree) => !worktree.isMain && isCheckoutDone(pullsByBranch[worktree.branch])
-  );
+  const mergedWorktrees = showWorktrees
+    ? sortedWorktrees.filter((worktree) => !worktree.isMain && isCheckoutDone(pullsByBranch[worktree.branch]))
+    : [];
   const behind = gitStatus?.status?.behind ?? 0;
 
   // Nothing in this repo answers the filter — drop it out of the list.
@@ -276,8 +282,10 @@ export const Project: FC<Props> = ({ project }) => {
             <div className={cn('flex items-center gap-2.5', !gitStatus && Classes.SKELETON)}>
               <QuickActions
                 gitStatus={gitStatus}
-                showDetails={allExpanded}
-                toggleDetails={toggleAll}
+                showDetails={Boolean(mainPath && expandedPaths[mainPath])}
+                showWorktrees={showWorktrees}
+                toggleDetails={toggleMain}
+                toggleWorktrees={() => set({ showWorktrees: !showWorktrees })}
               />
 
               <ButtonGroup large>
@@ -286,13 +294,16 @@ export const Project: FC<Props> = ({ project }) => {
                     place. Both stay in the menu. */}
                 {behind > 0 ? (
                   <Button
+                    aria-label="Pull"
+                    disabled={pulling}
                     icon="arrow-down"
                     intent="warning"
-                    loading={loading}
+                    loading={pulling}
                     onClick={runPull}
                   />
                 ) : (
                   <Button
+                    aria-label="Refresh"
                     icon="refresh"
                     onClick={updateProject}
                   />
@@ -316,6 +327,7 @@ export const Project: FC<Props> = ({ project }) => {
                   placement="auto-end"
                 >
                   <Button
+                    aria-label="Repository actions"
                     icon="caret-down"
                     intent={behind ? 'warning' : 'none'}
                   />
@@ -340,6 +352,7 @@ export const Project: FC<Props> = ({ project }) => {
 
       {mergedWorktrees.length > 0 && (
         <FoldDivider
+          className="px-6"
           icon="git-merge"
           label="Merged worktrees"
           onToggle={() => setShowMerged((prev) => !prev)}

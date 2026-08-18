@@ -200,6 +200,7 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
           placement="bottom"
         >
           <Button
+            aria-label="Open pull request in browser"
             icon="globe"
             onClick={openInBrowser}
           />
@@ -219,7 +220,9 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
           }
           placement="bottom-end"
         >
-          <Button icon="caret-down" />
+          <Button aria-label="Pull request actions"
+            icon="caret-down"
+          />
         </Popover>
       </ButtonGroup>
     </div>

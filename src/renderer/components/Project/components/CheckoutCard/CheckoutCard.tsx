@@ -230,14 +230,24 @@ export const CheckoutCard: FC<Props> = ({
           deleting && 'opacity-50 pointer-events-none'
         )}
       >
-        {leading}
-
-        {/* The row itself is the toggle — no chevron. Everything interactive
-            inside it stops the click from reaching this handler. */}
+        {/* The row itself is the toggle — no chevron. The repo name sits inside
+            it too, so clicking the obvious part of the header works; the
+            selector and the buttons stay outside. */}
         <div
+          aria-expanded={expanded}
           className="overflow-hidden flex flex-1 text-left justify-start gap-4 items-center min-w-0 cursor-pointer self-stretch"
           onClick={onToggleExpanded}
+          onKeyDown={(event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+
+            event.preventDefault();
+            onToggleExpanded();
+          }}
+          role="button"
+          tabIndex={0}
         >
+          {leading}
+
           {/* Main names its branch in the selector beside it, so printing it
               here too is the same word twice on one line. */}
           {!isMain && (
@@ -325,6 +335,7 @@ export const CheckoutCard: FC<Props> = ({
             placement="bottom"
           >
             <Button
+              aria-label="Copy path"
               disabled={deleting}
               icon={copyIcon}
               onClick={copyToClipboard}
@@ -339,6 +350,7 @@ export const CheckoutCard: FC<Props> = ({
               popoverClassName="whitespace-nowrap"
             >
               <Button
+                aria-label={`Open in ${selectedEditor.editor}`}
                 disabled={deleting}
                 icon="code"
                 onClick={() => window.bridge.launch.editor(worktree.path, selectedEditor)}
@@ -354,6 +366,7 @@ export const CheckoutCard: FC<Props> = ({
               popoverClassName="whitespace-nowrap"
             >
               <Button
+                aria-label={`Open in ${selectedShell.shell}`}
                 disabled={deleting}
                 icon="console"
                 onClick={() => window.bridge.launch.shell(worktree.path, selectedShell)}
@@ -368,6 +381,7 @@ export const CheckoutCard: FC<Props> = ({
               placement="bottom"
             >
               <Button
+                aria-label="Remove worktree"
                 disabled={deleting}
                 icon="trash"
                 loading={deleting}
@@ -394,6 +408,7 @@ export const CheckoutCard: FC<Props> = ({
 
           {hiddenOwn.length > 0 && (
             <FoldDivider
+              className="px-6"
               icon="git-pull"
               label="More pull requests"
               onToggle={() => setShowAllOwn((prev) => !prev)}
@@ -402,6 +417,7 @@ export const CheckoutCard: FC<Props> = ({
 
           {stray.length > 0 && (
             <FoldDivider
+              className="px-6"
               icon="git-branch"
               label="Branches without a worktree"
               onToggle={() => setShowStray((prev) => !prev)}
@@ -413,6 +429,7 @@ export const CheckoutCard: FC<Props> = ({
           {hiddenRuns.length > 0 && (
             <>
               <FoldDivider
+                className="px-6"
                 icon="eye-off"
                 label="Hidden workflows"
                 onToggle={() => setShowHidden((prev) => !prev)}

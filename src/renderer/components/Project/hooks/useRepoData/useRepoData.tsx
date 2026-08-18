@@ -249,15 +249,37 @@ export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranche
 
     getPulls();
 
-    if (!pullsIntervalId.current) {
-      pullsIntervalId.current = window.setInterval(getPulls, gitHubPulls.pollInterval);
-    }
+    const start = () => {
+      // Guarding on the ref alone left the old timer running at the old
+      // interval whenever the setting changed.
+      if (!pullsIntervalId.current) {
+        pullsIntervalId.current = window.setInterval(getPulls, gitHubPulls.pollInterval);
+      }
+    };
 
-    return () => {
+    const stop = () => {
       if (pullsIntervalId.current) {
         window.clearInterval(pullsIntervalId.current);
         pullsIntervalId.current = null;
       }
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        stop();
+        return;
+      }
+
+      getPulls();
+      start();
+    };
+
+    start();
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibility);
     };
   }, [getPulls, gitHubPulls.pollInterval, gitHubToken]);
 
@@ -307,9 +329,36 @@ export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranche
 
     if (!pollRuns) return;
 
-    const timer = window.setInterval(getPinnedRuns, pinnedInterval);
+    let timer: null | number = null;
 
-    return () => window.clearInterval(timer);
+    const start = () => {
+      if (!timer) timer = window.setInterval(getPinnedRuns, pinnedInterval);
+    };
+
+    const stop = () => {
+      if (timer) {
+        window.clearInterval(timer);
+        timer = null;
+      }
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        stop();
+        return;
+      }
+
+      getPinnedRuns();
+      start();
+    };
+
+    start();
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
   }, [getPinnedRuns, pollRuns]);
 
   /**

@@ -45,6 +45,7 @@ export const SearchInput: FC<Props> = ({ inputRef, onChange, onClear, value }) =
 
     {/* Holds the slot open so the input does not jump when the button appears. */}
     <button
+      aria-label="Clear filter"
       className={cn(
         'flex items-center justify-center w-[18px] h-[18px] shrink-0 rounded-full',
         'bg-transparent border-none cursor-pointer p-0',

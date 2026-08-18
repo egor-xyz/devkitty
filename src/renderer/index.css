@@ -250,3 +250,16 @@ body {
     background-color: #1c2127 !important;
   }
 }
+
+/* Someone who asked the OS for less motion gets none of ours: Blueprint's
+   collapse animations and our own transitions both collapse to an instant. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
