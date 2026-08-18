@@ -1,8 +1,10 @@
 import { Button, ButtonGroup, Collapse, Menu, MenuDivider, MenuItem, Popover, Tooltip } from '@blueprintjs/core';
 import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { getStatusIcon } from 'renderer/assets/gitHubStatusUtils';
+import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useModal } from 'renderer/hooks/useModal';
 import { cn } from 'renderer/utils/cn';
+import { timeAgo } from 'renderer/utils/timeAgo';
 import { type Run } from 'types/gitHub';
 import { type Project } from 'types/project';
 
@@ -19,11 +21,12 @@ type Job = {
 };
 
 type Props = {
-  onHide?: (runId: number) => void;
-  onIgnore?: (workflowName: string, workflowPath: string) => void;
   onRefresh?: () => void;
   project: Project;
   run: Run;
+  // Where this row pins once its jobs are open: below main, or below the
+  // worktree header that is itself pinned below main.
+  stickyTop?: number;
 };
 
 const tagLength = 75;
@@ -43,7 +46,7 @@ const formatDuration = (start?: string, end?: string) => {
   return `${seconds}s`;
 };
 
-export const Workflow: FC<Props> = ({ onHide, onIgnore, onRefresh, project, run }) => {
+export const Workflow: FC<Props> = ({ onRefresh, project, run, stickyTop = 55 }) => {
   const {
     conclusion,
     created_at,
@@ -59,6 +62,27 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, onRefresh, project, run 
     updated_at
   } = run;
   const { openModal } = useModal();
+  const { gitHubActions, set } = useAppSettings();
+  const pinnedWorkflows = gitHubActions.pinnedWorkflows ?? [];
+  const isPinned = pinnedWorkflows.includes(path);
+
+  const ignoredWorkflows = gitHubActions.ignoredWorkflows ?? [];
+
+  const hideWorkflow = () => {
+    if (ignoredWorkflows.includes(path)) return;
+
+    set({ gitHubActions: { ...gitHubActions, ignoredWorkflows: [...ignoredWorkflows, path] } });
+  };
+
+  const togglePinned = () => {
+    set({
+      gitHubActions: {
+        ...gitHubActions,
+        pinnedWorkflows: isPinned ? pinnedWorkflows.filter((item) => item !== path) : [...pinnedWorkflows, path]
+      }
+    });
+  };
+
   const [isOpen, setIsOpen] = useState(false);
   const [jobs, setJobs] = useState<Job[]>([]);
 
@@ -170,11 +194,27 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, onRefresh, project, run 
   return (
     <>
       <div
+        aria-expanded={isOpen}
         className={cn(
-          'flex relative items-center justify-between min-h-[45px] py-1 pl-5 pr-4 gap-2 w-full box-border shrink-0 mt-0.5 cursor-pointer',
-          'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2 hover:opacity-90'
+          // pr-2, not pr-4: the group around this row is inset by mx-2, so the
+          // buttons still line up with the checkout row's buttons above.
+          'flex relative items-center justify-between min-h-[45px] py-1 pl-5 pr-2 gap-2 w-full box-border shrink-0 mt-0.5 cursor-pointer',
+          'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2 hover:opacity-90',
+          // With its jobs open the run is a header in its own right: it pins
+          // under the checkout above it so you keep sight of which run you are
+          // reading a long job list for.
+          isOpen && 'sticky z-[5]'
         )}
         onClick={toggleJobs}
+        onKeyDown={(event) => {
+          if (event.key !== 'Enter' && event.key !== ' ') return;
+
+          event.preventDefault();
+          toggleJobs();
+        }}
+        role="button"
+        style={isOpen ? { top: stickyTop } : undefined}
+        tabIndex={0}
       >
         <div className="overflow-hidden flex text-left justify-start gap-4 items-center flex-1 min-w-0">
           <div className="w-[30px] shrink-0 flex justify-center"
@@ -202,9 +242,17 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, onRefresh, project, run 
         </div>
 
         {runDuration ? (
-          <span className="text-[11px] text-bp-gray-2 dark:text-bp-gray-4 ml-2 whitespace-nowrap shrink-0">
-            {runDuration}
-          </span>
+          <div className="flex flex-col items-end text-[11px] text-bp-gray-2 dark:text-bp-gray-4 ml-2 whitespace-nowrap shrink-0">
+            <span>{runDuration}</span>
+
+            {/* How long it took answers "is this slow"; when it ended answers
+                "is this the deploy I am thinking of". */}
+            {conclusion && (
+              <Tooltip content={new Date(updated_at).toLocaleString()}>
+                <span className="font-light">{timeAgo(updated_at)}</span>
+              </Tooltip>
+            )}
+          </div>
         ) : null}
 
         <ButtonGroup onClick={(e) => e.stopPropagation()}>
@@ -214,6 +262,7 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, onRefresh, project, run 
             placement="bottom"
           >
             <Button
+              aria-label="Copy run link"
               icon={copied ? 'tick' : 'link'}
               intent={copied ? 'success' : 'none'}
               onClick={copyLink}
@@ -226,6 +275,7 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, onRefresh, project, run 
             placement="bottom"
           >
             <Button
+              aria-label="Open run in browser"
               icon="globe"
               onClick={openInBrowser}
             />
@@ -264,27 +314,28 @@ export const Workflow: FC<Props> = ({ onHide, onIgnore, onRefresh, project, run 
 
                 <MenuDivider />
 
-                {onHide && (
-                  <MenuItem
-                    icon="eye-off"
-                    onClick={() => onHide(id)}
-                    text="Hide this action"
-                  />
-                )}
+                <MenuItem
+                  icon={isPinned ? 'unpin' : 'pin'}
+                  onClick={togglePinned}
+                  text={isPinned ? 'Unpin workflow' : 'Pin workflow'}
+                />
 
-                {onIgnore && (
-                  <MenuItem
-                    icon="disable"
-                    intent="warning"
-                    onClick={() => onIgnore(name, path)}
-                    text="Ignore workflow"
-                  />
-                )}
+                {/* Hiding one run of a workflow that runs on every push buys
+                    nothing — the next one is back in a minute. Hiding is
+                    per workflow, and Settings lists it for undoing. */}
+                <MenuItem
+                  icon="eye-off"
+                  intent="warning"
+                  onClick={hideWorkflow}
+                  text="Hide this workflow"
+                />
               </Menu>
             }
             placement="bottom-end"
           >
-            <Button icon="caret-down" />
+            <Button aria-label="Run actions"
+              icon="caret-down"
+            />
           </Popover>
         </ButtonGroup>
       </div>

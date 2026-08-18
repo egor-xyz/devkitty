@@ -55,6 +55,19 @@ export const parseWorktreeList = (output: string): Worktree[] => {
   return worktrees;
 };
 
+export const getWorktreeGit = async (id: string, worktreePath: string) => {
+  const git = await getGit(id);
+
+  const raw = await git.raw(['worktree', 'list', '--porcelain']);
+  const worktrees = parseWorktreeList(raw);
+
+  if (!worktrees.some((worktree) => worktree.path === worktreePath)) {
+    throw new Error('Worktree not found for this project');
+  }
+
+  return simpleGit(worktreePath);
+};
+
 export const getRepoInfo = async (id: string) => {
   try {
     const git = await getGit(id);

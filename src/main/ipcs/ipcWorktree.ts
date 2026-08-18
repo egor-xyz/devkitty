@@ -4,7 +4,7 @@ import path from 'path';
 import { simpleGit } from 'simple-git';
 import { type Worktree } from 'types/worktree';
 
-import { getGit, parseWorktreeList } from '../libs/git';
+import { getGit, getWorktreeGit, parseWorktreeList } from '../libs/git';
 
 ipcMain.handle('git:worktree:list', async (_, id: string): Promise<{ message?: string; success: boolean; worktrees?: Worktree[]; }> => {
   try {
@@ -92,5 +92,17 @@ ipcMain.handle('git:worktree:remove', async (_, id: string, worktreePath: string
   } catch (e) {
     const needsForce = e.message?.includes('contains modified or untracked files');
     return { message: e.message, needsForce, success: false };
+  }
+});
+
+ipcMain.handle('git:worktree:pull', async (_, id: string, worktreePath: string) => {
+  try {
+    const git = await getWorktreeGit(id, worktreePath);
+    // Same as the repo pull: fast-forward or say why not.
+    await git.pull(['--ff-only']);
+
+    return { message: 'Worktree pulled', success: true };
+  } catch (e) {
+    return { message: e.message, success: false };
   }
 });

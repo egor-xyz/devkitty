@@ -10,24 +10,74 @@ export const useGit = () => {
 
   const [gitStatus, setGitStatus] = useState<GitStatus>();
   const [loading, setLoading] = useState(false);
+  // Which project this hook keeps polling. State, not a ref, so changing the
+  // interval or hiding the window can rebuild the timer.
+  const [polledId, setPolledId] = useState<string>();
 
-  const intervalId = useRef<number>();
+  const inFlight = useRef(false);
   const unmounted = useRef(false);
 
-  const getStatus = async (id: string, polling = true) => {
-    setLoading(true);
+  /**
+   * `polling` asks the hook to keep this project's status fresh from now on.
+   * `silent` is for those repeat reads: they must not flip `loading`, or every
+   * tick would flash the skeletons.
+   */
+  const getStatus = async (id: string, polling = true, silent = false) => {
+    if (polling) setPolledId(id);
+    if (inFlight.current) return;
+
+    inFlight.current = true;
+    if (!silent) setLoading(true);
 
     const res = await window.bridge.git.getStatus(id);
+    inFlight.current = false;
+
+    if (unmounted.current) return;
 
     setGitStatus(res);
-    setLoading(false);
-
-    if (!unmounted.current && polling && !intervalId.current && fetchInterval > 2000) {
-      intervalId.current = window.setInterval(() => {
-        getStatus(id);
-      }, fetchInterval);
-    }
+    if (!silent) setLoading(false);
   };
+
+  // One timer, rebuilt whenever the project or the interval changes, and idle
+  // while the window is hidden — a background window polling git and fetching
+  // from every remote every few seconds buys nothing.
+  useEffect(() => {
+    if (!polledId || fetchInterval <= 2000) return;
+
+    let timer: null | number = null;
+
+    const tick = () => getStatus(polledId, false, true);
+
+    const start = () => {
+      if (!timer) timer = window.setInterval(tick, fetchInterval);
+    };
+
+    const stop = () => {
+      if (timer) {
+        window.clearInterval(timer);
+        timer = null;
+      }
+    };
+
+    const onVisibility = () => {
+      if (document.hidden) {
+        stop();
+        return;
+      }
+
+      tick();
+      start();
+    };
+
+    start();
+    document.addEventListener('visibilitychange', onVisibility);
+
+    return () => {
+      stop();
+      document.removeEventListener('visibilitychange', onVisibility);
+    };
+     
+  }, [fetchInterval, polledId]);
 
   const checkout = async (id: string, branch: string) => {
     setLoading(true);
@@ -92,7 +142,6 @@ export const useGit = () => {
 
   useEffect(() => () => {
       unmounted.current = true;
-      window.clearInterval(intervalId.current);
     }, []);
 
   const addWorktree = async (id: string, repoName: string, branch: string, newBranch?: string) => {

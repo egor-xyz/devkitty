@@ -3,7 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const handlers: Record<string, (...args: any[]) => any> = {};
 
 const mockGit = {
-  raw: vi.fn()
+  pull: vi.fn(),
+  raw: vi.fn(),
+  revparse: vi.fn(),
+  status: vi.fn()
 };
 
 vi.mock('electron', () => ({
@@ -20,24 +23,34 @@ vi.mock('electron', () => ({
   }
 }));
 
+vi.mock('fs/promises', () => ({
+  copyFile: vi.fn()
+}));
+
 vi.mock('path', () => ({
   default: {
     join: (...args: string[]) => args.join('/')
   }
 }));
 
+vi.mock('simple-git', () => ({
+  simpleGit: vi.fn(() => mockGit)
+}));
+
 vi.mock('../libs/git', () => ({
   getGit: vi.fn(() => Promise.resolve(mockGit)),
+  getWorktreeGit: vi.fn(() => Promise.resolve(mockGit)),
   parseWorktreeList: vi.fn()
 }));
 
 import { dialog } from 'electron';
 
-import { getGit, parseWorktreeList } from '../libs/git';
+import { getGit, getWorktreeGit, parseWorktreeList } from '../libs/git';
 
 await import('./ipcWorktree');
 
 const mockGetGit = vi.mocked(getGit);
+const mockGetWorktreeGit = vi.mocked(getWorktreeGit);
 const mockParseWorktreeList = vi.mocked(parseWorktreeList);
 const mockDialog = vi.mocked(dialog);
 
@@ -45,6 +58,7 @@ describe('ipcWorktree', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGetGit.mockResolvedValue(mockGit as any);
+    mockGetWorktreeGit.mockResolvedValue(mockGit as any);
   });
 
   describe('git:worktree:list', () => {
@@ -193,6 +207,26 @@ describe('ipcWorktree', () => {
 
       expect(result.success).toBe(false);
       expect(result.needsForce).toBe(false);
+    });
+  });
+
+  describe('git:worktree:pull', () => {
+    it('should pull using a git instance bound to the worktree path', async () => {
+      mockGit.pull.mockResolvedValue(undefined);
+
+      const result = await handlers['git:worktree:pull']({}, 'proj-1', '/path/to/feature');
+
+      expect(mockGetWorktreeGit).toHaveBeenCalledWith('proj-1', '/path/to/feature');
+      expect(mockGit.pull).toHaveBeenCalled();
+      expect(result).toEqual({ message: 'Worktree pulled', success: true });
+    });
+
+    it('should return the error message on failure', async () => {
+      mockGetWorktreeGit.mockRejectedValueOnce(new Error('Worktree not found for this project'));
+
+      const result = await handlers['git:worktree:pull']({}, 'proj-1', '/nope');
+
+      expect(result).toEqual({ message: 'Worktree not found for this project', success: false });
     });
   });
 });

@@ -39,6 +39,10 @@ const shells: Shell[] = [
   {
     bundleIdentifiers: ['com.mitchellh.ghostty'],
     name: 'Ghostty'
+  },
+  {
+    bundleIdentifiers: ['com.cmuxterm.app'],
+    name: 'cmux'
   }
 ];
 

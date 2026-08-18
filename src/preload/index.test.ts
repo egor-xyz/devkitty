@@ -77,11 +77,6 @@ describe('preload bridge', () => {
   });
 
   describe('gitAPI', () => {
-    it('should invoke git:api:getAction with id and filterBy', () => {
-      bridge.gitAPI.getAction('proj-1', ['main']);
-      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('git:api:getAction', 'proj-1', ['main']);
-    });
-
     it('should invoke git:api:getJobs with id and runId', () => {
       bridge.gitAPI.getJobs('proj-1', 12345);
       expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('git:api:getJobs', 'proj-1', 12345);

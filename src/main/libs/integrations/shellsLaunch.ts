@@ -5,6 +5,7 @@ import { assertNever } from './fatal-error';
 
 export enum Shell {
   Alacritty = 'Alacritty',
+  cmux = 'cmux',
   Ghostty = 'Ghostty',
   Hyper = 'Hyper',
   iTerm2 = 'iTerm2',
@@ -56,6 +57,8 @@ function getBundleID(shell: Shell): string {
   switch (shell) {
     case Shell.Alacritty:
       return 'io.alacritty';
+    case Shell.cmux:
+      return 'com.cmuxterm.app';
     case Shell.Ghostty:
       return 'com.mitchellh.ghostty';
     case Shell.Hyper:

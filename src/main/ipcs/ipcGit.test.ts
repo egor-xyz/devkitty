@@ -108,14 +108,25 @@ describe('ipcGit', () => {
       expect(result.worktrees).toHaveLength(2);
     });
 
-    it('should not include worktrees when only one exists', async () => {
+    it('should return worktrees even when only the main worktree exists', async () => {
       mockGit.status.mockResolvedValue({ current: 'main', files: [], isClean: () => true });
       mockGit.remote.mockResolvedValue('git@github.com:owner/repo.git');
       mockGit.branch.mockResolvedValue({ all: ['main'], current: 'main' });
-      mockGit.raw.mockResolvedValue('worktree data');
+      mockGit.raw.mockResolvedValue('worktree /path\nHEAD abc\nbranch refs/heads/main\n');
       mockGit.fetch.mockResolvedValue(undefined);
+      mockParseWorktreeList.mockReturnValue([{ branch: 'main', isMain: true, path: '/path' }]);
 
-      mockParseWorktreeList.mockReturnValueOnce([{ branch: 'main', isMain: true, path: '/path/main' }]);
+      const result = await handlers['git:getStatus']({}, 'proj-1');
+
+      expect(result.worktrees).toEqual([{ branch: 'main', isMain: true, path: '/path' }]);
+    });
+
+    it('should leave worktrees undefined when the worktree list command fails', async () => {
+      mockGit.status.mockResolvedValue({ current: 'main', files: [], isClean: () => true });
+      mockGit.remote.mockResolvedValue('git@github.com:owner/repo.git');
+      mockGit.branch.mockResolvedValue({ all: ['main'], current: 'main' });
+      mockGit.raw.mockRejectedValue(new Error('worktree not supported'));
+      mockGit.fetch.mockResolvedValue(undefined);
 
       const result = await handlers['git:getStatus']({}, 'proj-1');
 
