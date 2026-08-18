@@ -59,11 +59,22 @@ ipcMain.handle('git:pull', async (e, id: string) => {
   try {
     const git = await getGit(id);
 
-    await git.pull();
+    // --ff-only, so a repo with no pull.rebase configured does not fail with
+    // git's "need to specify how to reconcile divergent branches", and a button
+    // press never rewrites or merges history behind the user's back.
+    await git.pull(['--ff-only']);
 
     return { message: 'Project pulled', success: true };
   } catch (e) {
-    return { message: e.message, success: false };
+    const diverged =
+      e.message?.includes('Not possible to fast-forward') ||
+      e.message?.includes('not possible to fast-forward') ||
+      e.message?.includes('divergent branches');
+
+    return {
+      message: diverged ? 'Local commits diverge from the remote — rebase or merge manually' : e.message,
+      success: false
+    };
   }
 });
 

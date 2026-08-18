@@ -98,7 +98,8 @@ ipcMain.handle('git:worktree:remove', async (_, id: string, worktreePath: string
 ipcMain.handle('git:worktree:pull', async (_, id: string, worktreePath: string) => {
   try {
     const git = await getWorktreeGit(id, worktreePath);
-    await git.pull();
+    // Same as the repo pull: fast-forward or say why not.
+    await git.pull(['--ff-only']);
 
     return { message: 'Worktree pulled', success: true };
   } catch (e) {
