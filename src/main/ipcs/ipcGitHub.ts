@@ -97,13 +97,22 @@ ipcMain.handle('git:api:getRuns', async (_, id: string, deep = false) => {
 
 // "Load older runs" walks the repo's run history one page at a time, with no
 // date window: the 24h cutoff belongs to the poll, not to history browsing.
-ipcMain.handle('git:api:getRunsPage', async (_, id: string, page: number) => {
+// History is paged per branch, not repo-wide: a card shows one branch, and a
+// repo-wide page of 100 runs can hold barely one run of the branch you asked
+// about — which made "load more" walk several pages to show a single row.
+ipcMain.handle('git:api:getRunsPage', async (_, id: string, page: number, branch?: string) => {
   try {
     const { owner, repo } = await getRepoInfo(id);
     if (!owner || !repo) throw new Error('Project not found');
 
-    const { data } = await octokit().rest.actions.listWorkflowRunsForRepo({ owner, page, per_page: 100, repo });
-    log.info(`runs history page ${page} for ${owner}/${repo}: ${data.workflow_runs.length} runs`);
+    const { data } = await octokit().rest.actions.listWorkflowRunsForRepo({
+      owner,
+      page,
+      per_page: 100,
+      repo,
+      ...(branch ? { branch } : {})
+    });
+    log.info(`runs history page ${page} of ${branch ?? 'all branches'} for ${owner}/${repo}: ${data.workflow_runs.length} runs`);
 
     return { last: data.workflow_runs.length < 100, runs: data.workflow_runs, success: true };
   } catch (e) {

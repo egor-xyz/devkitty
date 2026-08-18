@@ -21,10 +21,6 @@ import {
 // rather than on every poll.
 const pinnedInterval = 60000;
 
-// How many history pages one "load more" may walk through before giving up on
-// finding runs that are not already on screen.
-const historyAttempts = 6;
-
 const getHidden = (key: string): Set<number> =>
   new Set(parseHidden(sessionStorage.getItem(key)).map((entry) => entry.id));
 
@@ -54,9 +50,11 @@ export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranche
   // History fetched on demand by "load older runs". Kept apart from the polled
   // runs so the 24h prune never touches it.
   const [olderRuns, setOlderRuns] = useState<Run[]>([]);
-  const [loadingOlder, setLoadingOlder] = useState(false);
-  const [moreHistory, setMoreHistory] = useState(true);
-  const historyPage = useRef(1);
+  // Which branch's history is being fetched, and which branches have run out of
+  // it: paging is per branch, so one card loading never freezes the others.
+  const [loadingHistory, setLoadingHistory] = useState<string>();
+  const [exhaustedHistory, setExhaustedHistory] = useState<Set<string>>(new Set());
+  const historyPages = useRef<Map<string, number>>(new Map());
   const [runsLoaded, setRunsLoaded] = useState(false);
   const [pulls, setPulls] = useState<PullWithTags[]>([]);
   const [hiddenPulls, setHiddenPulls] = useState(() => getHidden(hiddenPullsKey(project.id)));
@@ -140,39 +138,35 @@ export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranche
    * poll's 24h cutoff is about staying cheap, not about how far back you may
    * look. Each call appends another 100 runs until GitHub returns a short page.
    */
-  const loadOlderRuns = useCallback(async () => {
-    if (!gitHubToken || loadingOlder || !moreHistory) return;
+  const loadOlderRuns = useCallback(
+    async (branch: string) => {
+      if (!gitHubToken || loadingHistory || exhaustedHistory.has(branch)) return;
 
-    setLoadingOlder(true);
+      setLoadingHistory(branch);
 
-    // The first pages are already on screen from the mount fetch, so a single
-    // page can be all duplicates and the click would look dead. Keep walking
-    // until a page actually brings something new — or history runs out.
-    const fetched: Run[] = [];
-    let last = false;
+      // One page, one API call: a page scoped to this branch is 100 of its own
+      // runs, so it always brings history worth showing.
+      const page = (historyPages.current.get(branch) ?? 0) + 1;
+      const res = await window.bridge.gitAPI.getRunsPage(project.id, page, branch);
 
-    for (let attempt = 0; attempt < historyAttempts && fetched.length === 0 && !last; attempt += 1) {
-      const res = await window.bridge.gitAPI.getRunsPage(project.id, historyPage.current);
-      if (!res.success) break;
+      setLoadingHistory(undefined);
+      if (!res.success) return;
 
-      historyPage.current += 1;
-      last = Boolean(res.last);
+      historyPages.current.set(branch, page);
+      if (res.last) setExhaustedHistory((prev) => new Set(prev).add(branch));
 
-      const known = new Set([...runs, ...olderRuns].map((run) => run.id));
-      fetched.push(...((res.runs ?? []) as Run[]).filter((run) => !known.has(run.id)));
-    }
+      const fetched = (res.runs ?? []) as Run[];
+      if (fetched.length === 0) return;
 
-    setLoadingOlder(false);
-    if (last) setMoreHistory(false);
-    if (fetched.length === 0) return;
+      setOlderRuns((prev) => {
+        const byId = new Map(prev.map((run) => [run.id, run]));
+        for (const run of fetched) byId.set(run.id, run);
 
-    setOlderRuns((prev) => {
-      const byId = new Map(prev.map((run) => [run.id, run]));
-      for (const run of fetched) byId.set(run.id, run);
-
-      return [...byId.values()];
-    });
-  }, [gitHubToken, loadingOlder, moreHistory, olderRuns, project.id, runs]);
+        return [...byId.values()];
+      });
+    },
+    [exhaustedHistory, gitHubToken, loadingHistory, project.id]
+  );
 
   const getPulls = useCallback(async () => {
     if (!gitHubToken) return;
@@ -431,14 +425,14 @@ export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranche
 
   return {
     clearHiddenPulls,
+    exhaustedHistory,
     getOrphanPulls,
     getOrphanRuns,
     hiddenPullCount: hiddenPulls.size,
     hiddenRunsByBranch,
     hidePull,
-    loadingOlder,
+    loadingHistory,
     loadOlderRuns,
-    moreHistory,
     pullsByBranch,
     refresh,
     runsByBranch,

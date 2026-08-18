@@ -35,7 +35,8 @@ vi.mock('electron', () => ({
 
 vi.mock('electron-log', () => ({
   default: {
-    error: vi.fn()
+    error: vi.fn(),
+    info: vi.fn()
   }
 }));
 
@@ -71,6 +72,35 @@ describe('ipcGitHub', () => {
       gitHubToken: Buffer.from('encrypted-token')
     } as any);
     mockGetRepoInfo.mockResolvedValue({ owner: 'egor-xyz', repo: 'devkitty' });
+  });
+
+  describe('git:api:getRunsPage', () => {
+    it('should scope a history page to the branch that asked for it', async () => {
+      mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockResolvedValue({
+        data: { workflow_runs: [{ id: 1 }] }
+      });
+
+      const result = await handlers['git:api:getRunsPage']({}, 'proj-1', 2, 'HERO-1/thing');
+
+      expect(mockOctokitInstance.rest.actions.listWorkflowRunsForRepo).toHaveBeenCalledWith(
+        expect.objectContaining({ branch: 'HERO-1/thing', page: 2, per_page: 100 })
+      );
+      // A short page is the end of that branch's history.
+      expect(result).toEqual({ last: true, runs: [{ id: 1 }], success: true });
+    });
+
+    it('should page the whole repo when no branch is given', async () => {
+      mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockResolvedValue({
+        data: { workflow_runs: Array.from({ length: 100 }, (_, index) => ({ id: index })) }
+      });
+
+      const result = await handlers['git:api:getRunsPage']({}, 'proj-1', 1);
+
+      expect(mockOctokitInstance.rest.actions.listWorkflowRunsForRepo).toHaveBeenCalledWith(
+        expect.not.objectContaining({ branch: expect.anything() })
+      );
+      expect(result.last).toBe(false);
+    });
   });
 
   describe('git:api:reset', () => {
