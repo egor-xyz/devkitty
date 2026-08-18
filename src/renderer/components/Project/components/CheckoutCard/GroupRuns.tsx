@@ -1,16 +1,19 @@
-import { type FC, useState } from 'react';
+import { type FC, type ReactNode, useState } from 'react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useFilter } from 'renderer/hooks/useFilter';
 import { type Run } from 'types/gitHub';
 import { type Project } from 'types/project';
 
 import { overflowLimit, splitDoneRuns } from '../../hooks/useRepoData/groupByBranch';
-import { FoldDivider } from '../FoldDivider';
+import { FoldBar, FoldChip } from '../FoldBar';
 import { Workflow } from '../Workflow';
 
 const pageSize = 50;
 
 type Props = {
+  // Chips the card wants to share this row — its own folds would otherwise
+  // stack another rule under this one.
+  footer?: ReactNode;
   limit?: number;
   loadingOlder?: boolean;
   moreHistory?: boolean;
@@ -24,9 +27,10 @@ type Props = {
   stickyTop?: number;
 };
 
-// Runs that finished cleanly are folded away behind a divider: what needs
+// Runs that finished cleanly are folded away behind a chip: what needs
 // attention stays on screen, the rest is one click away.
 export const GroupRuns: FC<Props> = ({
+  footer,
   limit,
   loadingOlder,
   moreHistory,
@@ -60,7 +64,6 @@ export const GroupRuns: FC<Props> = ({
     setDonePage(pageSize);
   };
 
-
   const row = (run: Run) => (
     <Workflow
       key={run.id}
@@ -75,16 +78,10 @@ export const GroupRuns: FC<Props> = ({
   // the successful ones away would hide the answer.
   if (query.trim()) return <>{runs.map(row)}</>;
 
-  return (
+  const chips = (
     <>
-      {/* Rendered directly, not through Collapse: these lists run to dozens of
-          rows and a poll landing mid-animation makes Collapse remeasure, which
-          flickers and drags the scroll position with it. */}
-      {pinned.map(row)}
-      {shownActive.map(row)}
-
       {remainingActive > 0 && (
-        <FoldDivider
+        <FoldChip
           icon="double-chevron-down"
           label="Load more"
           onToggle={() => setActivePage((prev) => Math.max(prev, step) + step)}
@@ -92,7 +89,7 @@ export const GroupRuns: FC<Props> = ({
       )}
 
       {shownActive.length > step && (
-        <FoldDivider
+        <FoldChip
           icon="double-chevron-up"
           label="Hide"
           onToggle={() => setActivePage(step)}
@@ -100,40 +97,56 @@ export const GroupRuns: FC<Props> = ({
       )}
 
       {done.length > 0 && (
-        <FoldDivider
+        <FoldChip
           icon="tick-circle"
           label="Passing checks"
           onToggle={toggleDone}
         />
       )}
 
-      {showDone && (
-        <>
-          {shownDone.map(row)}
-
-          {remainingDone > 0 && (
-            <FoldDivider
-              icon="double-chevron-down"
-              label="Load more"
-              onToggle={() => setDonePage((prev) => prev + pageSize)}
-            />
-          )}
-        </>
+      {showDone && remainingDone > 0 && (
+        <FoldChip
+          icon="double-chevron-down"
+          label={`${remainingDone} more passing`}
+          onToggle={() => setDonePage((prev) => prev + pageSize)}
+        />
       )}
 
       {/* Older runs are nearly all finished ones, so they land in the passing
           pile: fetching a page and leaving that pile folded would look like the
           click did nothing. Open it as the runs arrive. */}
-      {paged && moreHistory && onLoadOlder && remainingDone === 0 && (
-        <FoldDivider
+      {paged && moreHistory && onLoadOlder && (
+        <FoldChip
           icon="history"
-          label={loadingOlder ? 'Loading…' : 'Load more from history'}
+          label={loadingOlder ? 'Loading…' : 'History'}
           onToggle={async () => {
             await onLoadOlder();
             setShowDone(true);
           }}
         />
       )}
+
+      {footer}
+    </>
+  );
+
+  const hasChips = Boolean(
+    remainingActive > 0 ||
+      shownActive.length > step ||
+      done.length > 0 ||
+      (paged && moreHistory && onLoadOlder) ||
+      footer
+  );
+
+  return (
+    <>
+      {/* Rendered directly, not through Collapse: these lists run to dozens of
+          rows and a poll landing mid-animation makes Collapse remeasure, which
+          flickers and drags the scroll position with it. */}
+      {pinned.map(row)}
+      {shownActive.map(row)}
+      {hasChips && <FoldBar>{chips}</FoldBar>}
+      {showDone && shownDone.map(row)}
     </>
   );
 };

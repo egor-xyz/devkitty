@@ -68,14 +68,14 @@ export const Project: FC<Props> = ({ project }) => {
 
   const {
     clearHiddenPulls,
+    exhaustedHistory,
     getOrphanPulls,
     getOrphanRuns,
     hiddenPullCount,
     hiddenRunsByBranch,
     hidePull,
-    loadingOlder,
+    loadingHistory,
     loadOlderRuns,
-    moreHistory,
     pullsByBranch,
     refresh,
     runsByBranch,
@@ -269,10 +269,10 @@ export const Project: FC<Props> = ({ project }) => {
             </div>
           ) : undefined
         }
-      loadingOlder={loadingOlder}
-      moreHistory={moreHistory}
+      loadingOlder={loadingHistory === worktree.branch}
+      moreHistory={!exhaustedHistory.has(worktree.branch)}
       onHidePull={hidePull}
-      onLoadOlder={loadOlderRuns}
+      onLoadOlder={() => loadOlderRuns(worktree.branch)}
       onRefresh={updateProject}
       onToggleExpanded={() => toggleExpanded(worktree.path)}
       project={project}

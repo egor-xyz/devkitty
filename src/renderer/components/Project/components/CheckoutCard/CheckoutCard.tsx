@@ -11,7 +11,7 @@ import { type Worktree } from 'types/worktree';
 
 import { type DetailGroup, splitOverflow } from '../../hooks/useRepoData/groupByBranch';
 import { CheckoutBranch } from '../CheckoutBranch';
-import { FoldDivider } from '../FoldDivider';
+import { FoldBar, FoldChip } from '../FoldBar';
 import { PullRequest } from '../PullRequest';
 import { GroupRuns } from './GroupRuns';
 
@@ -177,7 +177,7 @@ export const CheckoutCard: FC<Props> = ({
 
   // A pull request and its runs are one block: no gaps inside it, a clear gap
   // before the next one, and a tinted head.
-  const renderGroup = ({ pull, runs }: DetailGroup, index: number) => (
+  const renderGroup = ({ pull, runs }: DetailGroup, index: number, footer?: ReactNode) => (
     <div
       className={cn(
         // No overflow-hidden here: it would make this box the scrollport for
@@ -204,6 +204,7 @@ export const CheckoutCard: FC<Props> = ({
       {/* Main carries the whole repo's traffic, so it gets the configured cap;
           a worktree only ever shows its own branch and keeps the default. */}
       <GroupRuns
+        footer={footer}
         limit={isMain ? count : undefined}
         loadingOlder={loadingOlder}
         moreHistory={moreHistory}
@@ -216,6 +217,35 @@ export const CheckoutCard: FC<Props> = ({
       />
     </div>
   );
+
+  const cardChips =
+    hiddenOwn.length > 0 || stray.length > 0 || hiddenRuns.length > 0 ? (
+      <>
+        {hiddenOwn.length > 0 && (
+          <FoldChip
+            icon="git-pull"
+            label="More pull requests"
+            onToggle={() => setShowAllOwn((prev) => !prev)}
+          />
+        )}
+
+        {stray.length > 0 && (
+          <FoldChip
+            icon="git-branch"
+            label="Other branches"
+            onToggle={() => setShowStray((prev) => !prev)}
+          />
+        )}
+
+        {hiddenRuns.length > 0 && (
+          <FoldChip
+            icon="eye-off"
+            label="Hidden workflows"
+            onToggle={() => setShowHidden((prev) => !prev)}
+          />
+        )}
+      </>
+    ) : null;
 
   return (
     <>
@@ -403,49 +433,25 @@ export const CheckoutCard: FC<Props> = ({
             'shadow-[inset_0_3px_6px_-2px_rgba(0,0,0,0.18)] dark:shadow-[inset_0_3px_6px_-2px_rgba(0,0,0,0.55)]'
           )}
         >
-          {visibleOwn.map(renderGroup)}
-          <Collapse isOpen={showAllOwn}>{hiddenOwn.map(renderGroup)}</Collapse>
-
-          {hiddenOwn.length > 0 && (
-            <FoldDivider
-              className="px-6"
-              icon="git-pull"
-              label="More pull requests"
-              onToggle={() => setShowAllOwn((prev) => !prev)}
-            />
+          {/* The card's own folds ride along in the last group's chip row: on
+              their own they were four stacked rules eating half the card. */}
+          {visibleOwn.map((group, index) =>
+            renderGroup(group, index, index === visibleOwn.length - 1 ? cardChips : undefined)
           )}
 
-          {stray.length > 0 && (
-            <FoldDivider
-              className="px-6"
-              icon="git-branch"
-              label="Branches without a worktree"
-              onToggle={() => setShowStray((prev) => !prev)}
-            />
-          )}
+          {visibleOwn.length === 0 && cardChips && <FoldBar>{cardChips}</FoldBar>}
+          <Collapse isOpen={showAllOwn}>{hiddenOwn.map((group, index) => renderGroup(group, index))}</Collapse>
+          <Collapse isOpen={showStray}>{stray.map((group, index) => renderGroup(group, index))}</Collapse>
 
-          <Collapse isOpen={showStray}>{stray.map(renderGroup)}</Collapse>
-
-          {hiddenRuns.length > 0 && (
-            <>
-              <FoldDivider
-                className="px-6"
-                icon="eye-off"
-                label="Hidden workflows"
-                onToggle={() => setShowHidden((prev) => !prev)}
+          {showHidden && hiddenRuns.length > 0 && (
+            <div className="mx-2 rounded-md [&>*]:mt-0 opacity-70">
+              <GroupRuns
+                onRefresh={onRefresh}
+                project={project}
+                runs={hiddenRuns}
+                stickyTop={isMain ? 55 : 100}
               />
-
-              {showHidden && (
-                <div className="mx-2 rounded-md [&>*]:mt-0 opacity-70">
-                  <GroupRuns
-                    onRefresh={onRefresh}
-                    project={project}
-                    runs={hiddenRuns}
-                    stickyTop={isMain ? 55 : 100}
-                  />
-                </div>
-              )}
-            </>
+            </div>
           )}
 
           {gitHubToken && isBlank && (
