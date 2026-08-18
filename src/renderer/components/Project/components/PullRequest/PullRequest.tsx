@@ -1,6 +1,5 @@
-import { Button, ButtonGroup, Icon, Menu, MenuItem, Popover, Tag, Tooltip } from '@blueprintjs/core';
-import { readableColor } from 'polished';
-import { type FC, useEffect, useState } from 'react';
+import { Button, ButtonGroup, Icon, Menu, MenuItem, Popover, Tooltip } from '@blueprintjs/core';
+import { type CSSProperties, type FC, useEffect, useState } from 'react';
 import { cn } from 'renderer/utils/cn';
 import { timeAgo } from 'renderer/utils/timeAgo';
 import { type Pull } from 'types/gitHub';
@@ -71,24 +70,44 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
           <div className="flex items-center overflow-hidden mb-0.5 gap-2">
             {draft && '[DRAFT] '}
 
+            {/* GitHub's own state badges: purple merged, red closed, filled and
+                carrying the matching icon. shrink-0 and nowrap — a state is
+                never the thing worth truncating. */}
             {isMerged && (
-              <Tag intent="success"
-                minimal
+              <div
+                className={cn(
+                  'flex items-center gap-1 rounded-full px-1.5 py-0.5 shrink-0 whitespace-nowrap',
+                  'text-[10px] text-white bg-[#8250df] dark:bg-[#8957e5]'
+                )}
               >
-                merged
-              </Tag>
+                <Icon icon="git-merge"
+                  size={10}
+                />
+                Merged
+              </div>
             )}
 
             {isClosed && (
-              <Tag intent="danger"
-                minimal
+              <div
+                className={cn(
+                  'flex items-center gap-1 rounded-full px-1.5 py-0.5 shrink-0 whitespace-nowrap',
+                  'text-[10px] text-white bg-[#cf222e] dark:bg-[#da3633]'
+                )}
               >
-                closed
-              </Tag>
+                <Icon icon="cross-circle"
+                  size={10}
+                />
+                Closed
+              </div>
             )}
 
             {user.type === 'Bot' && (
-              <div className="rounded border border-black dark:border-bp-gray-3 px-1 py-px text-[10px] text-black dark:text-bp-gray-3">
+              <div
+                className={cn(
+                  'rounded-full border border-bp-gray-2 dark:border-bp-gray-3 px-1.5 py-px text-[10px] shrink-0',
+                  'text-bp-gray-1 dark:text-bp-gray-4'
+                )}
+              >
                 bot
               </div>
             )}
@@ -98,14 +117,22 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
                 buttons on the right. It wraps to two lines before it clips. */}
             <span className="line-clamp-2 break-words min-w-0">{title}</span>
 
+            {/* GitHub's raw label colour as a solid fill reads as a stray block
+                against the row. The colour survives as a tint and as the text,
+                so a label stays recognisable but sits in the same visual family
+                as the tags beside it. */}
             {labels.map((label: { color: string; id: number; name: string }) => (
               <div
-                className="rounded px-1 py-px text-xs shrink-0"
+                className={cn(
+                  'rounded-full border px-1.5 py-px text-[10px] shrink-0',
+                  // No fill: a tinted chip reads as a different surface from
+                  // whatever it sits on. Border and text carry the colour.
+                  'border-[color-mix(in_srgb,var(--label)_45%,transparent)]',
+                  'text-[color-mix(in_srgb,var(--label)_70%,black)]',
+                  'dark:text-[color-mix(in_srgb,var(--label)_80%,white)]'
+                )}
                 key={label.id}
-                style={{
-                  backgroundColor: `#${label.color}`,
-                  color: readableColor(`#${label.color}`)
-                }}
+                style={{ '--label': `#${label.color}` } as CSSProperties}
               >
                 {label.name}
               </div>
@@ -115,7 +142,7 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
               <div
                 className={cn(
                   'rounded-full border border-bp-gray-2 dark:border-bp-gray-3 px-1.5 py-px text-[10px]',
-                  'text-bp-gray-1 dark:text-bp-gray-4 bg-bp-light-gray-5 dark:bg-bp-dark-gray-4'
+                  'text-bp-gray-1 dark:text-bp-gray-4'
                 )}
                 key={`${number}-${tag}`}
               >

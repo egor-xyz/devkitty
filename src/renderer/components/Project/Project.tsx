@@ -59,6 +59,7 @@ export const Project: FC<Props> = ({ project }) => {
   const [expandedPaths, setExpandedPaths] = useState<Record<string, boolean>>({});
   const [showMerged, setShowMerged] = useState(false);
   const openedForPull = useRef<Set<string>>(new Set());
+  const collapsedOnMerge = useRef<Set<string>>(new Set());
 
   const anyExpanded = worktrees.some(({ path }) => expandedPaths[path]);
   const allExpanded = worktrees.length > 0 && worktrees.every(({ path }) => expandedPaths[path]);
@@ -69,7 +70,11 @@ export const Project: FC<Props> = ({ project }) => {
     getOrphanPulls,
     getOrphanRuns,
     hiddenPullCount,
+    hiddenRunsByBranch,
     hidePull,
+    loadingOlder,
+    loadOlderRuns,
+    moreHistory,
     pullsByBranch,
     refresh,
     runsByBranch,
@@ -104,6 +109,20 @@ export const Project: FC<Props> = ({ project }) => {
 
       openedForPull.current.add(path);
       setExpandedPaths((prev) => ({ ...prev, [path]: true }));
+    }
+  }, [id, pullsByBranch, worktrees]);
+
+  // A worktree whose pull requests are all merged has nothing left to act on,
+  // so it collapses once — the saved state goes with it, otherwise revealing
+  // the merged pile would unfold every card that was open before it merged.
+  useEffect(() => {
+    for (const { branch, path } of worktrees) {
+      if (collapsedOnMerge.current.has(path)) continue;
+      if (!isCheckoutDone(pullsByBranch[branch])) continue;
+
+      collapsedOnMerge.current.add(path);
+      localStorage.removeItem(expandedKey(id, path));
+      setExpandedPaths((prev) => ({ ...prev, [path]: false }));
     }
   }, [id, pullsByBranch, worktrees]);
 
@@ -231,6 +250,7 @@ export const Project: FC<Props> = ({ project }) => {
       expanded={Boolean(expandedPaths[worktree.path])}
       gitStatus={worktree.isMain ? gitStatus : undefined}
       groups={groupsFor(worktree)}
+      hiddenRuns={hiddenRunsByBranch[worktree.branch] ?? []}
       key={worktree.path}
       leading={
           worktree.isMain ? (
@@ -243,7 +263,10 @@ export const Project: FC<Props> = ({ project }) => {
             </div>
           ) : undefined
         }
+      loadingOlder={loadingOlder}
+      moreHistory={moreHistory}
       onHidePull={hidePull}
+      onLoadOlder={loadOlderRuns}
       onRefresh={updateProject}
       onToggleExpanded={() => toggleExpanded(worktree.path)}
       project={project}
@@ -317,10 +340,9 @@ export const Project: FC<Props> = ({ project }) => {
 
       {mergedWorktrees.length > 0 && (
         <FoldDivider
-          hideLabel={`Hide ${mergedWorktrees.length} merged worktree${mergedWorktrees.length > 1 ? 's' : ''}`}
+          icon="git-merge"
+          label="Merged worktrees"
           onToggle={() => setShowMerged((prev) => !prev)}
-          open={showMerged}
-          showLabel={`Show ${mergedWorktrees.length} merged worktree${mergedWorktrees.length > 1 ? 's' : ''}`}
         />
       )}
 

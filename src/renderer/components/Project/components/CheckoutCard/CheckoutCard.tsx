@@ -5,6 +5,7 @@ import { GitStatusBadge } from 'renderer/components/GitStatusBadge';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useModal } from 'renderer/hooks/useModal';
 import { cn } from 'renderer/utils/cn';
+import { type Run } from 'types/gitHub';
 import { type GitStatus, type Project } from 'types/project';
 import { type Worktree } from 'types/worktree';
 
@@ -27,8 +28,14 @@ type Props = {
   expanded: boolean;
   gitStatus?: GitStatus;
   groups: DetailGroup[];
+  // Runs of workflows you hid. Not shown, just offered — a fold to peek behind
+  // without putting them back.
+  hiddenRuns: Run[];
   leading?: ReactNode;
+  loadingOlder: boolean;
+  moreHistory: boolean;
   onHidePull: (pullId: number, label: string) => void;
+  onLoadOlder: () => void;
   onRefresh: () => void;
   onToggleExpanded: () => void;
   project: Project;
@@ -42,8 +49,12 @@ export const CheckoutCard: FC<Props> = ({
   expanded,
   gitStatus,
   groups,
+  hiddenRuns,
   leading,
+  loadingOlder,
+  moreHistory,
   onHidePull,
+  onLoadOlder,
   onRefresh,
   onToggleExpanded,
   project,
@@ -53,6 +64,7 @@ export const CheckoutCard: FC<Props> = ({
 }) => {
   const { openModal } = useModal();
   const {
+    fetchInterval,
     gitHubActions: { count },
     gitHubToken,
     selectedEditor,
@@ -60,6 +72,7 @@ export const CheckoutCard: FC<Props> = ({
   } = useAppSettings();
   const [status, setStatus] = useState<CheckoutStatus | null>(null);
   const [showStray, setShowStray] = useState(false);
+  const [showHidden, setShowHidden] = useState(false);
   const [showAllOwn, setShowAllOwn] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [copyIcon, setCopyIcon] = useState(
@@ -102,6 +115,19 @@ export const CheckoutCard: FC<Props> = ({
     fetchStatus();
   }, [fetchStatus, gitStatus, isMain]);
 
+  // Main's status arrives with the repo poll, but a worktree has no such feed —
+  // without its own clock the ahead/behind counts stayed at whatever they were
+  // when the card mounted, through every rebase and push.
+  useEffect(() => {
+    if (isMain) return;
+
+    const timer = window.setInterval(() => {
+      if (!document.hidden) fetchStatus();
+    }, fetchInterval > 2000 ? fetchInterval : 10000);
+
+    return () => window.clearInterval(timer);
+  }, [fetchInterval, fetchStatus, isMain]);
+
   const copyToClipboard = () => {
     setCopyIcon(
       <FaCopy
@@ -137,12 +163,11 @@ export const CheckoutCard: FC<Props> = ({
     });
   };
 
-  // Pre-fetch state looks exactly like the empty state, so a card expanded from
-  // saved storage would flash "No actions were found" on every app start.
-  // Only the main card explains itself when empty. A worktree with nothing on
-  // it just stays a single line — a dozen "no actions found" banners is noise,
-  // not information.
-  const isBlank = isMain && runsLoaded && groups.length === 0;
+  // An expanded card with nothing in it reads as a broken click, so it says so
+  // instead. Gated on `runsLoaded`: pre-fetch state looks exactly like the empty
+  // state, and a card expanded from saved storage would otherwise flash this on
+  // every app start.
+  const isBlank = runsLoaded && groups.length === 0 && hiddenRuns.length === 0;
 
   // Branches with no worktree anywhere land on the main card. There can be
   // dozens of them, so they fold away rather than burying this repo's actual
@@ -159,7 +184,9 @@ export const CheckoutCard: FC<Props> = ({
         // the sticky run rows inside, which kills their pinning.
         'mx-2 rounded-md',
         index > 0 && 'mt-2',
-        pull && 'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
+        // Only the ring holds the block together — no fill. The rows bring their
+        // own background, so a fill would only show through behind the fold
+        // dividers and read as a stray band.
         pull && 'shadow-[0_0_0_1px_rgba(0,0,0,0.06)] dark:shadow-[0_0_0_1px_rgba(0,0,0,0.35)]',
         '[&>*]:mt-0'
       )}
@@ -178,7 +205,11 @@ export const CheckoutCard: FC<Props> = ({
           a worktree only ever shows its own branch and keeps the default. */}
       <GroupRuns
         limit={isMain ? count : undefined}
+        loadingOlder={loadingOlder}
+        moreHistory={moreHistory}
+        onLoadOlder={onLoadOlder}
         onRefresh={onRefresh}
+        paged={!pull}
         project={project}
         runs={runs}
         stickyTop={isMain ? 55 : 100}
@@ -363,28 +394,47 @@ export const CheckoutCard: FC<Props> = ({
 
           {hiddenOwn.length > 0 && (
             <FoldDivider
-              hideLabel={`Hide ${hiddenOwn.length} more pull request${hiddenOwn.length > 1 ? 's' : ''}`}
+              icon="git-pull"
+              label="More pull requests"
               onToggle={() => setShowAllOwn((prev) => !prev)}
-              open={showAllOwn}
-              showLabel={`Show ${hiddenOwn.length} more pull request${hiddenOwn.length > 1 ? 's' : ''}`}
             />
           )}
 
           {stray.length > 0 && (
             <FoldDivider
-              hideLabel={`Hide ${stray.length} branch${stray.length > 1 ? 'es' : ''} not checked out locally`}
+              icon="git-branch"
+              label="Branches without a worktree"
               onToggle={() => setShowStray((prev) => !prev)}
-              open={showStray}
-              showLabel={`Show ${stray.length} branch${stray.length > 1 ? 'es' : ''} not checked out locally`}
             />
           )}
 
           <Collapse isOpen={showStray}>{stray.map(renderGroup)}</Collapse>
 
+          {hiddenRuns.length > 0 && (
+            <>
+              <FoldDivider
+                icon="eye-off"
+                label="Hidden workflows"
+                onToggle={() => setShowHidden((prev) => !prev)}
+              />
+
+              {showHidden && (
+                <div className="mx-2 rounded-md [&>*]:mt-0 opacity-70">
+                  <GroupRuns
+                    onRefresh={onRefresh}
+                    project={project}
+                    runs={hiddenRuns}
+                    stickyTop={isMain ? 55 : 100}
+                  />
+                </div>
+              )}
+            </>
+          )}
+
           {gitHubToken && isBlank && (
-            <div className={cn('flex justify-between items-center py-2.5 px-4', Classes.TEXT_MUTED)}>
+            <div className={cn('flex justify-between items-center py-2.5 px-4 text-xs', Classes.TEXT_MUTED)}>
               <span>
-                No actions were found for the <b>{worktree.branch}</b> branch in the last 24 hours
+                No pull requests or actions for <b>{worktree.branch}</b> in the last 24 hours
               </span>
 
               <Tag minimal>watcher is active</Tag>

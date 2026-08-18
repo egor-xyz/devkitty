@@ -175,7 +175,7 @@ describe('ipcGitHub', () => {
       expect(result.runs.map((run: any) => run.id)).toEqual([1]);
     });
 
-    it('should drop ignored workflows', async () => {
+    it('should return hidden workflows too, so the renderer can offer a peek', async () => {
       mockSettings.get.mockReturnValue({
         gitHubActions: { count: 5, ignoredWorkflows: ['.github/workflows/noisy.yml'], inProgress: false },
         gitHubToken: Buffer.from('token')
@@ -192,7 +192,7 @@ describe('ipcGitHub', () => {
 
       const result = await handlers['git:api:getRuns']({}, 'proj-1');
 
-      expect(result.runs.map((run: any) => run.id)).toEqual([1]);
+      expect(result.runs.map((run: any) => run.id)).toEqual([1, 2]);
     });
 
     it('should fail when the repo cannot be resolved', async () => {

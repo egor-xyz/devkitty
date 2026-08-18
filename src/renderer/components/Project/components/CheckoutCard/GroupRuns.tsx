@@ -12,7 +12,13 @@ const pageSize = 50;
 
 type Props = {
   limit?: number;
+  loadingOlder?: boolean;
+  moreHistory?: boolean;
+  onLoadOlder?: () => Promise<void> | void;
   onRefresh: () => void;
+  // A pull request shows every check it has — capping them is what the passing
+  // fold is for. Paging belongs to a branch's open-ended run history.
+  paged?: boolean;
   project: Project;
   runs: Run[];
   stickyTop?: number;
@@ -20,7 +26,17 @@ type Props = {
 
 // Runs that finished cleanly are folded away behind a divider: what needs
 // attention stays on screen, the rest is one click away.
-export const GroupRuns: FC<Props> = ({ limit, onRefresh, project, runs, stickyTop }) => {
+export const GroupRuns: FC<Props> = ({
+  limit,
+  loadingOlder,
+  moreHistory,
+  onLoadOlder,
+  onRefresh,
+  paged = true,
+  project,
+  runs,
+  stickyTop
+}) => {
   const [showDone, setShowDone] = useState(false);
   const [donePage, setDonePage] = useState(pageSize);
   const { gitHubActions } = useAppSettings();
@@ -29,7 +45,7 @@ export const GroupRuns: FC<Props> = ({ limit, onRefresh, project, runs, stickyTo
 
   // How many runs a page of the active list holds. Loading more grows it a page
   // at a time, with no ceiling; hiding drops back to exactly one page.
-  const step = limit ?? overflowLimit;
+  const step = paged ? (limit ?? overflowLimit) : Number.MAX_SAFE_INTEGER;
   const [activePage, setActivePage] = useState(step);
   const shownActive = active.slice(0, Math.max(activePage, step));
   const remainingActive = active.length - shownActive.length;
@@ -69,28 +85,25 @@ export const GroupRuns: FC<Props> = ({ limit, onRefresh, project, runs, stickyTo
 
       {remainingActive > 0 && (
         <FoldDivider
-          hideLabel={`Load ${Math.min(remainingActive, step)} more of ${remainingActive}`}
+          icon="double-chevron-down"
+          label="Load more"
           onToggle={() => setActivePage((prev) => Math.max(prev, step) + step)}
-          open={false}
-          showLabel={`Load ${Math.min(remainingActive, step)} more of ${remainingActive}`}
         />
       )}
 
       {shownActive.length > step && (
         <FoldDivider
-          hideLabel={`Hide ${shownActive.length - step} check${shownActive.length - step > 1 ? 's' : ''}`}
+          icon="double-chevron-up"
+          label="Hide"
           onToggle={() => setActivePage(step)}
-          open
-          showLabel={`Hide ${shownActive.length - step} check${shownActive.length - step > 1 ? 's' : ''}`}
         />
       )}
 
       {done.length > 0 && (
         <FoldDivider
-          hideLabel={`Hide ${done.length} successful check${done.length > 1 ? 's' : ''}`}
+          icon="tick-circle"
+          label="Passing checks"
           onToggle={toggleDone}
-          open={showDone}
-          showLabel={`Show ${done.length} successful check${done.length > 1 ? 's' : ''}`}
         />
       )}
 
@@ -100,13 +113,26 @@ export const GroupRuns: FC<Props> = ({ limit, onRefresh, project, runs, stickyTo
 
           {remainingDone > 0 && (
             <FoldDivider
-              hideLabel={`Load ${Math.min(remainingDone, pageSize)} more of ${remainingDone}`}
+              icon="double-chevron-down"
+              label="Load more"
               onToggle={() => setDonePage((prev) => prev + pageSize)}
-              open={false}
-              showLabel={`Load ${Math.min(remainingDone, pageSize)} more of ${remainingDone}`}
             />
           )}
         </>
+      )}
+
+      {/* Older runs are nearly all finished ones, so they land in the passing
+          pile: fetching a page and leaving that pile folded would look like the
+          click did nothing. Open it as the runs arrive. */}
+      {paged && moreHistory && onLoadOlder && remainingDone === 0 && (
+        <FoldDivider
+          icon="history"
+          label={loadingOlder ? 'Loading…' : 'Load more from history'}
+          onToggle={async () => {
+            await onLoadOlder();
+            setShowDone(true);
+          }}
+        />
       )}
     </>
   );

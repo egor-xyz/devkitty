@@ -26,6 +26,7 @@ const mockBridge = {
     getPinnedRuns: vi.fn(),
     getPulls: vi.fn(),
     getRuns: vi.fn(),
+    getRunsPage: vi.fn(),
     reset: vi.fn(),
     searchRuns: vi.fn()
   },

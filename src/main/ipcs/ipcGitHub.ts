@@ -64,9 +64,6 @@ const maxPages = 5;
 
 ipcMain.handle('git:api:getRuns', async (_, id: string, deep = false) => {
   try {
-    const { gitHubActions } = settings.get('appSettings');
-    const { ignoredWorkflows = [] } = gitHubActions;
-
     const { owner, repo } = await getRepoInfo(id);
     if (!owner || !repo) throw new Error('Project not found');
 
@@ -87,11 +84,28 @@ ipcMain.handle('git:api:getRuns', async (_, id: string, deep = false) => {
       if (data.workflow_runs.length < 100 || !oldest || new Date(oldest.created_at).getTime() <= since) break;
     }
 
-    const runs = collected
-      .filter((run) => new Date(run.created_at).getTime() > since)
-      .filter((run) => !ignoredWorkflows.includes(run.path));
+    // Hidden workflows are filtered in the renderer, not here: it keeps them
+    // aside so a card can offer a peek at what it is holding back.
+    const runs = collected.filter((run) => new Date(run.created_at).getTime() > since);
 
     return { runs, success: true };
+  } catch (e) {
+    log.error(e);
+    return { message: e.message, success: false };
+  }
+});
+
+// "Load older runs" walks the repo's run history one page at a time, with no
+// date window: the 24h cutoff belongs to the poll, not to history browsing.
+ipcMain.handle('git:api:getRunsPage', async (_, id: string, page: number) => {
+  try {
+    const { owner, repo } = await getRepoInfo(id);
+    if (!owner || !repo) throw new Error('Project not found');
+
+    const { data } = await octokit().rest.actions.listWorkflowRunsForRepo({ owner, page, per_page: 100, repo });
+    log.info(`runs history page ${page} for ${owner}/${repo}: ${data.workflow_runs.length} runs`);
+
+    return { last: data.workflow_runs.length < 100, runs: data.workflow_runs, success: true };
   } catch (e) {
     log.error(e);
     return { message: e.message, success: false };
@@ -141,15 +155,14 @@ ipcMain.handle('git:api:searchRuns', async (_, id: string, query: string) => {
     const terms = query.toLowerCase().split(/\s+/).filter(Boolean);
     if (terms.length === 0) return { runs: [], success: true };
 
-    const { ignoredWorkflows = [] } = settings.get('appSettings').gitHubActions;
-
     const { owner, repo } = await getRepoInfo(id);
     if (!owner || !repo) throw new Error('Project not found');
 
     const { data } = await octokit().rest.actions.listRepoWorkflows({ owner, per_page: 100, repo });
 
+    // Hidden workflows are not skipped here either — the renderer keeps their
+    // runs behind the peek fold rather than dropping them.
     const matched = data.workflows
-      .filter((workflow) => !ignoredWorkflows.includes(workflow.path))
       .filter((workflow) => terms.every((term) => workflow.name.toLowerCase().includes(term)))
       .slice(0, searchedWorkflows);
 

@@ -9,6 +9,7 @@ import {
   notifiableBranches,
   orphanPulls,
   orphanRuns,
+  shouldNotifyRun,
   sortWorktreesByActivity,
   splitDoneRuns,
   splitOverflow,
@@ -653,5 +654,52 @@ describe('splitDoneRuns — only the latest pinned run', () => {
     );
 
     expect(result.pinned.map((run) => run.id).sort()).toEqual([2, 9]);
+  });
+});
+
+describe('shouldNotifyRun', () => {
+  const runOf = (event: string, conclusion: null | string) => ({ conclusion, event, id: 1 }) as any;
+
+  it('should stay quiet while a run is still going', () => {
+    expect(shouldNotifyRun(runOf('push', null))).toBe(false);
+  });
+
+  it('should not announce a pull request check that passed', () => {
+    expect(shouldNotifyRun(runOf('pull_request', 'success'))).toBe(false);
+  });
+
+  it('should announce a pull request check that failed', () => {
+    expect(shouldNotifyRun(runOf('pull_request', 'failure'))).toBe(true);
+  });
+
+  it('should announce a cancelled or timed out pull request check', () => {
+    expect(shouldNotifyRun(runOf('pull_request_target', 'cancelled'))).toBe(true);
+    expect(shouldNotifyRun(runOf('pull_request', 'timed_out'))).toBe(true);
+  });
+
+  it('should stay quiet for a skipped pull request check', () => {
+    expect(shouldNotifyRun(runOf('pull_request', 'skipped'))).toBe(false);
+  });
+
+  it('should announce a push or manual run either way', () => {
+    expect(shouldNotifyRun(runOf('push', 'success'))).toBe(true);
+    expect(shouldNotifyRun(runOf('workflow_dispatch', 'failure'))).toBe(true);
+  });
+});
+
+describe('shouldNotifyRun — hidden workflows', () => {
+  const hidden = new Set(['.github/workflows/graph.yml']);
+  const runOf = (path: string, conclusion: string) => ({ conclusion, event: 'push', id: 1, path }) as any;
+
+  it('should stay quiet for a workflow you hid', () => {
+    expect(shouldNotifyRun(runOf('.github/workflows/graph.yml', 'success'), hidden)).toBe(false);
+  });
+
+  it('should stay quiet even when a hidden workflow fails', () => {
+    expect(shouldNotifyRun(runOf('.github/workflows/graph.yml', 'failure'), hidden)).toBe(false);
+  });
+
+  it('should still announce a workflow that is not hidden', () => {
+    expect(shouldNotifyRun(runOf('.github/workflows/ci.yml', 'success'), hidden)).toBe(true);
   });
 });

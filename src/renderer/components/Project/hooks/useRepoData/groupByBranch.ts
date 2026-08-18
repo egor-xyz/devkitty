@@ -159,6 +159,22 @@ export const mergeRuns = (previous: Run[], incoming: Run[], now: number): Run[] 
   return [...byId.values()].filter((run) => new Date(run.created_at).getTime() > now - dayMs);
 };
 
+// A pull request's checks pass all day long; only a failure is worth a desktop
+// notification. Runs off a pull request — a deploy, a push to main — still
+// report both ways, since nobody is watching a pull request page for those.
+const failedConclusions = new Set(['action_required', 'cancelled', 'failure', 'startup_failure', 'timed_out']);
+
+export const isPullRun = (event?: null | string) => event === 'pull_request' || event === 'pull_request_target';
+
+export const shouldNotifyRun = (run: Run, hiddenWorkflows: Set<string> = new Set()): boolean => {
+  if (!run.conclusion) return false;
+  // A hidden workflow is still fetched — the cards offer a peek at it — but it
+  // has no business interrupting anyone.
+  if (run.path && hiddenWorkflows.has(run.path)) return false;
+
+  return isPullRun(run.event) ? failedConclusions.has(run.conclusion) : true;
+};
+
 // Runs are fetched for the whole repo, so every branch every teammate pushes
 // lands in the poll. Only what this machine has checked out — plus the pull
 // requests you opened yourself — deserves a desktop notification; the rest is

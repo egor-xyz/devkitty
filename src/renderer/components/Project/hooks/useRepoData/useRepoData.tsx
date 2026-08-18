@@ -13,12 +13,17 @@ import {
   orphanPulls,
   orphanRuns,
   type PullWithTags,
+  shouldNotifyRun,
   tagPulls
 } from './groupByBranch';
 
 // A pinned workflow costs one API call each, so it refreshes once a minute
 // rather than on every poll.
 const pinnedInterval = 60000;
+
+// How many history pages one "load more" may walk through before giving up on
+// finding runs that are not already on screen.
+const historyAttempts = 6;
 
 const getHidden = (key: string): Set<number> =>
   new Set(parseHidden(sessionStorage.getItem(key)).map((entry) => entry.id));
@@ -46,6 +51,12 @@ export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranche
   const [runs, setRuns] = useState<Run[]>([]);
   const [searchedRuns, setSearchedRuns] = useState<Run[]>([]);
   const [pinnedRuns, setPinnedRuns] = useState<Run[]>([]);
+  // History fetched on demand by "load older runs". Kept apart from the polled
+  // runs so the 24h prune never touches it.
+  const [olderRuns, setOlderRuns] = useState<Run[]>([]);
+  const [loadingOlder, setLoadingOlder] = useState(false);
+  const [moreHistory, setMoreHistory] = useState(true);
+  const historyPage = useRef(1);
   const [runsLoaded, setRunsLoaded] = useState(false);
   const [pulls, setPulls] = useState<PullWithTags[]>([]);
   const [hiddenPulls, setHiddenPulls] = useState(() => getHidden(hiddenPullsKey(project.id)));
@@ -63,6 +74,13 @@ export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranche
   const initialRunsFetched = useRef(false);
   const notifyArmed = useRef(false);
   const notifyBranches = useRef<Set<string>>(new Set());
+  const hiddenWorkflows = useRef<Set<string>>(new Set());
+
+  // Refs, not deps: `getRuns` reads them when it fires, and rebuilding it would
+  // restart the poll every time a setting changes.
+  useEffect(() => {
+    hiddenWorkflows.current = new Set(ignoredWorkflows);
+  }, [ignoredWorkflows]);
 
   // A ref, not state: `getRuns` reads it at fire time and must not be rebuilt
   // (and so restart the poll) every time a branch list changes identity.
@@ -96,7 +114,7 @@ export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranche
         notifyArmed.current &&
         prev !== undefined &&
         !prev &&
-        run.conclusion &&
+        shouldNotifyRun(run, hiddenWorkflows.current) &&
         notifications &&
         notifyBranches.current.has(run.head_branch ?? '')
       ) {
@@ -116,6 +134,45 @@ export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranche
     // repo pushes it off the first page.
     setRuns((prev) => mergeRuns(prev, nextRuns, Date.now()));
   }, [gitHubToken, ignoreDependabot, notifications, project.id, project.name]);
+
+  /**
+   * Walks the repo's run history a page at a time, with no date window — the
+   * poll's 24h cutoff is about staying cheap, not about how far back you may
+   * look. Each call appends another 100 runs until GitHub returns a short page.
+   */
+  const loadOlderRuns = useCallback(async () => {
+    if (!gitHubToken || loadingOlder || !moreHistory) return;
+
+    setLoadingOlder(true);
+
+    // The first pages are already on screen from the mount fetch, so a single
+    // page can be all duplicates and the click would look dead. Keep walking
+    // until a page actually brings something new — or history runs out.
+    const fetched: Run[] = [];
+    let last = false;
+
+    for (let attempt = 0; attempt < historyAttempts && fetched.length === 0 && !last; attempt += 1) {
+      const res = await window.bridge.gitAPI.getRunsPage(project.id, historyPage.current);
+      if (!res.success) break;
+
+      historyPage.current += 1;
+      last = Boolean(res.last);
+
+      const known = new Set([...runs, ...olderRuns].map((run) => run.id));
+      fetched.push(...((res.runs ?? []) as Run[]).filter((run) => !known.has(run.id)));
+    }
+
+    setLoadingOlder(false);
+    if (last) setMoreHistory(false);
+    if (fetched.length === 0) return;
+
+    setOlderRuns((prev) => {
+      const byId = new Map(prev.map((run) => [run.id, run]));
+      for (const run of fetched) byId.set(run.id, run);
+
+      return [...byId.values()];
+    });
+  }, [gitHubToken, loadingOlder, moreHistory, olderRuns, project.id, runs]);
 
   const getPulls = useCallback(async () => {
     if (!gitHubToken) return;
@@ -278,16 +335,29 @@ export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranche
   // No per-branch cap: the card folds finished checks away and pages them.
   // Searched runs join the polled ones and skip the 24h prune — they were asked
   // for by name, so their age is beside the point.
-  const runsByBranch = useMemo(() => {
+  const allRuns = useMemo(() => {
     const byId = new Map(runs.map((run) => [run.id, run]));
-    for (const run of [...pinnedRuns, ...searchedRuns]) if (!byId.has(run.id)) byId.set(run.id, run);
+    for (const run of [...pinnedRuns, ...searchedRuns, ...olderRuns]) if (!byId.has(run.id)) byId.set(run.id, run);
 
-    // Hiding a workflow has to apply here too, not only to the next fetch:
-    // runs already merged into state would otherwise keep showing forever.
+    return [...byId.values()];
+  }, [olderRuns, pinnedRuns, runs, searchedRuns]);
+
+  // Hiding a workflow has to apply here too, not only to the next fetch: runs
+  // already merged into state would otherwise keep showing forever.
+  const runsByBranch = useMemo(() => {
     const hiddenWorkflows = new Set(ignoredWorkflows);
 
-    return groupRunsByBranch([...byId.values()].filter((run) => !hiddenWorkflows.has(run.path)));
-  }, [ignoredWorkflows, pinnedRuns, runs, searchedRuns]);
+    return groupRunsByBranch(allRuns.filter((run) => !hiddenWorkflows.has(run.path)));
+  }, [allRuns, ignoredWorkflows]);
+
+  // The same runs, but only the hidden ones: a card can offer a peek at what it
+  // is holding back without anything being unhidden.
+  const hiddenRunsByBranch = useMemo(() => {
+    const hiddenWorkflows = new Set(ignoredWorkflows);
+    if (hiddenWorkflows.size === 0) return {};
+
+    return groupRunsByBranch(allRuns.filter((run) => hiddenWorkflows.has(run.path)));
+  }, [allRuns, ignoredWorkflows]);
 
   const pullsByBranch = useMemo(
     () => groupPullsByBranch(pulls.filter(({ pull }) => !hiddenPulls.has(pull.id))),
@@ -315,7 +385,11 @@ export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranche
     getOrphanPulls,
     getOrphanRuns,
     hiddenPullCount: hiddenPulls.size,
+    hiddenRunsByBranch,
     hidePull,
+    loadingOlder,
+    loadOlderRuns,
+    moreHistory,
     pullsByBranch,
     refresh,
     runsByBranch,
