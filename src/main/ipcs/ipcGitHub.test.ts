@@ -12,6 +12,10 @@ const mockOctokitInstance = {
       getRef: vi.fn(),
       updateRef: vi.fn()
     },
+    pulls: {
+      get: vi.fn(),
+      list: vi.fn()
+    },
     search: {
       issuesAndPullRequests: vi.fn()
     }
@@ -31,7 +35,8 @@ vi.mock('electron', () => ({
 
 vi.mock('electron-log', () => ({
   default: {
-    error: vi.fn()
+    error: vi.fn(),
+    info: vi.fn()
   }
 }));
 
@@ -67,6 +72,35 @@ describe('ipcGitHub', () => {
       gitHubToken: Buffer.from('encrypted-token')
     } as any);
     mockGetRepoInfo.mockResolvedValue({ owner: 'egor-xyz', repo: 'devkitty' });
+  });
+
+  describe('git:api:getRunsPage', () => {
+    it('should scope a history page to the branch that asked for it', async () => {
+      mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockResolvedValue({
+        data: { workflow_runs: [{ id: 1 }] }
+      });
+
+      const result = await handlers['git:api:getRunsPage']({}, 'proj-1', 2, 'HERO-1/thing');
+
+      expect(mockOctokitInstance.rest.actions.listWorkflowRunsForRepo).toHaveBeenCalledWith(
+        expect.objectContaining({ branch: 'HERO-1/thing', page: 2, per_page: 100 })
+      );
+      // A short page is the end of that branch's history.
+      expect(result).toEqual({ last: true, runs: [{ id: 1 }], success: true });
+    });
+
+    it('should page the whole repo when no branch is given', async () => {
+      mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockResolvedValue({
+        data: { workflow_runs: Array.from({ length: 100 }, (_, index) => ({ id: index })) }
+      });
+
+      const result = await handlers['git:api:getRunsPage']({}, 'proj-1', 1);
+
+      expect(mockOctokitInstance.rest.actions.listWorkflowRunsForRepo).toHaveBeenCalledWith(
+        expect.not.objectContaining({ branch: expect.anything() })
+      );
+      expect(result.last).toBe(false);
+    });
   });
 
   describe('git:api:reset', () => {
@@ -125,120 +159,78 @@ describe('ipcGitHub', () => {
     });
   });
 
-  describe('git:api:getAction', () => {
-    it('should return workflow runs filtered by branch', async () => {
-      const now = Date.now();
-      const recentDate = new Date(now - 1000).toISOString();
+  describe('git:api:getRuns', () => {
+    const recent = new Date().toISOString();
+    const old = new Date(Date.now() - 90000000).toISOString();
 
+    beforeEach(() => {
+      mockGetRepoInfo.mockResolvedValue({ owner: 'owner', repo: 'repo' });
+      mockSettings.get.mockReturnValue({
+        gitHubActions: { count: 5, inProgress: false },
+        gitHubToken: Buffer.from('token')
+      } as any);
+    });
+
+    it('should return runs from every branch without slicing', async () => {
       mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockResolvedValue({
         data: {
-          total_count: 1,
+          total_count: 3,
           workflow_runs: [
-            {
-              created_at: recentDate,
-              head_branch: 'main',
-              name: 'CI',
-              status: 'completed'
-            }
+            { created_at: recent, head_branch: 'main', id: 1, path: '.github/workflows/ci.yml' },
+            { created_at: recent, head_branch: 'feature', id: 2, path: '.github/workflows/ci.yml' },
+            { created_at: recent, head_branch: 'other', id: 3, path: '.github/workflows/ci.yml' }
           ]
         }
       });
 
-      const result = await handlers['git:api:getAction']({}, 'proj-1', ['main']);
+      const result = await handlers['git:api:getRuns']({}, 'proj-1');
 
       expect(result.success).toBe(true);
-      expect(result.runs).toHaveLength(1);
+      expect(result.runs.map((run: any) => run.id)).toEqual([1, 2, 3]);
     });
 
-    it('should return message when no runs exist', async () => {
-      mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockResolvedValue({
-        data: { total_count: 0, workflow_runs: [] }
-      });
-
-      const result = await handlers['git:api:getAction']({}, 'proj-1', ['main']);
-
-      expect(result).toEqual({ message: 'No running actions', success: true });
-    });
-
-    it('should filter out runs older than 24 hours', async () => {
-      const oldDate = new Date(Date.now() - 100000000).toISOString(); // > 24h ago
-
-      mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockResolvedValue({
-        data: {
-          total_count: 1,
-          workflow_runs: [
-            { created_at: oldDate, head_branch: 'main', name: 'CI', status: 'completed' }
-          ]
-        }
-      });
-
-      const result = await handlers['git:api:getAction']({}, 'proj-1', ['main']);
-
-      expect(result.success).toBe(false);
-      expect(result.message).toBe('No actions for this branch');
-    });
-
-    it('should limit runs by count setting', async () => {
-      const now = Date.now();
-      const recentDate = new Date(now - 1000).toISOString();
-
-      mockSettings.get.mockReturnValue({
-        gitHubActions: { all: true, count: 2, inProgress: false },
-        gitHubToken: Buffer.from('token')
-      } as any);
-
-      mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockResolvedValue({
-        data: {
-          total_count: 5,
-          workflow_runs: Array(5)
-            .fill(null)
-            .map((_, i) => ({
-              created_at: recentDate,
-              head_branch: 'main',
-              name: `CI-${i}`,
-              status: 'completed'
-            }))
-        }
-      });
-
-      const result = await handlers['git:api:getAction']({}, 'proj-1', ['main']);
-
-      expect(result.runs).toHaveLength(2);
-    });
-
-    it('should return error on API failure', async () => {
-      mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockRejectedValue(new Error('API error'));
-
-      const result = await handlers['git:api:getAction']({}, 'proj-1', ['main']);
-
-      expect(result).toEqual({ message: 'API error', success: false });
-    });
-
-    it('should filter by inProgress when setting is enabled', async () => {
-      const now = Date.now();
-      const recentDate = new Date(now - 1000).toISOString();
-      const olderDate = new Date(now - 3600000).toISOString(); // 1h ago (> 30min)
-
-      mockSettings.get.mockReturnValue({
-        gitHubActions: { all: true, count: 10, inProgress: true },
-        gitHubToken: Buffer.from('token')
-      } as any);
-
+    it('should drop runs older than 24 hours', async () => {
       mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockResolvedValue({
         data: {
           total_count: 2,
           workflow_runs: [
-            { created_at: recentDate, head_branch: 'main', name: 'CI-1', status: 'in_progress' },
-            { created_at: olderDate, head_branch: 'main', name: 'CI-2', status: 'completed' }
+            { created_at: recent, head_branch: 'main', id: 1, path: '.github/workflows/ci.yml' },
+            { created_at: old, head_branch: 'main', id: 2, path: '.github/workflows/ci.yml' }
           ]
         }
       });
 
-      const result = await handlers['git:api:getAction']({}, 'proj-1', ['main']);
+      const result = await handlers['git:api:getRuns']({}, 'proj-1');
 
-      // The in_progress run should pass, the completed old one should be filtered
-      expect(result.runs).toHaveLength(1);
-      expect(result.runs[0].status).toBe('in_progress');
+      expect(result.runs.map((run: any) => run.id)).toEqual([1]);
+    });
+
+    it('should return hidden workflows too, so the renderer can offer a peek', async () => {
+      mockSettings.get.mockReturnValue({
+        gitHubActions: { count: 5, ignoredWorkflows: ['.github/workflows/noisy.yml'], inProgress: false },
+        gitHubToken: Buffer.from('token')
+      } as any);
+      mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockResolvedValue({
+        data: {
+          total_count: 2,
+          workflow_runs: [
+            { created_at: recent, head_branch: 'main', id: 1, path: '.github/workflows/ci.yml' },
+            { created_at: recent, head_branch: 'main', id: 2, path: '.github/workflows/noisy.yml' }
+          ]
+        }
+      });
+
+      const result = await handlers['git:api:getRuns']({}, 'proj-1');
+
+      expect(result.runs.map((run: any) => run.id)).toEqual([1, 2]);
+    });
+
+    it('should fail when the repo cannot be resolved', async () => {
+      mockGetRepoInfo.mockResolvedValue({});
+
+      const result = await handlers['git:api:getRuns']({}, 'proj-1');
+
+      expect(result).toEqual({ message: 'Project not found', success: false });
     });
   });
 
@@ -315,6 +307,48 @@ describe('ipcGitHub', () => {
       const result = await handlers['git:api:getPulls']({}, 'proj-1', 'author');
 
       expect(result).toEqual({ message: 'Rate limited', success: false });
+    });
+  });
+
+  describe('git:api:getOpenPulls', () => {
+    beforeEach(() => {
+      mockGetRepoInfo.mockResolvedValue({ owner: 'owner', repo: 'repo' });
+      mockSettings.get.mockReturnValue({ gitHubToken: Buffer.from('token') } as any);
+    });
+
+    it('should list pull requests with head refs, newest first', async () => {
+      mockOctokitInstance.rest.pulls.list.mockResolvedValue({
+        data: [
+          { head: { ref: 'feature' }, id: 10, number: 42 },
+          { head: { ref: 'fix' }, id: 11, number: 43 }
+        ]
+      });
+
+      const result = await handlers['git:api:getOpenPulls']({}, 'proj-1');
+
+      expect(mockOctokitInstance.rest.pulls.list).toHaveBeenCalledWith({
+        direction: 'desc',
+        owner: 'owner',
+        per_page: 100,
+        repo: 'repo',
+        sort: 'updated',
+        state: 'all'
+      });
+      expect(result).toEqual({
+        pulls: [
+          { head: { ref: 'feature' }, id: 10, number: 42 },
+          { head: { ref: 'fix' }, id: 11, number: 43 }
+        ],
+        success: true
+      });
+    });
+
+    it('should fail when the repo cannot be resolved', async () => {
+      mockGetRepoInfo.mockResolvedValue({});
+
+      const result = await handlers['git:api:getOpenPulls']({}, 'proj-1');
+
+      expect(result).toEqual({ message: 'Project not found', success: false });
     });
   });
 });

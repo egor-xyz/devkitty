@@ -1,1 +1,0 @@
-export { usePulls } from './usePulls';

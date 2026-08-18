@@ -1,6 +1,5 @@
 import { Button, ButtonGroup, Icon, Menu, MenuItem, Popover, Tooltip } from '@blueprintjs/core';
-import { readableColor } from 'polished';
-import { type FC, useEffect, useState } from 'react';
+import { type CSSProperties, type FC, useEffect, useState } from 'react';
 import { cn } from 'renderer/utils/cn';
 import { timeAgo } from 'renderer/utils/timeAgo';
 import { type Pull } from 'types/gitHub';
@@ -13,7 +12,7 @@ type Check = {
 };
 
 type Props = {
-  onHide?: (pullId: number) => void;
+  onHide?: (pullId: number, label: string) => void;
   projectId: string;
   pull: Pull;
   tags?: string[];
@@ -30,7 +29,9 @@ const getChecksSummary = (checks: Check[]) => {
 };
 
 export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) => {
-  const { created_at, draft, html_url, labels, number, title, user } = pull;
+  const { created_at, draft, html_url, labels, merged_at, number, state, title, user } = pull;
+  const isMerged = Boolean(merged_at);
+  const isClosed = !isMerged && state === 'closed';
   const [checks, setChecks] = useState<Check[]>([]);
 
   useEffect(() => {
@@ -52,37 +53,86 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
   return (
     <div
       className={cn(
-        'flex relative items-center justify-between min-h-[45px] py-1 pl-5 pr-4 mt-0.5',
+        // pr-2, not pr-4: the group around this row is inset by mx-2, so the
+        // buttons still line up with the checkout row's buttons above.
+        'flex relative items-center justify-between min-h-[45px] py-1 pl-5 pr-2 gap-3 mt-0.5',
         'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2'
       )}
     >
-      <div className="overflow-hidden flex text-left justify-start gap-4 items-center">
+      <div className="overflow-hidden flex flex-1 min-w-0 text-left justify-start gap-4 items-center">
         <img
           alt={user.login}
-          className="w-[30px] h-[30px] rounded-full object-cover"
+          className="w-[30px] h-[30px] rounded-full object-cover shrink-0"
           src={user.avatar_url}
         />
 
-        <div className="overflow-hidden flex flex-col">
-          <div className="flex items-center overflow-hidden text-ellipsis whitespace-nowrap mb-0.5 gap-2">
+        <div className="overflow-hidden flex flex-col min-w-0">
+          <div className="flex items-center overflow-hidden mb-0.5 gap-2">
             {draft && '[DRAFT] '}
 
+            {/* GitHub's own state badges: purple merged, red closed, filled and
+                carrying the matching icon. shrink-0 and nowrap — a state is
+                never the thing worth truncating. */}
+            {isMerged && (
+              <div
+                className={cn(
+                  'flex items-center gap-1 rounded-full px-1.5 py-0.5 shrink-0 whitespace-nowrap',
+                  'text-[10px] text-white bg-[#8250df] dark:bg-[#8957e5]'
+                )}
+              >
+                <Icon icon="git-merge"
+                  size={10}
+                />
+                Merged
+              </div>
+            )}
+
+            {isClosed && (
+              <div
+                className={cn(
+                  'flex items-center gap-1 rounded-full px-1.5 py-0.5 shrink-0 whitespace-nowrap',
+                  'text-[10px] text-white bg-[#cf222e] dark:bg-[#da3633]'
+                )}
+              >
+                <Icon icon="cross-circle"
+                  size={10}
+                />
+                Closed
+              </div>
+            )}
+
             {user.type === 'Bot' && (
-              <div className="rounded border border-black dark:border-bp-gray-3 px-1 py-px text-[10px] text-black dark:text-bp-gray-3">
+              <div
+                className={cn(
+                  'rounded-full border border-bp-gray-2 dark:border-bp-gray-3 px-1.5 py-px text-[10px] shrink-0',
+                  'text-bp-gray-1 dark:text-bp-gray-4'
+                )}
+              >
                 bot
               </div>
             )}
 
-            {title}
+            {/* The title is the only part that may shrink — badges and labels
+                keep their width so a long title never slides under the
+                buttons on the right. It wraps to two lines before it clips. */}
+            <span className="line-clamp-2 break-words min-w-0">{title}</span>
 
+            {/* GitHub's raw label colour as a solid fill reads as a stray block
+                against the row. The colour survives as a tint and as the text,
+                so a label stays recognisable but sits in the same visual family
+                as the tags beside it. */}
             {labels.map((label: { color: string; id: number; name: string }) => (
               <div
-                className="rounded px-1 py-px text-xs"
+                className={cn(
+                  'rounded-full border px-1.5 py-px text-[10px] shrink-0',
+                  // No fill: a tinted chip reads as a different surface from
+                  // whatever it sits on. Border and text carry the colour.
+                  'border-[color-mix(in_srgb,var(--label)_45%,transparent)]',
+                  'text-[color-mix(in_srgb,var(--label)_70%,black)]',
+                  'dark:text-[color-mix(in_srgb,var(--label)_80%,white)]'
+                )}
                 key={label.id}
-                style={{
-                  backgroundColor: `#${label.color}`,
-                  color: readableColor(`#${label.color}`)
-                }}
+                style={{ '--label': `#${label.color}` } as CSSProperties}
               >
                 {label.name}
               </div>
@@ -92,7 +142,7 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
               <div
                 className={cn(
                   'rounded-full border border-bp-gray-2 dark:border-bp-gray-3 px-1.5 py-px text-[10px]',
-                  'text-bp-gray-1 dark:text-bp-gray-4 bg-bp-light-gray-5 dark:bg-bp-dark-gray-4'
+                  'text-bp-gray-1 dark:text-bp-gray-4'
                 )}
                 key={`${number}-${tag}`}
               >
@@ -150,6 +200,7 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
           placement="bottom"
         >
           <Button
+            aria-label="Open pull request in browser"
             icon="globe"
             onClick={openInBrowser}
           />
@@ -161,7 +212,7 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
               {onHide && (
                 <MenuItem
                   icon="eye-off"
-                  onClick={() => onHide(pull.id)}
+                  onClick={() => onHide(pull.id, `#${number} ${title}`)}
                   text="Hide this PR"
                 />
               )}
@@ -169,7 +220,9 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
           }
           placement="bottom-end"
         >
-          <Button icon="caret-down" />
+          <Button aria-label="Pull request actions"
+            icon="caret-down"
+          />
         </Popover>
       </ButtonGroup>
     </div>

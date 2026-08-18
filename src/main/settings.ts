@@ -21,12 +21,11 @@ export const settings = new Store<Settings>({
       fetchInterval: 10000,
       gitHubActions: {
         all: true,
-        count: 3,
-        hideDone: false,
+        count: 5,
         ignoreDependabot: false,
         ignoredWorkflows: [],
-        inProgress: false,
-        notifications: true
+        notifications: true,
+        pinnedWorkflows: []
       },
       gitHubPulls: {
         pollInterval: 300000

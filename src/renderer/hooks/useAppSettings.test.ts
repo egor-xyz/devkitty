@@ -11,9 +11,11 @@ describe('useAppSettings', () => {
       fetchInterval: 10000,
       gitHubActions: {
         all: true,
-        count: 3,
+        count: 5,
         ignoreDependabot: false,
-        inProgress: false
+        ignoredWorkflows: [],
+        notifications: true,
+        pinnedWorkflows: []
       },
       shells: [],
       showLogo: true,
@@ -45,8 +47,8 @@ describe('useAppSettings', () => {
     it('should have default gitHubActions settings', () => {
       const { gitHubActions } = useAppSettings.getState();
       expect(gitHubActions.all).toBe(true);
-      expect(gitHubActions.count).toBe(3);
-      expect(gitHubActions.inProgress).toBe(false);
+      expect(gitHubActions.ignoreDependabot).toBe(false);
+      expect(gitHubActions.notifications).toBe(true);
     });
   });
 

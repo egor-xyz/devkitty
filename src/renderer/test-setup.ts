@@ -21,10 +21,14 @@ const mockBridge = {
     reset: vi.fn()
   },
   gitAPI: {
-    getAction: vi.fn(),
     getJobs: vi.fn(),
+    getOpenPulls: vi.fn(),
+    getPinnedRuns: vi.fn(),
     getPulls: vi.fn(),
-    reset: vi.fn()
+    getRuns: vi.fn(),
+    getRunsPage: vi.fn(),
+    reset: vi.fn(),
+    searchRuns: vi.fn()
   },
   launch: {
     editor: vi.fn(),
@@ -46,7 +50,9 @@ const mockBridge = {
   },
   worktree: {
     add: vi.fn(),
+    getStatus: vi.fn(),
     list: vi.fn(),
+    pull: vi.fn(),
     remove: vi.fn()
   }
 };
