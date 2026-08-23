@@ -1,21 +1,24 @@
-import { Button, ButtonGroup, Classes, Icon, Navbar } from '@blueprintjs/core';
+import { Button, ButtonGroup, Classes, Icon, Navbar, Tooltip } from '@blueprintjs/core';
 import clsx from 'clsx';
 import { useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router';
 import Devkitty from 'renderer/assets/devkitty.svg?react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
+import { useClaudeUsage } from 'renderer/hooks/useClaudeUsage';
 import { useDarkMode } from 'renderer/hooks/useDarkMode';
 import { useFilter } from 'renderer/hooks/useFilter';
 import { useModal } from 'renderer/hooks/useModal';
 import { useProjects } from 'renderer/hooks/useProjects';
 import { cn } from 'renderer/utils/cn';
 
+import { ClaudeMark } from '../ClaudeUsage';
 import { ShinyText } from '../ShinyText';
 import { SearchInput } from './SearchInput';
 
 export const AppNavbar = () => {
   const { themeSource, toggleDarkMode } = useDarkMode();
-  const { showLogo } = useAppSettings();
+  const { set, showClaudeUsage, showLogo } = useAppSettings();
+  const claudeInstalled = useClaudeUsage((s) => s.detection.installed);
   const { addProject } = useProjects();
   const { openModal } = useModal();
   const { clear, query, setQuery } = useFilter();
@@ -134,6 +137,23 @@ export const AppNavbar = () => {
             minimal
             onClick={addSticker}
           />
+
+          {claudeInstalled && (
+            <Tooltip
+              compact
+              content={showClaudeUsage ? 'Hide Claude Code usage' : 'Show Claude Code usage'}
+              hoverOpenDelay={2000}
+              placement="bottom"
+            >
+              <Button
+                icon={<ClaudeMark className={showClaudeUsage ? 'text-[#D97757]' : undefined}
+                  size={16}
+                      />}
+                minimal
+                onClick={() => set({ showClaudeUsage: !showClaudeUsage })}
+              />
+            </Tooltip>
+          )}
 
           <NavLink
             className={({ isActive }) => clsx(Classes.BUTTON, Classes.MINIMAL, isActive && Classes.ACTIVE)}

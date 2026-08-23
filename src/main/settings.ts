@@ -31,6 +31,7 @@ export const settings = new Store<Settings>({
         pollInterval: 300000
       },
       shells: [],
+      showClaudeUsage: false,
       showLogo: true,
       showWorktrees: true
     },

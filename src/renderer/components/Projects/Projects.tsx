@@ -24,7 +24,7 @@ export const Projects = () => {
   const withGroups = groups.length > 0 && projects.length > 0 && sortedProjects.length > 1;
 
   return (
-    <div className="flex relative flex-col h-[calc(100vh-50px)]">
+    <div className="flex relative flex-col h-[calc(100vh-50px-var(--claude-footer-h))]">
       <div className="flex flex-col content-end h-full pb-1 overflow-y-auto scrollbar-none scroll-smooth">
         {!projects.length && (
           <NonIdealState

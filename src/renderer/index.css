@@ -27,6 +27,41 @@
   --color-bp-orange-2: #f0a053;
 }
 
+/* Height reserved by the Claude usage footer when it is shown, so the page
+   content shrinks to fit above it instead of hiding behind it. */
+:root {
+  --claude-footer-h: 0px;
+}
+.has-claude-footer {
+  --claude-footer-h: 44px;
+}
+
+/* Apple-style glass footer, tinted with the cool gradient (warm glow → indigo).
+   Translucent so the backdrop-blur frosts what's behind, with a top sheen and a
+   soft lift shadow. */
+.devkitty-footer-glass {
+  background: linear-gradient(90deg, rgba(233, 227, 245, 0.72) 0%, rgba(226, 233, 244, 0.72) 100%);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: 0 -6px 20px -6px rgba(0, 0, 0, 0.18);
+}
+
+.dark .devkitty-footer-glass {
+  background: linear-gradient(90deg, rgba(92, 13, 9, 0.68) 0%, rgba(56, 6, 33, 0.66) 40%, rgba(24, 3, 47, 0.68) 72%, rgba(10, 3, 55, 0.72) 100%);
+  box-shadow: 0 -8px 24px -6px rgba(0, 0, 0, 0.5);
+}
+
+/* The Claude mark rotates while usage is being read. */
+@keyframes claude-mark-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.claude-mark-spin {
+  transform-origin: center;
+  animation: claude-mark-spin 1.2s linear infinite;
+}
+
 /* Electron-specific styles */
 .app-region-drag {
   -webkit-app-region: drag;
@@ -240,7 +275,10 @@
   white-space: nowrap;
 }
 
-/* Global body background - must be at end to override other styles */
+/* Global app background — a subtle diagonal theme gradient behind the whole
+   window (content panels are transparent, so it reads through everything, the
+   way Slack tints its window). `body` covers load + edges via the OS scheme;
+   `.devkitty-app-bg` is class-based so it also follows the in-app dark toggle. */
 body {
   background-color: #dce0e5 !important;
 }

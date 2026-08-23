@@ -15,7 +15,7 @@ export const Settings = () => {
   };
 
   return (
-    <div className="h-[calc(100vh-50px)] settings-root">
+    <div className="h-[calc(100vh-50px-var(--claude-footer-h))] settings-root">
       <Tabs
         defaultSelectedTabId={id}
         onChange={handleTabChange}
