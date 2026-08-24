@@ -2,7 +2,7 @@ import { Button, ButtonGroup, Classes, Collapse, Spinner, Tag, Tooltip } from '@
 import { type FC, type ReactNode, useCallback, useEffect, useState } from 'react';
 import { FaCopy, FaRegCopy } from 'react-icons/fa';
 import { GitStatusBadge } from 'renderer/components/GitStatusBadge';
-import { useAppSettings } from 'renderer/hooks/useAppSettings';
+import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
 import { useModal } from 'renderer/hooks/useModal';
 import { cn } from 'renderer/utils/cn';
 import { type Run } from 'types/gitHub';
@@ -70,6 +70,7 @@ export const CheckoutCard: FC<Props> = ({
     selectedEditor,
     selectedShell
   } = useAppSettings();
+  const isSunset = useIsSunset();
   const [status, setStatus] = useState<CheckoutStatus | null>(null);
   const [showStray, setShowStray] = useState(false);
   const [showHidden, setShowHidden] = useState(false);
@@ -252,7 +253,7 @@ export const CheckoutCard: FC<Props> = ({
       <div
         className={cn(
           'flex relative items-center justify-start py-1 pl-5 pr-4 gap-3 w-full box-border shrink-0 mt-0.5',
-          'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
+          isSunset ? 'dk-sunset-sticky' : 'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
           // The main checkout IS the repo header, so it is taller and pins to
           // the top; worktrees pin just beneath it while their contents scroll.
           isMain ? 'h-[55px] sticky top-0 z-20' : 'h-[45px] sticky top-[55px] z-10',
@@ -429,7 +430,7 @@ export const CheckoutCard: FC<Props> = ({
           className={cn(
             // No indentation at any level. What belongs to this checkout reads
             // as recessed instead: a darker surface, sunk behind the header.
-            'bg-bp-light-gray-3 dark:bg-bp-dark-gray-1',
+            isSunset ? 'dk-sunset-body' : 'bg-bp-light-gray-3 dark:bg-bp-dark-gray-1',
             'shadow-[inset_0_3px_6px_-2px_rgba(0,0,0,0.18)] dark:shadow-[inset_0_3px_6px_-2px_rgba(0,0,0,0.55)]'
           )}
         >

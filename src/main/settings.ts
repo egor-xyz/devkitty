@@ -17,6 +17,7 @@ export const settings = new Store<Settings>({
   },
   defaults: {
     appSettings: {
+      claudeEnabled: true,
       editors: [],
       fetchInterval: 10000,
       gitHubActions: {
@@ -33,7 +34,8 @@ export const settings = new Store<Settings>({
       shells: [],
       showClaudeUsage: false,
       showLogo: true,
-      showWorktrees: true
+      showWorktrees: true,
+      theme: 'sunset'
     },
     collapsedGroups: [],
     newGroups: [],

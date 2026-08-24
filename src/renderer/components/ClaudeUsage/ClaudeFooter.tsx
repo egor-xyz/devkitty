@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useAppSettings } from 'renderer/hooks/useAppSettings';
+import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
 import { useClaudeUsage, useClaudeUsagePolling } from 'renderer/hooks/useClaudeUsage';
 import { cn } from 'renderer/utils/cn';
 
@@ -9,6 +9,7 @@ import { UsageMeter } from './UsageMeter';
 
 export const ClaudeFooter = () => {
   const { showClaudeUsage } = useAppSettings();
+  const isSunset = useIsSunset();
   const accounts = useClaudeUsage((s) => s.accounts);
   const activeDir = useClaudeUsage((s) => s.activeDir);
   const usage = useClaudeUsage((s) => s.usage);
@@ -31,7 +32,10 @@ export const ClaudeFooter = () => {
   return (
     <footer
       className={cn(
-        'devkitty-footer-glass app-region-no-drag fixed bottom-0 left-0 right-0 z-10 flex h-11 select-none items-center gap-3.5 px-4',
+        'app-region-no-drag fixed bottom-0 left-0 right-0 z-10 flex h-11 select-none items-center gap-3.5 px-4',
+        isSunset
+          ? 'devkitty-footer-glass'
+          : 'border-t border-bp-light-gray-1 bg-bp-light-gray-4 dark:border-bp-dark-gray-2 dark:bg-bp-dark-gray-1',
         'transition-transform duration-300 ease-out',
         showClaudeUsage ? 'translate-y-0' : 'pointer-events-none translate-y-full'
       )}
@@ -56,15 +60,7 @@ export const ClaudeFooter = () => {
             result="noise"
             seed={7}
             type="fractalNoise"
-          >
-            {/* Slowly churn the noise so the refraction drifts like water. */}
-            <animate
-              attributeName="baseFrequency"
-              dur="14s"
-              repeatCount="indefinite"
-              values="0.020 0.020;0.026 0.018;0.018 0.026;0.020 0.020"
-            />
-          </feTurbulence>
+          />
 
           <feGaussianBlur
             in="noise"

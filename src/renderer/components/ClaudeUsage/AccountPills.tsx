@@ -11,37 +11,46 @@ type Props = {
 
 export const AccountPills = ({ accounts, activeDir, onSelect }: Props) => {
   const buttons = useRef<(HTMLButtonElement | null)[]>([]);
-  const [indicator, setIndicator] = useState<{ left: number; width: number }>({ left: 0, width: 0 });
+  const [indicator, setIndicator] = useState<{ height: number; left: number; top: number; width: number }>({
+    height: 0,
+    left: 0,
+    top: 0,
+    width: 0
+  });
 
   const activeIndex = Math.max(
     0,
     accounts.findIndex((a) => a.dir === activeDir)
   );
 
-  // Measure the active button so the glass slides to exactly where it sits,
-  // regardless of the tooltip wrappers around each one.
+  // Measure the active button's exact box so the glass sits precisely on it —
+  // matching top/height too, not just left/width, keeps the digit centred.
   useLayoutEffect(() => {
     const el = buttons.current[activeIndex];
-    if (el) setIndicator({ left: el.offsetLeft, width: el.offsetWidth });
+    if (el) setIndicator({ height: el.offsetHeight, left: el.offsetLeft, top: el.offsetTop, width: el.offsetWidth });
   }, [activeIndex, accounts.length]);
 
   // Nothing to switch between with a single account.
   if (accounts.length < 2) return null;
 
   return (
-    <div className="relative flex items-center gap-1">
+    <div className="relative flex items-center gap-1 rounded-[10px] bg-black/20 p-0.5 ring-1 ring-white/10">
+      {/* Liquid-glass pill that slides under the active account. The refraction
+          comes from the #dk-liquid-glass SVG filter used as a backdrop-filter;
+          the layered highlights give it a wet, domed look. */}
       <span
         aria-hidden
         className={cn(
-          'pointer-events-none absolute top-0 h-6 rounded-[8px] border border-white/40',
-          'bg-gradient-to-b from-white/35 to-white/10',
-          'shadow-[inset_0_1px_0_rgba(255,255,255,0.7),inset_0_-1px_2px_rgba(255,255,255,0.15),0_2px_6px_rgba(0,0,0,0.28)]'
+          'pointer-events-none absolute left-0 top-0 rounded-[8px] border border-white/45',
+          'bg-gradient-to-b from-white/40 via-white/15 to-white/5',
+          'shadow-[inset_0_1px_0.5px_rgba(255,255,255,0.85),inset_0_-2px_3px_rgba(255,255,255,0.12),inset_0_0_8px_rgba(197,138,214,0.25),0_2px_8px_rgba(0,0,0,0.35)]'
         )}
         style={{
-          backdropFilter: 'url(#dk-liquid-glass) saturate(1.8) brightness(1.08)',
-          transform: `translateX(${indicator.left}px)`,
-          transition: 'transform 0.45s cubic-bezier(0.34, 1.4, 0.5, 1), width 0.45s cubic-bezier(0.34, 1.4, 0.5, 1)',
-          WebkitBackdropFilter: 'url(#dk-liquid-glass) saturate(1.8) brightness(1.08)',
+          backdropFilter: 'url(#dk-liquid-glass) saturate(1.9) brightness(1.1)',
+          height: indicator.height,
+          transform: `translate(${indicator.left}px, ${indicator.top}px)`,
+          transition: 'transform 0.5s cubic-bezier(0.34, 1.56, 0.5, 1), width 0.5s cubic-bezier(0.34, 1.56, 0.5, 1)',
+          WebkitBackdropFilter: 'url(#dk-liquid-glass) saturate(1.9) brightness(1.1)',
           width: indicator.width
         }}
       />
@@ -65,10 +74,10 @@ export const AccountPills = ({ accounts, activeDir, onSelect }: Props) => {
           >
             <button
               className={cn(
-                'app-region-no-drag relative z-10 flex h-6 w-6 items-center justify-center rounded-[7px] text-[11px] font-semibold tabular-nums transition-colors',
+                'app-region-no-drag relative z-10 flex h-6 w-6 items-center justify-center rounded-[7px] text-[11px] font-semibold tabular-nums transition-colors duration-300',
                 active
-                  ? 'text-bp-dark-gray-1 dark:text-white'
-                  : 'text-bp-gray-1 hover:text-bp-dark-gray-1 dark:text-white/55 dark:hover:text-white/85'
+                  ? 'text-white drop-shadow-[0_1px_1px_rgba(0,0,0,0.4)]'
+                  : 'text-white/55 hover:text-white/85'
               )}
               onClick={() => onSelect(account.dir)}
               ref={(el) => {

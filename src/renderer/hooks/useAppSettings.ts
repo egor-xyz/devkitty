@@ -6,6 +6,7 @@ type Actions = {
 };
 
 export const useAppSettings = create<Actions & AppSettings>((set) => ({
+  claudeEnabled: true,
   editors: [],
   fetchInterval: 10000,
   gitHubActions: {
@@ -28,8 +29,11 @@ export const useAppSettings = create<Actions & AppSettings>((set) => ({
   shells: [],
   showClaudeUsage: false,
   showLogo: true,
-  showWorktrees: true
+  showWorktrees: true,
+  theme: 'sunset'
 }));
+
+export const useIsSunset = () => useAppSettings((s) => (s.theme ?? 'sunset') === 'sunset');
 
 (async () => {
   const state = await window.bridge.settings.get('appSettings');
