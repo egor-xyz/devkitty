@@ -8,6 +8,8 @@ import { type ThemeSource } from 'types/Modal';
 import { type GitStatus, type Project } from 'types/project';
 import { type Settings } from 'types/settings';
 
+import { demoBridge } from './demo/bridge';
+
 const bridge = {
   claude: {
     accounts: (): Promise<ClaudeAccount[]> => ipcRenderer.invoke('claude:accounts'),
@@ -73,6 +75,19 @@ const bridge = {
   }
 };
 
-contextBridge.exposeInMainWorld('bridge', bridge);
+// Demo mode swaps in a fully-faked bridge for screenshots. Gated on DEV only, so
+// a production build can never enable it — neither the env var nor the localStorage
+// flag the Settings toggle sets are read once this is a packaged build.
+const demoEnabled = () => {
+  if (!import.meta.env.DEV) return false;
+  if (process.env.DK_DEMO === '1') return true;
+  try {
+    return window.localStorage.getItem('dk-demo') === '1';
+  } catch {
+    return false;
+  }
+};
+
+contextBridge.exposeInMainWorld('bridge', demoEnabled() ? demoBridge : bridge);
 
 export type Bridge = typeof bridge;
