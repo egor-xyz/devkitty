@@ -214,14 +214,16 @@
    lavender fill with a bright white highlight band sweeping across it. The text
    itself is the gradient (text-fill transparent), so the sweep is crisp. */
 .theme-sunset .shiny-text {
+  /* Dim lavender base with a bright white highlight band, so the moving sweep
+     is clearly visible (an all-light gradient made the shimmer invisible). */
   background: linear-gradient(
     110deg,
-    #c7bce4 0%,
-    #c7bce4 40%,
-    #ffffff 48%,
-    #f3d9ff 52%,
-    #c7bce4 60%,
-    #c7bce4 100%
+    #8b7fb0 0%,
+    #8b7fb0 38%,
+    #ffffff 50%,
+    #f3d9ff 55%,
+    #8b7fb0 66%,
+    #8b7fb0 100%
   ) !important;
   background-size: 220% 100% !important;
   -webkit-background-clip: text !important;
@@ -230,7 +232,7 @@
   color: transparent !important;
 }
 .theme-sunset .shiny-text.animate {
-  animation: shine 4s linear infinite !important;
+  animation: shine 3.2s linear infinite !important;
 }
 
 /* Navbar shadow effect for dark mode */
@@ -414,12 +416,16 @@
 .theme-sunset .bp6-dark .bp6-popover-content,
 .theme-sunset .dark .bp6-menu,
 .theme-sunset .bp6-dark .bp6-menu {
-  background-color: #241232 !important;
+  /* Warm red → purple sunset glass, so popovers match the app surfaces instead
+     of reading as a flat off-theme box. Kept near-opaque for legible text. */
+  background-color: #2a1230 !important;
+  background-image: linear-gradient(160deg, rgba(77, 20, 16, 0.96) 0%, rgba(54, 15, 54, 0.97) 52%, rgba(36, 16, 63, 0.98) 100%) !important;
+  box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(199, 188, 228, 0.14) !important;
   color: #efe8f5 !important;
 }
 .theme-sunset .dark .bp6-popover-arrow-fill,
 .theme-sunset .bp6-dark .bp6-popover-arrow-fill {
-  fill: #241232 !important;
+  fill: #3a123a !important;
 }
 .theme-sunset .dark .bp6-menu-item:hover,
 .theme-sunset .bp6-dark .bp6-menu-item:hover {
