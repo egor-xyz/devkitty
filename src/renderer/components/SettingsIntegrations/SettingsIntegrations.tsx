@@ -1,4 +1,4 @@
-import { Button, Divider, InputGroup, MenuItem } from '@blueprintjs/core';
+import { Button, Divider, InputGroup, MenuItem, Switch } from '@blueprintjs/core';
 import { Select } from '@blueprintjs/select';
 import { useState } from 'react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
@@ -7,7 +7,7 @@ import { type FoundEditor } from 'types/foundEditor';
 import { type FoundShell } from 'types/foundShell';
 
 export const SettingsIntegrations = () => {
-  const { editors, gitHubToken, selectedEditor, selectedShell, set, shells } = useAppSettings();
+  const { claudeEnabled, editors, gitHubToken, selectedEditor, selectedShell, set, shells } = useAppSettings();
   const [token, setToken] = useState(gitHubToken ?? '');
 
   const saveToken = async () => {
@@ -42,6 +42,14 @@ export const SettingsIntegrations = () => {
           text={'Set GitHub Token'}
         />
       </div>
+
+      <h3 className="text-sm font-semibold mt-4 mb-2.5">Claude Code</h3>
+
+      <Switch
+        checked={claudeEnabled ?? true}
+        label="Usage integration"
+        onChange={() => set({ claudeEnabled: !(claudeEnabled ?? true) })}
+      />
 
       {editors.length !== 0 && Boolean(selectedEditor) && (
         <>

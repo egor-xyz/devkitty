@@ -1,5 +1,6 @@
 import { Button, ButtonGroup, Icon, Menu, MenuItem, Popover, Tooltip } from '@blueprintjs/core';
 import { type CSSProperties, type FC, useEffect, useState } from 'react';
+import { useIsSunset } from 'renderer/hooks/useAppSettings';
 import { cn } from 'renderer/utils/cn';
 import { timeAgo } from 'renderer/utils/timeAgo';
 import { type Pull } from 'types/gitHub';
@@ -32,6 +33,7 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
   const { created_at, draft, html_url, labels, merged_at, number, state, title, user } = pull;
   const isMerged = Boolean(merged_at);
   const isClosed = !isMerged && state === 'closed';
+  const isSunset = useIsSunset();
   const [checks, setChecks] = useState<Check[]>([]);
 
   useEffect(() => {
@@ -56,7 +58,7 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
         // pr-2, not pr-4: the group around this row is inset by mx-2, so the
         // buttons still line up with the checkout row's buttons above.
         'flex relative items-center justify-between min-h-[45px] py-1 pl-5 pr-2 gap-3 mt-0.5',
-        'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2'
+        isSunset ? 'dk-sunset-row' : 'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2'
       )}
     >
       <div className="overflow-hidden flex flex-1 min-w-0 text-left justify-start gap-4 items-center">
@@ -66,7 +68,7 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
           src={user.avatar_url}
         />
 
-        <div className="overflow-hidden flex flex-col min-w-0">
+        <div className="overflow-hidden flex flex-col min-w-0 flex-1">
           <div className="flex items-center overflow-hidden mb-0.5 gap-2">
             {draft && '[DRAFT] '}
 
@@ -112,43 +114,10 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
               </div>
             )}
 
-            {/* The title is the only part that may shrink — badges and labels
-                keep their width so a long title never slides under the
-                buttons on the right. It wraps to two lines before it clips. */}
+            {/* The title is the only part that may shrink. It wraps to two
+                lines before it clips; the labels/tags live in a sibling that
+                centres against the whole card, not just the title line. */}
             <span className="line-clamp-2 break-words min-w-0">{title}</span>
-
-            {/* GitHub's raw label colour as a solid fill reads as a stray block
-                against the row. The colour survives as a tint and as the text,
-                so a label stays recognisable but sits in the same visual family
-                as the tags beside it. */}
-            {labels.map((label: { color: string; id: number; name: string }) => (
-              <div
-                className={cn(
-                  'rounded-full border px-1.5 py-px text-[10px] shrink-0',
-                  // No fill: a tinted chip reads as a different surface from
-                  // whatever it sits on. Border and text carry the colour.
-                  'border-[color-mix(in_srgb,var(--label)_45%,transparent)]',
-                  'text-[color-mix(in_srgb,var(--label)_70%,black)]',
-                  'dark:text-[color-mix(in_srgb,var(--label)_80%,white)]'
-                )}
-                key={label.id}
-                style={{ '--label': `#${label.color}` } as CSSProperties}
-              >
-                {label.name}
-              </div>
-            ))}
-
-            {tags.map((tag) => (
-              <div
-                className={cn(
-                  'rounded-full border border-bp-gray-2 dark:border-bp-gray-3 px-1.5 py-px text-[10px]',
-                  'text-bp-gray-1 dark:text-bp-gray-4'
-                )}
-                key={`${number}-${tag}`}
-              >
-                {tag}
-              </div>
-            ))}
           </div>
 
           <div className="flex items-center overflow-hidden whitespace-nowrap text-ellipsis -mt-px text-xs font-light dark:text-bp-gray-3 gap-2">
@@ -191,6 +160,40 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
             )}
           </div>
         </div>
+
+        {/* Labels + tags sit here, not in the title line, so they centre
+            against the full card height (like the avatar and buttons) even when
+            the title wraps to two lines. */}
+        {(labels.length > 0 || tags.length > 0) && (
+          <div className="flex items-center gap-2 shrink-0">
+            {labels.map((label: { color: string; id: number; name: string }) => (
+              <div
+                className={cn(
+                  'rounded-full border px-1.5 py-px text-[10px] shrink-0',
+                  'border-[color-mix(in_srgb,var(--label)_45%,transparent)]',
+                  'text-[color-mix(in_srgb,var(--label)_70%,black)]',
+                  'dark:text-[color-mix(in_srgb,var(--label)_80%,white)]'
+                )}
+                key={label.id}
+                style={{ '--label': `#${label.color}` } as CSSProperties}
+              >
+                {label.name}
+              </div>
+            ))}
+
+            {tags.map((tag) => (
+              <div
+                className={cn(
+                  'rounded-full border border-bp-gray-2 dark:border-bp-gray-3 px-1.5 py-px text-[10px]',
+                  'text-bp-gray-1 dark:text-bp-gray-4'
+                )}
+                key={`${number}-${tag}`}
+              >
+                {tag}
+              </div>
+            ))}
+          </div>
+        )}
       </div>
 
       <ButtonGroup>

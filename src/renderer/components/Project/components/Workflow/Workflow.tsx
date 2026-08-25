@@ -1,7 +1,7 @@
 import { Button, ButtonGroup, Collapse, Menu, MenuDivider, MenuItem, Popover, Tooltip } from '@blueprintjs/core';
 import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
 import { getStatusIcon } from 'renderer/assets/gitHubStatusUtils';
-import { useAppSettings } from 'renderer/hooks/useAppSettings';
+import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
 import { useModal } from 'renderer/hooks/useModal';
 import { cn } from 'renderer/utils/cn';
 import { timeAgo } from 'renderer/utils/timeAgo';
@@ -63,6 +63,7 @@ export const Workflow: FC<Props> = ({ onRefresh, project, run, stickyTop = 55 })
   } = run;
   const { openModal } = useModal();
   const { gitHubActions, set } = useAppSettings();
+  const isSunset = useIsSunset();
   const pinnedWorkflows = gitHubActions.pinnedWorkflows ?? [];
   const isPinned = pinnedWorkflows.includes(path);
 
@@ -198,12 +199,16 @@ export const Workflow: FC<Props> = ({ onRefresh, project, run, stickyTop = 55 })
         className={cn(
           // pr-2, not pr-4: the group around this row is inset by mx-2, so the
           // buttons still line up with the checkout row's buttons above.
-          'flex relative items-center justify-between min-h-[45px] py-1 pl-5 pr-2 gap-2 w-full box-border shrink-0 mt-0.5 cursor-pointer',
-          'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2 hover:opacity-90',
+          'flex relative items-center justify-between min-h-[45px] py-1 pl-5 pr-2 gap-2 w-full box-border shrink-0 mt-0.5 cursor-pointer hover:opacity-90',
           // With its jobs open the run is a header in its own right: it pins
           // under the checkout above it so you keep sight of which run you are
-          // reading a long job list for.
-          isOpen && 'sticky z-[5]'
+          // reading a long job list for. Opaque only while pinned, so nothing
+          // scrolling beneath bleeds through; otherwise translucent glass.
+          isSunset
+            ? isOpen
+              ? 'sticky z-[5] dk-sunset-sticky'
+              : 'dk-sunset-row'
+            : cn('bg-bp-light-gray-4 dark:bg-bp-dark-gray-2', isOpen && 'sticky z-[5]')
         )}
         onClick={toggleJobs}
         onKeyDown={(event) => {

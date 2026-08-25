@@ -1,5 +1,6 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 import { type AppSettings } from 'types/appSettings';
+import { type ClaudeAccount, type ClaudeDetection, type ClaudeUsage } from 'types/claudeUsage';
 import { type FoundEditor } from 'types/foundEditor';
 import { type FoundShell } from 'types/foundShell';
 import { type pullTypes } from 'types/gitHub';
@@ -8,6 +9,11 @@ import { type GitStatus, type Project } from 'types/project';
 import { type Settings } from 'types/settings';
 
 const bridge = {
+  claude: {
+    accounts: (): Promise<ClaudeAccount[]> => ipcRenderer.invoke('claude:accounts'),
+    detect: (): Promise<ClaudeDetection> => ipcRenderer.invoke('claude:detect'),
+    usage: (account: ClaudeAccount): Promise<ClaudeUsage> => ipcRenderer.invoke('claude:usage', account)
+  },
   darkMode: {
     on: (callback: (event: IpcRendererEvent, theme: ThemeSource) => void) => ipcRenderer.on('theme-changed', callback),
     set: (theme: ThemeSource) => ipcRenderer.invoke('dark-mode:set', theme),
