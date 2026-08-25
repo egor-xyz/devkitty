@@ -25,11 +25,15 @@ export const App = () => {
   const claudeActive = claudeEnabled && !onSettings;
   const footerVisible = showClaudeUsage && hasAccounts && claudeActive;
 
-  // Mirror the Sunset flag onto <html> so theme rules also reach Blueprint
-  // popovers/menus, which portal to document.body outside the App root.
+  // Mirror the Sunset flag AND the dark flag onto <html> so theme rules — and
+  // Tailwind's `dark:` variants — also reach Blueprint popovers/menus, which
+  // portal to document.body outside the App root. Without the dark mirror,
+  // portaled popover text falls back to light-mode colours and vanishes on the
+  // dark popover background.
   useEffect(() => {
     document.documentElement.classList.toggle('theme-sunset', isSunset);
-  }, [isSunset]);
+    document.documentElement.classList.toggle('dark', darkMode);
+  }, [darkMode, isSunset]);
 
   return (
     <div

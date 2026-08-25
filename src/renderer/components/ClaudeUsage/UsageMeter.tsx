@@ -127,7 +127,6 @@ export const UsageMeter = ({ label, now, reportedAt, title, window }: Props) => 
       interactionKind="hover"
       minimal
       placement="top"
-      usePortal={false}
     >
       <div className="flex w-full cursor-default items-center gap-3">
         <span className="shrink-0 rounded bg-black/5 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wider text-bp-gray-1 dark:bg-white/10 dark:text-white/85">
