@@ -100,10 +100,10 @@ export const removeScope = (entries: IgnoredWorkflow[], path: string, scope: Wor
     .filter((item) => item.scopes.length > 0);
 
 const scopeLabels: Record<WorkflowScope, string> = {
-  all: 'Everywhere',
-  'non-pr': 'Non-PR',
-  pr: 'Pull requests',
-  root: 'main',
+  all: 'everywhere',
+  'non-pr': 'non-PR',
+  pr: 'pull requests',
+  root: 'root',
   worktree: 'worktrees'
 };
 

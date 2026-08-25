@@ -118,7 +118,7 @@ export const SettingsActions = () => {
   // hidden in — "Everywhere", "main", "Pull requests" — so any one can be lifted
   // without touching the others.
   const workflowRows: ListRow[] = ignoredWorkflows.map(({ path, scopes }) => ({
-    actions: scopes.map((scope) => ({ label: scopeLabel(scope), onUnhide: () => unhideScope(path, scope) })),
+    actions: scopes.map((scope) => ({ label: `Unhide ${scopeLabel(scope)}`, onUnhide: () => unhideScope(path, scope) })),
     label: workflowName(path),
     rowKey: path
   }));

@@ -138,10 +138,10 @@ describe('removeScope', () => {
 
 describe('scopeLabel', () => {
   it('should name every scope', () => {
-    expect(scopeLabel('all')).toBe('Everywhere');
-    expect(scopeLabel('root')).toBe('main');
+    expect(scopeLabel('all')).toBe('everywhere');
+    expect(scopeLabel('root')).toBe('root');
     expect(scopeLabel('worktree')).toBe('worktrees');
-    expect(scopeLabel('pr')).toBe('Pull requests');
-    expect(scopeLabel('non-pr')).toBe('Non-PR');
+    expect(scopeLabel('pr')).toBe('pull requests');
+    expect(scopeLabel('non-pr')).toBe('non-PR');
   });
 });
