@@ -10,7 +10,10 @@ export const ThemeSelector = () => {
 
   const buttonClass = 'text-center cursor-pointer flex flex-col justify-between gap-1 text-[13px]';
   const imgClass = (active: boolean) =>
-    cn('overflow-hidden block rounded-xl w-[120px] border-3 border-transparent object-cover', active && 'border-blue-500');
+    cn(
+      'overflow-hidden block rounded-xl w-[120px] border-3 border-transparent object-cover',
+      active && 'border-blue-500 ring-2 ring-blue-400 ring-offset-2 ring-offset-transparent'
+    );
 
   return (
     <div className="w-[420px] flex justify-between mx-auto mb-5">

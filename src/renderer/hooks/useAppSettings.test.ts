@@ -44,6 +44,10 @@ describe('useAppSettings', () => {
       expect(useAppSettings.getState().showWorktrees).toBe(true);
     });
 
+    it('should have sunset theme by default', () => {
+      expect(useAppSettings.getState().theme).toBe('sunset');
+    });
+
     it('should have default gitHubActions settings', () => {
       const { gitHubActions } = useAppSettings.getState();
       expect(gitHubActions.all).toBe(true);

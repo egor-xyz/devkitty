@@ -1,23 +1,25 @@
-import { Button, ButtonGroup, Classes, Icon, Navbar } from '@blueprintjs/core';
+import { Button, ButtonGroup, Classes, Icon, Navbar, Tooltip } from '@blueprintjs/core';
 import clsx from 'clsx';
 import { useEffect, useRef } from 'react';
 import { NavLink, useLocation } from 'react-router';
 import Devkitty from 'renderer/assets/devkitty.svg?react';
-import { useAppSettings } from 'renderer/hooks/useAppSettings';
+import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
+import { useClaudeUsage } from 'renderer/hooks/useClaudeUsage';
 import { useDarkMode } from 'renderer/hooks/useDarkMode';
 import { useFilter } from 'renderer/hooks/useFilter';
-import { useModal } from 'renderer/hooks/useModal';
 import { useProjects } from 'renderer/hooks/useProjects';
 import { cn } from 'renderer/utils/cn';
 
+import { ClaudeMark } from '../ClaudeUsage';
 import { ShinyText } from '../ShinyText';
 import { SearchInput } from './SearchInput';
 
 export const AppNavbar = () => {
   const { themeSource, toggleDarkMode } = useDarkMode();
-  const { showLogo } = useAppSettings();
+  const { claudeEnabled, set, showClaudeUsage, showLogo } = useAppSettings();
+  const isSunset = useIsSunset();
+  const claudeInstalled = useClaudeUsage((s) => s.detection.installed);
   const { addProject } = useProjects();
-  const { openModal } = useModal();
   const { clear, query, setQuery } = useFilter();
   const searchRef = useRef<HTMLInputElement>(null);
   const onHome = useLocation().pathname === '/';
@@ -49,13 +51,6 @@ export const AppNavbar = () => {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [clear]);
 
-  const addSticker = () => {
-    openModal({
-      name: 'sticker:add',
-      props: {}
-    });
-  };
-
   const refresh = () => {
     window.location.reload();
   };
@@ -64,7 +59,9 @@ export const AppNavbar = () => {
     <Navbar
       className={cn(
         'app-region-drag select-none !shadow-none overflow-hidden',
-        '!bg-bp-light-gray-4 dark:!bg-bp-dark-gray-1 dark:border-b dark:border-bp-dark-gray-2'
+        isSunset
+          ? 'devkitty-header-grad'
+          : '!bg-bp-light-gray-4 dark:!bg-bp-dark-gray-1 dark:border-b dark:border-bp-dark-gray-2'
       )}
     >
       <Navbar.Group className="app-region-no-drag ml-[70px] overflow-hidden">
@@ -74,14 +71,16 @@ export const AppNavbar = () => {
           onClick={addProject}
         />
 
-        <div className="navbar-shadow-container hidden dark:block">
-          <div className="navbar-shadow" />
-        </div>
+        {!isSunset && (
+          <div className="navbar-shadow-container hidden dark:block">
+            <div className="navbar-shadow" />
+          </div>
+        )}
 
         <div
           className={cn(
             'app-region-drag ml-1.5 text-lg select-none pointer-events-none',
-            'dark:-ml-[42px] dark:text-bp-dark-gray-3'
+            isSunset ? 'dark:text-bp-light-gray-4' : 'dark:-ml-[42px] dark:text-bp-dark-gray-3'
           )}
         >
           <ShinyText text="devkitty" />
@@ -129,11 +128,22 @@ export const AppNavbar = () => {
             />
           )}
 
-          <Button
-            icon="pin"
-            minimal
-            onClick={addSticker}
-          />
+          {claudeInstalled && claudeEnabled && (
+            <Tooltip
+              compact
+              content={showClaudeUsage ? 'Hide Claude Code usage' : 'Show Claude Code usage'}
+              hoverOpenDelay={2000}
+              placement="bottom"
+            >
+              <Button
+                icon={<ClaudeMark className={showClaudeUsage ? 'text-[#D97757]' : undefined}
+                  size={16}
+                      />}
+                minimal
+                onClick={() => set({ showClaudeUsage: !showClaudeUsage })}
+              />
+            </Tooltip>
+          )}
 
           <NavLink
             className={({ isActive }) => clsx(Classes.BUTTON, Classes.MINIMAL, isActive && Classes.ACTIVE)}

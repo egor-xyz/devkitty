@@ -37,7 +37,7 @@ const readExpanded = (projectId: string, path: string): boolean | null => {
 
 export const Project: FC<Props> = ({ project }) => {
   const { getStatus, gitStatus, loading, pull } = useGit();
-  const { gitHubToken, set, showWorktrees } = useAppSettings();
+  const { gitHubToken, showWorktrees: showWorktreesDefault } = useAppSettings();
   const { openModal } = useModal();
   const { query } = useFilter();
 
@@ -57,6 +57,9 @@ export const Project: FC<Props> = ({ project }) => {
   // Fetching runs costs API budget, so a repo is only polled while at least
   // one of its cards is open.
   const [expandedPaths, setExpandedPaths] = useState<Record<string, boolean>>({});
+  // Worktree visibility is per repo (the global Appearance setting is only the
+  // default) so one repo's git-branch toggle never lights up every other repo.
+  const [showWorktrees, setShowWorktrees] = useState(showWorktreesDefault);
   const [showMerged, setShowMerged] = useState(false);
   const [pulling, setPulling] = useState(false);
   const openedForPull = useRef<Set<string>>(new Set());
@@ -285,7 +288,7 @@ export const Project: FC<Props> = ({ project }) => {
                 showDetails={Boolean(mainPath && expandedPaths[mainPath])}
                 showWorktrees={showWorktrees}
                 toggleDetails={toggleMain}
-                toggleWorktrees={() => set({ showWorktrees: !showWorktrees })}
+                toggleWorktrees={() => setShowWorktrees((value) => !value)}
               />
 
               <ButtonGroup large>
@@ -328,6 +331,7 @@ export const Project: FC<Props> = ({ project }) => {
                 >
                   <Button
                     aria-label="Repository actions"
+                    className="dk-narrow-icon-btn"
                     icon="caret-down"
                     intent={behind ? 'warning' : 'none'}
                   />

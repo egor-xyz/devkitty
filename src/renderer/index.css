@@ -27,6 +27,76 @@
   --color-bp-orange-2: #f0a053;
 }
 
+/* Height reserved by the Claude usage footer when it is shown, so the page
+   content shrinks to fit above it instead of hiding behind it. */
+:root {
+  --claude-footer-h: 0px;
+}
+.has-claude-footer {
+  --claude-footer-h: 44px;
+}
+
+/* Apple-style glass footer, tinted with the cool gradient (warm glow → indigo).
+   Translucent so the backdrop-blur frosts what's behind, with a top sheen and a
+   soft lift shadow. */
+.devkitty-footer-glass {
+  background: linear-gradient(90deg, rgba(233, 227, 245, 0.72) 0%, rgba(226, 233, 244, 0.72) 100%);
+  backdrop-filter: blur(20px) saturate(150%);
+  -webkit-backdrop-filter: blur(20px) saturate(150%);
+  box-shadow: 0 -6px 20px -6px rgba(0, 0, 0, 0.18);
+}
+
+.dark .devkitty-footer-glass {
+  background: linear-gradient(90deg, rgba(92, 13, 9, 0.68) 0%, rgba(56, 6, 33, 0.66) 40%, rgba(24, 3, 47, 0.68) 72%, rgba(10, 3, 55, 0.72) 100%);
+  box-shadow: 0 -8px 24px -6px rgba(0, 0, 0, 0.5);
+}
+
+/* Themed header — the SAME left-to-right gradient as the footer, so the warm
+   glow and indigo run through the whole window (top band + bottom band read as
+   one field). */
+.devkitty-header-grad {
+  background: linear-gradient(90deg, #e7e0f0 0%, #e9e7f3 50%, #e2e9f4 100%) !important;
+}
+
+.dark .devkitty-header-grad,
+.devkitty-header-grad.dark {
+  background: linear-gradient(90deg, #5c0d09 0%, #380621 40%, #18032f 72%, #0a0337 100%) !important;
+}
+
+/* App background — the same left-to-right field as the header and footer, so a
+   translucent row shows a red→indigo slice and the gradient runs through every
+   line of the window. */
+.devkitty-app-bg {
+  background: linear-gradient(90deg, #e7e0f0 0%, #e9e7f3 50%, #e2e9f4 100%);
+}
+
+.devkitty-app-bg.dark {
+  background: linear-gradient(90deg, #5c0d09 0%, #380621 40%, #18032f 72%, #0a0337 100%);
+}
+
+/* Gradient window frame — 2px bars down the left (warm) and right (indigo)
+   edges that connect the header band to the footer band, closing the frame. */
+.devkitty-edge-l,
+.devkitty-edge-r {
+  background: linear-gradient(180deg, #e7e0f0 0%, #e9e7f3 50%, #e2e9f4 100%);
+}
+
+.dark .devkitty-edge-l,
+.dark .devkitty-edge-r {
+  background: linear-gradient(180deg, #5c0d09 0%, #380621 40%, #18032f 72%, #0a0337 100%);
+}
+
+/* The Claude mark rotates while usage is being read. */
+@keyframes claude-mark-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.claude-mark-spin {
+  transform-origin: center;
+  animation: claude-mark-spin 1.2s linear infinite;
+}
+
 /* Electron-specific styles */
 .app-region-drag {
   -webkit-app-region: drag;
@@ -43,6 +113,38 @@
 .scrollbar-none::-webkit-scrollbar {
   width: 0;
   height: 0;
+}
+
+/* Thin, custom scrollbars everywhere (Chromium/Electron). The thumb is inset by
+   a transparent border + background-clip so it reads as a slim rounded pill; the
+   track is invisible. Except .scrollbar-none, which stays hidden. */
+*::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+*::-webkit-scrollbar-track {
+  background: transparent;
+}
+*::-webkit-scrollbar-thumb {
+  background-color: rgba(0, 0, 0, 0.22);
+  background-clip: content-box;
+  border: 3px solid transparent;
+  border-radius: 9999px;
+}
+*::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(0, 0, 0, 0.38);
+  background-clip: content-box;
+}
+*::-webkit-scrollbar-corner {
+  background: transparent;
+}
+.dark *::-webkit-scrollbar-thumb {
+  background-color: rgba(255, 255, 255, 0.2);
+  background-clip: content-box;
+}
+.dark *::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(255, 255, 255, 0.35);
+  background-clip: content-box;
 }
 
 /* AppLoader animation */
@@ -106,6 +208,29 @@
 
 .shiny-text.animate {
   animation: shine 3s linear infinite;
+}
+
+/* Sunset wordmark — a proper gradient-clip shimmer: the whole word is a light
+   lavender fill with a bright white highlight band sweeping across it. The text
+   itself is the gradient (text-fill transparent), so the sweep is crisp. */
+.theme-sunset .shiny-text {
+  background: linear-gradient(
+    110deg,
+    #c7bce4 0%,
+    #c7bce4 40%,
+    #ffffff 48%,
+    #f3d9ff 52%,
+    #c7bce4 60%,
+    #c7bce4 100%
+  ) !important;
+  background-size: 220% 100% !important;
+  -webkit-background-clip: text !important;
+  background-clip: text !important;
+  -webkit-text-fill-color: transparent !important;
+  color: transparent !important;
+}
+.theme-sunset .shiny-text.animate {
+  animation: shine 4s linear infinite !important;
 }
 
 /* Navbar shadow effect for dark mode */
@@ -203,6 +328,154 @@
   background-color: #252a31;
 }
 
+/* Sunset: the settings panel drops its solid fill so the app gradient reads
+   through, matching the rest of the window. */
+.settings-root.theme-sunset .bp6-tab-panel,
+.bp6-dark.settings-root.theme-sunset .bp6-tab-panel,
+.bp6-dark .settings-root.theme-sunset .bp6-tab-panel {
+  background-color: transparent;
+}
+
+/* Style-selector card previews — the real theme background rendered inside a
+   mini card so the choice is visible, not guessed. */
+.dk-preview-default {
+  background-color: #dce0e5;
+}
+.dark .dk-preview-default {
+  background-color: #252a31;
+}
+.dk-preview-sunset {
+  background: linear-gradient(90deg, #e7e0f0 0%, #e9e7f3 50%, #e2e9f4 100%);
+}
+.dark .dk-preview-sunset {
+  background: linear-gradient(90deg, #5c0d09 0%, #380621 40%, #18032f 72%, #0a0337 100%);
+}
+
+/* ---------------------------------------------------------------------------
+   Sunset surface tinting. Blueprint buttons and the app's grey cards/chips read
+   as muddy grey blocks on the warm→indigo gradient. Under .theme-sunset they
+   become translucent glass with a warm-neutral edge so they sit in the same
+   visual family as the gradient. Scoped to .theme-sunset only — Default is
+   untouched. Intent buttons (the gold pull, success, danger) keep their colour.
+   --------------------------------------------------------------------------- */
+
+/* Sunset buttons — one solid, opaque control surface used on both the dark rows
+   and the gradient header. Opaque so the gradient never bleeds through (no
+   "washed" look); a hair lighter than the rows plus a border + shadow so it
+   reads as a raised button (never vanishes into the row). */
+.theme-sunset.dark .bp6-button:not(.bp6-minimal):not([class*='bp6-intent-']) {
+  background-color: #342c41 !important;
+  background-image: none !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+  color: #e6dff0 !important;
+}
+.theme-sunset.dark .bp6-button:not(.bp6-minimal):not([class*='bp6-intent-']):hover {
+  background-color: #443a54 !important;
+}
+.theme-sunset.dark .bp6-button:not(.bp6-minimal):not([class*='bp6-intent-']):active {
+  background-color: #4e4360 !important;
+}
+/* Toggled/selected — fill stays the same; the icon and a thin ring pick up the
+   Sunset magenta accent, so "active" reads as an accent, not a differently
+   coloured box. */
+.theme-sunset.dark .bp6-button:not(.bp6-minimal):not([class*='bp6-intent-']).bp6-active {
+  /* Recessed / pressed-in: a darker fill plus an inset shadow reads as "on"
+     through depth, no accent hue to clash with the gradient. */
+  background-color: #241d2f !important;
+  box-shadow: inset 0 2px 6px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(0, 0, 0, 0.35) !important;
+  color: #f0e9f8 !important;
+}
+.theme-sunset.dark .bp6-button:not(.bp6-minimal):not([class*='bp6-intent-']).bp6-active:hover {
+  background-color: #2b2338 !important;
+}
+
+/* Sunset pull / warning buttons — the neon Blueprint yellow clashes with the
+   red→purple field, so warning buttons take the Sunset magenta accent instead. */
+.theme-sunset.dark .bp6-button.bp6-intent-warning {
+  background: linear-gradient(180deg, #a855c9 0%, #7a3fb0 100%) !important;
+  color: #ffffff !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.28), inset 0 0 0 1px rgba(255, 255, 255, 0.1), 0 1px 3px rgba(0, 0, 0, 0.4) !important;
+}
+.theme-sunset.dark .bp6-button.bp6-intent-warning:hover {
+  background: linear-gradient(180deg, #b667d6 0%, #874bc0 100%) !important;
+}
+
+/* Narrow the pull/refresh icon slot without shrinking the (large) button group. */
+.dk-narrow-icon-btn.bp6-button {
+  min-width: 0 !important;
+  padding-left: 14px !important;
+  padding-right: 14px !important;
+}
+
+/* Sunset popovers / menus — plum surface instead of Blueprint grey. Covers both
+   inline popovers (ancestor .dark) and portaled ones (portal wrapper .bp6-dark);
+   the Sunset flag is mirrored onto <html> so these portal targets are in scope. */
+.theme-sunset .dark .bp6-popover-content,
+.theme-sunset .bp6-dark .bp6-popover-content,
+.theme-sunset .dark .bp6-menu,
+.theme-sunset .bp6-dark .bp6-menu {
+  background-color: #241232 !important;
+  color: #efe8f5 !important;
+}
+.theme-sunset .dark .bp6-popover-arrow-fill,
+.theme-sunset .bp6-dark .bp6-popover-arrow-fill {
+  fill: #241232 !important;
+}
+.theme-sunset .dark .bp6-menu-item:hover,
+.theme-sunset .bp6-dark .bp6-menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+/* Solid, opaque sticky-header surface for Sunset — sticky rows must never let
+   scrolling content bleed through, so this is fully opaque (applied in the
+   component, not via a fragile dark: utility override). */
+.dk-sunset-sticky {
+  background: linear-gradient(90deg, #e9dfe8 0%, #e2ddf0 100%);
+}
+.dark .dk-sunset-sticky {
+  /* Red → purple, opaque (sticky headers must not bleed). */
+  background: linear-gradient(90deg, #4d1410 0%, #360f36 55%, #24103f 100%);
+}
+
+/* Sunset glass surfaces — white-alpha (NOT grey) so the warm→indigo gradient
+   reads through the group / card body / rows instead of stacking into mud.
+   Three depths so nested surfaces still separate. */
+.dk-sunset-group {
+  background-color: rgba(255, 255, 255, 0.45);
+}
+.dk-sunset-body {
+  background-color: rgba(255, 255, 255, 0.5);
+}
+.dk-sunset-row {
+  background-color: rgba(255, 255, 255, 0.55);
+}
+.dark .dk-sunset-group {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+.dark .dk-sunset-body {
+  background-color: rgba(0, 0, 0, 0.1);
+}
+.dark .dk-sunset-row {
+  background-color: rgba(0, 0, 0, 0.14);
+}
+
+/* Dark Sunset — expanded workflow job graph: container darkens like a card body,
+   job/step node cards lift as glass (escaped dark: utility classes). */
+.theme-sunset.dark .dark\:bg-bp-dark-gray-1 {
+  background-color: rgba(0, 0, 0, 0.1) !important;
+}
+.theme-sunset.dark .dark\:bg-bp-dark-gray-3 {
+  background-color: rgba(255, 255, 255, 0.07) !important;
+}
+
+/* Dark Sunset — chip / tag borders lift off the gradient (escaped dark: classes). */
+.theme-sunset.dark .dark\:border-bp-dark-gray-4 {
+  border-color: rgba(255, 255, 255, 0.24) !important;
+}
+.theme-sunset.dark .dark\:border-bp-gray-3 {
+  border-color: rgba(255, 255, 255, 0.3) !important;
+}
+
 /* GitHub action icons */
 @keyframes action-rotate {
   from { transform: rotate(0deg); }
@@ -240,7 +513,10 @@
   white-space: nowrap;
 }
 
-/* Global body background - must be at end to override other styles */
+/* Global app background — a subtle diagonal theme gradient behind the whole
+   window (content panels are transparent, so it reads through everything, the
+   way Slack tints its window). `body` covers load + edges via the OS scheme;
+   `.devkitty-app-bg` is class-based so it also follows the in-app dark toggle. */
 body {
   background-color: #dce0e5 !important;
 }

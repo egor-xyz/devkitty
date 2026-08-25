@@ -1,6 +1,7 @@
 import { Classes, ContextMenu, Icon, Menu, MenuDivider, MenuItem } from '@blueprintjs/core';
 import { type FC, useRef } from 'react';
 import { useDrag, useDrop } from 'react-dnd';
+import { useIsSunset } from 'renderer/hooks/useAppSettings';
 import { useDarkModeStore } from 'renderer/hooks/useDarkMode';
 import { useGroups } from 'renderer/hooks/useGroups';
 import { useModal } from 'renderer/hooks/useModal';
@@ -24,6 +25,7 @@ export const GroupCollapse: FC<Props> = ({ collapsed, group, index, onClick, pro
   const { openModal } = useModal();
   const { changeOrder } = useGroups();
   const { darkMode } = useDarkModeStore();
+  const isSunset = useIsSunset();
 
   const ref = useRef<HTMLDivElement>(null);
 
@@ -131,7 +133,9 @@ export const GroupCollapse: FC<Props> = ({ collapsed, group, index, onClick, pro
   return (
     <div
       className={cn(
-        'flex flex-col bg-bp-light-gray-5 dark:bg-bp-dark-gray-1 transition-opacity duration-300 ease-in-out',
+        'flex flex-col',
+        isSunset ? 'dk-sunset-group' : 'bg-bp-light-gray-5 dark:bg-bp-dark-gray-1',
+        'transition-opacity duration-300 ease-in-out',
         isDragging && 'opacity-30'
       )}
       data-handler-id={handlerId}
@@ -143,17 +147,15 @@ export const GroupCollapse: FC<Props> = ({ collapsed, group, index, onClick, pro
           className={cn(
             'flex items-start justify-between w-full py-1 pl-5 pr-4',
             'text-sm font-light cursor-pointer select-none gap-x-2.5',
-            'dark:text-bp-dark-gray-5'
+            isSunset ? 'text-white/90' : 'dark:text-bp-dark-gray-5'
           )}
           onClick={() => !isEmpty && onClick()}
           ref={drag}
         >
           <div className={Classes.ALIGN_LEFT}>
-            <Icon icon={group.icon} />{' '}
+            <Icon icon={group.icon ?? 'folder-open'} />{' '}
 
-            <span>
-              {group.fullName} ({projects.length})
-            </span>
+            <span>{group.fullName}</span>
           </div>
 
           <div className={Classes.ALIGN_RIGHT}>
@@ -178,8 +180,12 @@ export const GroupCollapse: FC<Props> = ({ collapsed, group, index, onClick, pro
 
       <div
         className={cn(
-          'flex flex-col w-full max-h-full py-1 overflow-hidden overflow-y-visible transition-all duration-300 ease-in-out',
-          collapsed && 'min-h-0 max-h-0 overflow-hidden'
+          // overflow-visible when expanded so the checkout headers can `position:
+          // sticky` against the page scroll container. Any overflow clip here
+          // (even overflow-x) makes the group its own scroll container and traps
+          // the sticky headers inside it. Clip only while collapsed.
+          'flex flex-col w-full max-h-full py-1 transition-all duration-300 ease-in-out',
+          collapsed ? 'min-h-0 max-h-0 overflow-hidden' : 'overflow-visible'
         )}
         style={{ minHeight: collapsed ? 0 : `${projects.length * 40 + (projects.length - 1) * 2}px` }}
       >

@@ -1,6 +1,8 @@
 import { Tabs } from '@blueprintjs/core';
 import { useNavigate, useParams } from 'react-router';
 import { GitHubIcon } from 'renderer/assets/gitHubIcons';
+import { useIsSunset } from 'renderer/hooks/useAppSettings';
+import { cn } from 'renderer/utils/cn';
 
 import { SettingsActions } from '../SettingsActions';
 import { SettingsAppearance } from '../SettingsAppearance';
@@ -9,13 +11,14 @@ import { SettingsIntegrations } from '../SettingsIntegrations';
 export const Settings = () => {
   const { id = 'appearance' } = useParams<{ id?: string }>();
   const navigate = useNavigate();
+  const isSunset = useIsSunset();
 
   const handleTabChange = (id: string) => {
     navigate(`/settings/${id}`);
   };
 
   return (
-    <div className="h-[calc(100vh-50px)] settings-root">
+    <div className={cn('h-[calc(100vh-50px-var(--claude-footer-h))] settings-root', isSunset && 'theme-sunset')}>
       <Tabs
         defaultSelectedTabId={id}
         onChange={handleTabChange}

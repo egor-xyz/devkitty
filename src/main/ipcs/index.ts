@@ -7,3 +7,4 @@ import './ipcGitHub';
 import './ipcNotification';
 import './ipcSticker';
 import './ipcWorktree';
+import './ipcClaude';

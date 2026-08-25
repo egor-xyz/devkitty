@@ -1,6 +1,7 @@
 import { Divider, Switch } from '@blueprintjs/core';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 
+import { StyleSelector } from '../StyleSelector';
 import { ThemeSelector } from '../ThemeSelector';
 
 export const SettingsAppearance = () => {
@@ -12,6 +13,11 @@ export const SettingsAppearance = () => {
       <Divider />
       <h3 className="text-sm font-semibold mt-4 mb-2.5">Color Theme</h3>
       <ThemeSelector />
+      <Divider className="my-6!" />
+      <h3 className="text-sm font-semibold mt-4 mb-2.5">Style</h3>
+
+      <StyleSelector />
+
       <Divider className="my-6!" />
       <h3 className="text-sm font-semibold mt-4 mb-2.5">Git</h3>
 
