@@ -210,31 +210,6 @@
   animation: shine 3s linear infinite;
 }
 
-/* Sunset wordmark — a proper gradient-clip shimmer: the whole word is a light
-   lavender fill with a bright white highlight band sweeping across it. The text
-   itself is the gradient (text-fill transparent), so the sweep is crisp. */
-.theme-sunset .shiny-text {
-  /* Solid silver wordmark with a bright highlight band sweeping across — the
-     base stops are fully opaque so the text is always legible; only the band
-     moves. Matches the marketing site's wordmark. */
-  background: linear-gradient(
-    110deg,
-    #cfd0da 0%,
-    #cfd0da 42%,
-    #ffffff 50%,
-    #eef0f6 54%,
-    #cfd0da 62%,
-    #cfd0da 100%
-  ) !important;
-  background-size: 220% 100% !important;
-  -webkit-background-clip: text !important;
-  background-clip: text !important;
-  -webkit-text-fill-color: transparent !important;
-  color: transparent !important;
-}
-.theme-sunset .shiny-text.animate {
-  animation: shine 3.2s linear infinite !important;
-}
 
 /* Navbar shadow effect for dark mode */
 .navbar-shadow-container {
