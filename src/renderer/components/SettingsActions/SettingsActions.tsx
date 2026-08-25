@@ -4,16 +4,18 @@ import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useProjects } from 'renderer/hooks/useProjects';
 import { cn } from 'renderer/utils/cn';
 import { type HiddenEntry, hiddenPullsPrefix, parseHidden, projectIdOf, removeHidden } from 'renderer/utils/hidden';
+import { parseIgnored, removeScope, scopeLabel } from 'renderer/utils/ignoredWorkflows';
 import { unhideEvent } from 'renderer/utils/unhide';
 
 type HiddenRow = HiddenEntry & { key: string; projectId: string };
 
 // One row shape for both lists: hidden workflows carry no repo badge, hidden
-// pull requests do.
+// pull requests do. A row can offer more than one unhide button — a workflow
+// hidden in several scopes lists one per scope on the same line.
 type ListRow = {
+  actions: { label: string; onUnhide: () => void }[];
   badge?: string;
   label: string;
-  onUnhide: () => void;
   rowKey: string;
 };
 
@@ -30,10 +32,12 @@ const readHidden = () => readRows(hiddenPullsPrefix);
 
 export const SettingsActions = () => {
   const { gitHubActions, set } = useAppSettings();
-  const { count = 5, ignoreDependabot = false, ignoredWorkflows = [], notifications = true } = gitHubActions;
+  const { count = 5, ignoreDependabot = false, notifications = true } = gitHubActions;
+  // Stored data may still be the legacy `string[]`, so parse it forward.
+  const ignoredWorkflows = parseIgnored(gitHubActions.ignoredWorkflows);
 
-  const removeIgnored = (name: string) => {
-    set({ gitHubActions: { ...gitHubActions, ignoredWorkflows: ignoredWorkflows.filter((w) => w !== name) } });
+  const unhideScope = (path: string, scope: Parameters<typeof scopeLabel>[0]) => {
+    set({ gitHubActions: { ...gitHubActions, ignoredWorkflows: removeScope(ignoredWorkflows, path, scope) } });
   };
 
   const { projects } = useProjects();
@@ -95,28 +99,34 @@ export const SettingsActions = () => {
               <span className="text-xs truncate flex-1 min-w-0">{item.label}</span>
               {item.badge && <Tag minimal>{item.badge}</Tag>}
 
-              <Button
-                onClick={item.onUnhide}
-                size="small"
-                text="Unhide"
-                variant="minimal"
-              />
+              {item.actions.map((action) => (
+                <Button
+                  key={action.label}
+                  onClick={action.onUnhide}
+                  size="small"
+                  text={action.label}
+                  variant="minimal"
+                />
+              ))}
             </div>
           ))}
         </div>
       </>
     );
 
-  const workflowRows: ListRow[] = ignoredWorkflows.map((path) => ({
+  // One row per hidden workflow, with an unhide button for each scope it is
+  // hidden in — "Everywhere", "main", "Pull requests" — so any one can be lifted
+  // without touching the others.
+  const workflowRows: ListRow[] = ignoredWorkflows.map(({ path, scopes }) => ({
+    actions: scopes.map((scope) => ({ label: `Unhide ${scopeLabel(scope)}`, onUnhide: () => unhideScope(path, scope) })),
     label: workflowName(path),
-    onUnhide: () => removeIgnored(path),
     rowKey: path
   }));
 
   const pullRows: ListRow[] = hiddenPulls.map((row) => ({
+    actions: [{ label: 'Unhide', onUnhide: () => unhideOne(row) }],
     badge: projectName(row.projectId),
     label: row.label,
-    onUnhide: () => unhideOne(row),
     rowKey: `${row.key}-${row.id}`
   }));
 
