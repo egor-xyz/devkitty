@@ -166,11 +166,12 @@ const failedConclusions = new Set(['action_required', 'cancelled', 'failure', 's
 
 export const isPullRun = (event?: null | string) => event === 'pull_request' || event === 'pull_request_target';
 
-export const shouldNotifyRun = (run: Run, hiddenWorkflows: Set<string> = new Set()): boolean => {
+export const shouldNotifyRun = (run: Run, hidden = false): boolean => {
   if (!run.conclusion) return false;
   // A hidden workflow is still fetched — the cards offer a peek at it — but it
-  // has no business interrupting anyone.
-  if (run.path && hiddenWorkflows.has(run.path)) return false;
+  // has no business interrupting anyone. Whether it counts as hidden depends on
+  // where the run would render, so the caller decides with the run's context.
+  if (hidden) return false;
 
   return isPullRun(run.event) ? failedConclusions.has(run.conclusion) : true;
 };

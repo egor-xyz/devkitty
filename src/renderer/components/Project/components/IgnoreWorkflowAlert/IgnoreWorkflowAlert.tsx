@@ -1,6 +1,7 @@
 import { Alert, Classes } from '@blueprintjs/core';
 import { type FC } from 'react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
+import { addScope, parseIgnored } from 'renderer/utils/ignoredWorkflows';
 import { type ModalProps } from 'types/Modal';
 
 export type IgnoreWorkflowAlertProps = {
@@ -16,12 +17,10 @@ export const IgnoreWorkflowAlert: FC<IgnoreWorkflowAlertProps & ModalProps> = ({
   workflowPath
 }) => {
   const { gitHubActions, set } = useAppSettings();
-  const { ignoredWorkflows = [] } = gitHubActions;
 
   const confirm = () => {
-    if (!ignoredWorkflows.includes(workflowPath)) {
-      set({ gitHubActions: { ...gitHubActions, ignoredWorkflows: [...ignoredWorkflows, workflowPath] } });
-    }
+    const ignoredWorkflows = addScope(parseIgnored(gitHubActions.ignoredWorkflows), workflowPath, 'all');
+    set({ gitHubActions: { ...gitHubActions, ignoredWorkflows } });
     onClose();
   };
 
