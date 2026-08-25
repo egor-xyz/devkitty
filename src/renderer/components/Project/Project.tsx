@@ -68,6 +68,7 @@ export const Project: FC<Props> = ({ project }) => {
   const anyExpanded = worktrees.some(({ path }) => expandedPaths[path]);
 
   const worktreeBranches = useMemo(() => worktrees.map((worktree) => worktree.branch), [worktrees]);
+  const mainBranch = useMemo(() => worktrees.find((worktree) => worktree.isMain)?.branch ?? '', [worktrees]);
 
   const {
     clearHiddenPulls,
@@ -83,7 +84,7 @@ export const Project: FC<Props> = ({ project }) => {
     refresh,
     runsByBranch,
     runsLoaded
-  } = useRepoData(project, anyExpanded, worktreeBranches, query);
+  } = useRepoData(project, anyExpanded, worktreeBranches, mainBranch, query);
 
   // Worktrees arrive asynchronously — seed each new card from its saved state,
   // defaulting to open when the checkout has an open pull request.

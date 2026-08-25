@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { addHidden, hiddenPullsKey, hiddenRunsKey, parseHidden } from 'renderer/utils/hidden';
+import { type IgnoredWorkflow, isWorkflowHidden, parseIgnored, type RunContext } from 'renderer/utils/ignoredWorkflows';
 import { unhideEvent } from 'renderer/utils/unhide';
 import { type Run } from 'types/gitHub';
 import { type Project } from 'types/project';
@@ -8,6 +9,7 @@ import { type Project } from 'types/project';
 import {
   groupPullsByBranch,
   groupRunsByBranch,
+  isPullRun,
   mergeRuns,
   notifiableBranches,
   orphanPulls,
@@ -43,7 +45,13 @@ const hide = (key: string, id: number, label: string) => {
  * repo, but only checkouts on this machine — and pull requests you opened —
  * are worth interrupting you for.
  */
-export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranches: string[], query = '') => {
+export const useRepoData = (
+  project: Project,
+  pollRuns: boolean,
+  worktreeBranches: string[],
+  mainBranch = '',
+  query = ''
+) => {
   const [runs, setRuns] = useState<Run[]>([]);
   const [searchedRuns, setSearchedRuns] = useState<Run[]>([]);
   const [pinnedRuns, setPinnedRuns] = useState<Run[]>([]);
@@ -72,19 +80,42 @@ export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranche
   const initialRunsFetched = useRef(false);
   const notifyArmed = useRef(false);
   const notifyBranches = useRef<Set<string>>(new Set());
-  const hiddenWorkflows = useRef<Set<string>>(new Set());
+  const hiddenWorkflows = useRef<IgnoredWorkflow[]>([]);
+  // The pieces `getRuns` needs to place a run in root vs worktree, kept in a ref
+  // so a branch-list change never rebuilds the poll.
+  const rootContext = useRef<{ mainBranch: string; worktrees: Set<string> }>({ mainBranch: '', worktrees: new Set() });
+
+  // Stored data may still be the legacy `string[]`, so it is parsed forward on
+  // every read rather than trusted to match the current shape.
+  const ignored = useMemo(() => parseIgnored(ignoredWorkflows), [ignoredWorkflows]);
+
+  // A run's card decides its scope: the main branch and any branch checked out
+  // nowhere render under the main (root) card; a worktree's own branch is the
+  // one worktree context. `isPr` comes straight off the run's event.
+  const contextOf = useCallback(
+    (run: Run): RunContext => ({
+      isPr: isPullRun(run.event),
+      isRoot: !(worktreeBranches.includes(run.head_branch) && run.head_branch !== mainBranch),
+      path: run.path
+    }),
+    [mainBranch, worktreeBranches]
+  );
 
   // Refs, not deps: `getRuns` reads them when it fires, and rebuilding it would
   // restart the poll every time a setting changes.
   useEffect(() => {
-    hiddenWorkflows.current = new Set(ignoredWorkflows);
-  }, [ignoredWorkflows]);
+    hiddenWorkflows.current = ignored;
+  }, [ignored]);
 
   // A ref, not state: `getRuns` reads it at fire time and must not be rebuilt
   // (and so restart the poll) every time a branch list changes identity.
   useEffect(() => {
     notifyBranches.current = notifiableBranches(worktreeBranches, pulls);
   }, [pulls, worktreeBranches]);
+
+  useEffect(() => {
+    rootContext.current = { mainBranch, worktrees: new Set(worktreeBranches) };
+  }, [mainBranch, worktreeBranches]);
 
   /**
    * `arm` is passed only by the *polling* fetch. The mount fetch runs for every
@@ -112,7 +143,14 @@ export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranche
         notifyArmed.current &&
         prev !== undefined &&
         !prev &&
-        shouldNotifyRun(run, hiddenWorkflows.current) &&
+        shouldNotifyRun(
+          run,
+          isWorkflowHidden(hiddenWorkflows.current, {
+            isPr: isPullRun(run.event),
+            isRoot: !(rootContext.current.worktrees.has(run.head_branch) && run.head_branch !== rootContext.current.mainBranch),
+            path: run.path
+          })
+        ) &&
         notifications &&
         notifyBranches.current.has(run.head_branch ?? '')
       ) {
@@ -386,21 +424,20 @@ export const useRepoData = (project: Project, pollRuns: boolean, worktreeBranche
   }, [olderRuns, pinnedRuns, runs, searchedRuns]);
 
   // Hiding a workflow has to apply here too, not only to the next fetch: runs
-  // already merged into state would otherwise keep showing forever.
-  const runsByBranch = useMemo(() => {
-    const hiddenWorkflows = new Set(ignoredWorkflows);
-
-    return groupRunsByBranch(allRuns.filter((run) => !hiddenWorkflows.has(run.path)));
-  }, [allRuns, ignoredWorkflows]);
+  // already merged into state would otherwise keep showing forever. A run's
+  // scope depends on where it renders, so it is judged by its own context.
+  const runsByBranch = useMemo(
+    () => groupRunsByBranch(allRuns.filter((run) => !isWorkflowHidden(ignored, contextOf(run)))),
+    [allRuns, contextOf, ignored]
+  );
 
   // The same runs, but only the hidden ones: a card can offer a peek at what it
   // is holding back without anything being unhidden.
   const hiddenRunsByBranch = useMemo(() => {
-    const hiddenWorkflows = new Set(ignoredWorkflows);
-    if (hiddenWorkflows.size === 0) return {};
+    if (ignored.length === 0) return {};
 
-    return groupRunsByBranch(allRuns.filter((run) => hiddenWorkflows.has(run.path)));
-  }, [allRuns, ignoredWorkflows]);
+    return groupRunsByBranch(allRuns.filter((run) => isWorkflowHidden(ignored, contextOf(run))));
+  }, [allRuns, contextOf, ignored]);
 
   const pullsByBranch = useMemo(
     () => groupPullsByBranch(pulls.filter(({ pull }) => !hiddenPulls.has(pull.id))),

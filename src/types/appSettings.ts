@@ -1,5 +1,6 @@
 import { type FoundEditor } from './foundEditor';
 import { type FoundShell } from './foundShell';
+import { type IgnoredWorkflow } from './ignoredWorkflow';
 
 export type AppSettings = {
   claudeAccountDir?: string; // config dir of the account shown in the usage footer
@@ -10,7 +11,7 @@ export type AppSettings = {
     all: boolean;
     count: number;
     ignoreDependabot: boolean;
-    ignoredWorkflows: string[];
+    ignoredWorkflows: IgnoredWorkflow[];
     notifications: boolean;
     pinnedWorkflows: string[];
   };

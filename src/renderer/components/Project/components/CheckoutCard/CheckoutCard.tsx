@@ -206,6 +206,7 @@ export const CheckoutCard: FC<Props> = ({
           a worktree only ever shows its own branch and keeps the default. */}
       <GroupRuns
         footer={footer}
+        isRoot={isMain}
         limit={isMain ? count : undefined}
         loadingOlder={loadingOlder}
         moreHistory={moreHistory}
@@ -447,6 +448,7 @@ export const CheckoutCard: FC<Props> = ({
           {showHidden && hiddenRuns.length > 0 && (
             <div className="mx-2 rounded-md [&>*]:mt-0 opacity-70">
               <GroupRuns
+                isRoot={isMain}
                 onRefresh={onRefresh}
                 project={project}
                 runs={hiddenRuns}

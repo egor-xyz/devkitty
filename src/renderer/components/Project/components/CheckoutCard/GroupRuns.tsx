@@ -14,6 +14,8 @@ type Props = {
   // Chips the card wants to share this row — its own folds would otherwise
   // stack another rule under this one.
   footer?: ReactNode;
+  // Where this list renders, so a run's hide menu can scope to root vs worktree.
+  isRoot?: boolean;
   limit?: number;
   loadingOlder?: boolean;
   moreHistory?: boolean;
@@ -31,6 +33,7 @@ type Props = {
 // attention stays on screen, the rest is one click away.
 export const GroupRuns: FC<Props> = ({
   footer,
+  isRoot = false,
   limit,
   loadingOlder,
   moreHistory,
@@ -66,6 +69,7 @@ export const GroupRuns: FC<Props> = ({
 
   const row = (run: Run) => (
     <Workflow
+      isRoot={isRoot}
       key={run.id}
       onRefresh={onRefresh}
       project={project}

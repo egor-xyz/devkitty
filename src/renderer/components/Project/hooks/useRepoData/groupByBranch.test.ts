@@ -688,18 +688,17 @@ describe('shouldNotifyRun', () => {
 });
 
 describe('shouldNotifyRun — hidden workflows', () => {
-  const hidden = new Set(['.github/workflows/graph.yml']);
-  const runOf = (path: string, conclusion: string) => ({ conclusion, event: 'push', id: 1, path }) as any;
+  const runOf = (conclusion: string) => ({ conclusion, event: 'push', id: 1 }) as any;
 
-  it('should stay quiet for a workflow you hid', () => {
-    expect(shouldNotifyRun(runOf('.github/workflows/graph.yml', 'success'), hidden)).toBe(false);
+  it('should stay quiet for a run hidden in its context', () => {
+    expect(shouldNotifyRun(runOf('success'), true)).toBe(false);
   });
 
-  it('should stay quiet even when a hidden workflow fails', () => {
-    expect(shouldNotifyRun(runOf('.github/workflows/graph.yml', 'failure'), hidden)).toBe(false);
+  it('should stay quiet even when a hidden run fails', () => {
+    expect(shouldNotifyRun(runOf('failure'), true)).toBe(false);
   });
 
-  it('should still announce a workflow that is not hidden', () => {
-    expect(shouldNotifyRun(runOf('.github/workflows/ci.yml', 'success'), hidden)).toBe(true);
+  it('should still announce a run that is not hidden', () => {
+    expect(shouldNotifyRun(runOf('success'), false)).toBe(true);
   });
 });

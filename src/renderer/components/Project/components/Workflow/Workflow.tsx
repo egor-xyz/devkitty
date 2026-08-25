@@ -4,10 +4,12 @@ import { getStatusIcon } from 'renderer/assets/gitHubStatusUtils';
 import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
 import { useModal } from 'renderer/hooks/useModal';
 import { cn } from 'renderer/utils/cn';
+import { addScope, parseIgnored, type WorkflowScope } from 'renderer/utils/ignoredWorkflows';
 import { timeAgo } from 'renderer/utils/timeAgo';
 import { type Run } from 'types/gitHub';
 import { type Project } from 'types/project';
 
+import { isPullRun } from '../../hooks/useRepoData/groupByBranch';
 import { WorkflowGraph } from './WorkflowGraph';
 
 type Job = {
@@ -21,6 +23,9 @@ type Job = {
 };
 
 type Props = {
+  // True when this row lives in the main (root) card, false in a worktree card.
+  // Decides which location the "hide on…" option scopes to.
+  isRoot?: boolean;
   onRefresh?: () => void;
   project: Project;
   run: Run;
@@ -46,7 +51,7 @@ const formatDuration = (start?: string, end?: string) => {
   return `${seconds}s`;
 };
 
-export const Workflow: FC<Props> = ({ onRefresh, project, run, stickyTop = 55 }) => {
+export const Workflow: FC<Props> = ({ isRoot = false, onRefresh, project, run, stickyTop = 55 }) => {
   const {
     conclusion,
     created_at,
@@ -67,12 +72,11 @@ export const Workflow: FC<Props> = ({ onRefresh, project, run, stickyTop = 55 })
   const pinnedWorkflows = gitHubActions.pinnedWorkflows ?? [];
   const isPinned = pinnedWorkflows.includes(path);
 
-  const ignoredWorkflows = gitHubActions.ignoredWorkflows ?? [];
+  const ignoredWorkflows = useMemo(() => parseIgnored(gitHubActions.ignoredWorkflows), [gitHubActions.ignoredWorkflows]);
+  const isPr = isPullRun(event);
 
-  const hideWorkflow = () => {
-    if (ignoredWorkflows.includes(path)) return;
-
-    set({ gitHubActions: { ...gitHubActions, ignoredWorkflows: [...ignoredWorkflows, path] } });
+  const hideScope = (scope: WorkflowScope) => {
+    set({ gitHubActions: { ...gitHubActions, ignoredWorkflows: addScope(ignoredWorkflows, path, scope) } });
   };
 
   const togglePinned = () => {
@@ -326,14 +330,29 @@ export const Workflow: FC<Props> = ({ onRefresh, project, run, stickyTop = 55 })
                 />
 
                 {/* Hiding one run of a workflow that runs on every push buys
-                    nothing — the next one is back in a minute. Hiding is
-                    per workflow, and Settings lists it for undoing. */}
-                <MenuItem
-                  icon="eye-off"
+                    nothing — the next one is back in a minute. Hiding is per
+                    workflow and scoped to where you clicked: a PR run hides only
+                    from pull requests, a push/manual run hides on its own card.
+                    Settings lists each scope for undoing. */}
+                <MenuItem icon="eye-off"
                   intent="warning"
-                  onClick={hideWorkflow}
                   text="Hide this workflow"
-                />
+                >
+                  {isPr ? (
+                    <MenuItem onClick={() => hideScope('pr')}
+                      text="From pull requests"
+                    />
+                  ) : (
+                    <MenuItem
+                      onClick={() => hideScope(isRoot ? 'root' : 'worktree')}
+                      text={isRoot ? 'On main' : 'On worktrees'}
+                    />
+                  )}
+
+                  <MenuItem onClick={() => hideScope('all')}
+                    text="Everywhere"
+                  />
+                </MenuItem>
               </Menu>
             }
             placement="bottom-end"
