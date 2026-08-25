@@ -214,16 +214,17 @@
    lavender fill with a bright white highlight band sweeping across it. The text
    itself is the gradient (text-fill transparent), so the sweep is crisp. */
 .theme-sunset .shiny-text {
-  /* Dim lavender base with a bright white highlight band, so the moving sweep
-     is clearly visible (an all-light gradient made the shimmer invisible). */
+  /* Solid silver wordmark with a bright highlight band sweeping across — the
+     base stops are fully opaque so the text is always legible; only the band
+     moves. Matches the marketing site's wordmark. */
   background: linear-gradient(
     110deg,
-    #8b7fb0 0%,
-    #8b7fb0 38%,
+    #cfd0da 0%,
+    #cfd0da 42%,
     #ffffff 50%,
-    #f3d9ff 55%,
-    #8b7fb0 66%,
-    #8b7fb0 100%
+    #eef0f6 54%,
+    #cfd0da 62%,
+    #cfd0da 100%
   ) !important;
   background-size: 220% 100% !important;
   -webkit-background-clip: text !important;
