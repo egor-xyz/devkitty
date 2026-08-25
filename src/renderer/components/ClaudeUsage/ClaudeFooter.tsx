@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react';
+import { useLocation } from 'react-router';
 import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
 import { useClaudeUsage, useClaudeUsagePolling } from 'renderer/hooks/useClaudeUsage';
 import { cn } from 'renderer/utils/cn';
@@ -15,6 +16,11 @@ export const ClaudeFooter = () => {
   const usage = useClaudeUsage((s) => s.usage);
   const loading = useClaudeUsage((s) => s.loading);
   const setActive = useClaudeUsage((s) => s.setActive);
+
+  // Hidden on the Settings page, but the panel stays mounted and slides down
+  // (rather than unmounting) so the hide animates.
+  const onSettings = useLocation().pathname.startsWith('/settings');
+  const visible = showClaudeUsage && !onSettings;
 
   useClaudeUsagePolling();
 
@@ -37,7 +43,7 @@ export const ClaudeFooter = () => {
           ? 'devkitty-footer-glass'
           : 'border-t border-bp-light-gray-1 bg-bp-light-gray-4 dark:border-bp-dark-gray-2 dark:bg-bp-dark-gray-1',
         'transition-transform duration-300 ease-out',
-        showClaudeUsage ? 'translate-y-0' : 'pointer-events-none translate-y-full'
+        visible ? 'translate-y-0' : 'pointer-events-none translate-y-full'
       )}
     >
       {/* Refraction filter for the liquid-glass account switcher (Chromium/Electron

@@ -153,11 +153,9 @@ export const GroupCollapse: FC<Props> = ({ collapsed, group, index, onClick, pro
           ref={drag}
         >
           <div className={Classes.ALIGN_LEFT}>
-            <Icon icon={group.icon} />{' '}
+            <Icon icon={group.icon ?? 'folder-open'} />{' '}
 
-            <span>
-              {group.fullName} ({projects.length})
-            </span>
+            <span>{group.fullName}</span>
           </div>
 
           <div className={Classes.ALIGN_RIGHT}>

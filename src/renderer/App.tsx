@@ -43,7 +43,9 @@ export const App = () => {
       <AppNavbar />
       <Routing />
       <Modal />
-      {claudeActive && <ClaudeFooter />}
+      {/* Kept mounted on the Settings route (it reads the route itself) so it
+          slides down instead of vanishing. */}
+      {claudeEnabled && <ClaudeFooter />}
 
       {isSunset && (
         <>
