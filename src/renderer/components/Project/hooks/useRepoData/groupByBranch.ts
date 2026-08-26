@@ -33,10 +33,30 @@ export const splitDoneRuns = (
     }
   }
 
+  // Newest successful run per workflow. A failure that a later run of the same
+  // workflow already went green over has been dealt with — a re-run passed — so
+  // it retires to `done` instead of nagging from the active list forever.
+  const latestSuccessAt = new Map<string, number>();
+
+  for (const run of runs) {
+    if (!run.path || run.conclusion !== 'success') continue;
+
+    const at = new Date(run.created_at).getTime();
+    const current = latestSuccessAt.get(run.path);
+    if (current === undefined || at > current) latestSuccessAt.set(run.path, at);
+  }
+
+  const isSuperseded = (run: Run): boolean => {
+    if (!run.path || !run.conclusion || settledConclusions.has(run.conclusion)) return false;
+
+    const successAt = latestSuccessAt.get(run.path);
+    return successAt !== undefined && successAt > new Date(run.created_at).getTime();
+  };
+
   for (const run of runs) {
     if (run.path && latestPinned.get(run.path)?.id === run.id) {
       pinned.push(run);
-    } else if (run.conclusion && settledConclusions.has(run.conclusion)) {
+    } else if ((run.conclusion && settledConclusions.has(run.conclusion)) || isSuperseded(run)) {
       done.push(run);
     } else {
       active.push(run);
