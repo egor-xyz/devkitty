@@ -521,6 +521,62 @@ describe('splitDoneRuns — pinned workflows', () => {
   });
 });
 
+describe('splitDoneRuns — failures superseded by a newer success', () => {
+  const at = (id: number, conclusion: null | string, path: string, createdAt: string) =>
+    ({ conclusion, created_at: createdAt, head_branch: 'main', id, path, status: 'completed' }) as any;
+  const deploy = '.github/workflows/deploy.yml';
+
+  it('should fold an old failure once a newer run of the same workflow succeeds', () => {
+    const result = splitDoneRuns([
+      at(1, 'failure', deploy, '2026-08-16T10:00:00Z'),
+      at(2, 'success', deploy, '2026-08-16T12:00:00Z')
+    ]);
+
+    expect(result.active).toEqual([]);
+    expect(result.done.map((item) => item.id)).toEqual([1, 2]);
+  });
+
+  it('should keep a failure active when the newer success is a different workflow', () => {
+    const result = splitDoneRuns([
+      at(1, 'failure', deploy, '2026-08-16T10:00:00Z'),
+      at(2, 'success', '.github/workflows/ci.yml', '2026-08-16T12:00:00Z')
+    ]);
+
+    expect(result.active.map((item) => item.id)).toEqual([1]);
+    expect(result.done.map((item) => item.id)).toEqual([2]);
+  });
+
+  it('should keep a failure active when the only success is older', () => {
+    const result = splitDoneRuns([
+      at(1, 'success', deploy, '2026-08-16T10:00:00Z'),
+      at(2, 'failure', deploy, '2026-08-16T12:00:00Z')
+    ]);
+
+    expect(result.active.map((item) => item.id)).toEqual([2]);
+    expect(result.done.map((item) => item.id)).toEqual([1]);
+  });
+
+  it('should fold superseded cancelled and timed-out runs too', () => {
+    const result = splitDoneRuns([
+      at(1, 'cancelled', deploy, '2026-08-16T10:00:00Z'),
+      at(2, 'timed_out', deploy, '2026-08-16T11:00:00Z'),
+      at(3, 'success', deploy, '2026-08-16T12:00:00Z')
+    ]);
+
+    expect(result.active).toEqual([]);
+    expect(result.done.map((item) => item.id)).toEqual([1, 2, 3]);
+  });
+
+  it('should not supersede a failure that lacks a workflow path', () => {
+    const result = splitDoneRuns([
+      { conclusion: 'failure', created_at: '2026-08-16T10:00:00Z', head_branch: 'main', id: 1, status: 'completed' } as any,
+      at(2, 'success', deploy, '2026-08-16T12:00:00Z')
+    ]);
+
+    expect(result.active.map((item) => item.id)).toEqual([1]);
+  });
+});
+
 describe('notifiableBranches', () => {
   it('should include every locally checked out branch', () => {
     const result = notifiableBranches(['main', 'feature'], []);
