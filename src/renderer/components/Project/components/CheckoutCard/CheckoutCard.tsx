@@ -5,6 +5,7 @@ import { GitStatusBadge } from 'renderer/components/GitStatusBadge';
 import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
 import { useModal } from 'renderer/hooks/useModal';
 import { cn } from 'renderer/utils/cn';
+import { refreshEvent } from 'renderer/utils/refresh';
 import { type Run } from 'types/gitHub';
 import { type GitStatus, type Project } from 'types/project';
 import { type Worktree } from 'types/worktree';
@@ -128,6 +129,15 @@ export const CheckoutCard: FC<Props> = ({
 
     return () => window.clearInterval(timer);
   }, [fetchInterval, fetchStatus, isMain]);
+
+  // Gentle refresh from the navbar re-reads git status in place.
+  useEffect(() => {
+    const onRefresh = () => fetchStatus();
+
+    window.addEventListener(refreshEvent, onRefresh);
+
+    return () => window.removeEventListener(refreshEvent, onRefresh);
+  }, [fetchStatus]);
 
   const copyToClipboard = () => {
     setCopyIcon(

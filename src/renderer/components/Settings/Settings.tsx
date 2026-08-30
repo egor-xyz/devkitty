@@ -1,4 +1,4 @@
-import { Tabs } from '@blueprintjs/core';
+import { Button, Tabs } from '@blueprintjs/core';
 import { useNavigate, useParams } from 'react-router';
 import { GitHubIcon } from 'renderer/assets/gitHubIcons';
 import { useIsSunset } from 'renderer/hooks/useAppSettings';
@@ -18,7 +18,15 @@ export const Settings = () => {
   };
 
   return (
-    <div className={cn('h-[calc(100vh-50px-var(--claude-footer-h))] settings-root', isSunset && 'theme-sunset')}>
+    <div className={cn('relative h-[calc(100vh-50px-var(--claude-footer-h))] settings-root', isSunset && 'theme-sunset')}>
+      <Button
+        aria-label="Close settings"
+        className="absolute top-3 right-3 z-10"
+        icon="cross"
+        minimal
+        onClick={() => navigate('/')}
+      />
+
       <Tabs
         defaultSelectedTabId={id}
         onChange={handleTabChange}

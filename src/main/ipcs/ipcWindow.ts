@@ -8,8 +8,17 @@ ipcMain.handle('window:setAlwaysOnTop', (event, flag: boolean) => {
   if (!win) return false;
 
   win.setAlwaysOnTop(flag, 'screen-saver');
-  win.setVisibleOnAllWorkspaces(flag, { visibleOnFullScreen: true });
-  return win.isAlwaysOnTop();
+  // skipTransformProcessType: setVisibleOnAllWorkspaces otherwise flips the app
+  // between UIElement/Foreground process types on macOS, which drops the Dock
+  // icon (electron/electron#26350). Skipping the transform keeps the icon put.
+  win.setVisibleOnAllWorkspaces(flag, {
+    skipTransformProcessType: true,
+    visibleOnFullScreen: true,
+  });
+  // Report back the flag we applied, not isAlwaysOnTop() — on macOS the latter
+  // can momentarily read false right after setVisibleOnAllWorkspaces, which
+  // would leave the navbar toggle stuck looking off.
+  return flag;
 });
 
 ipcMain.handle('window:getAlwaysOnTop', (event) => {

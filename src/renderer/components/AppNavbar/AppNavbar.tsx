@@ -9,9 +9,11 @@ import { useDarkMode } from 'renderer/hooks/useDarkMode';
 import { useFilter } from 'renderer/hooks/useFilter';
 import { useProjects } from 'renderer/hooks/useProjects';
 import { cn } from 'renderer/utils/cn';
+import { requestRefresh } from 'renderer/utils/refresh';
 
 import { ClaudeMark } from '../ClaudeUsage';
 import { ShinyText } from '../ShinyText';
+import { PinIcon, SettingsGearIcon } from './NavIcons';
 import { SearchInput } from './SearchInput';
 
 export const AppNavbar = () => {
@@ -32,7 +34,9 @@ export const AppNavbar = () => {
   }, []);
 
   const toggleAlwaysOnTop = async () => {
-    const next = await window.bridge.window.setAlwaysOnTop(!alwaysOnTop);
+    const target = !alwaysOnTop;
+    setAlwaysOnTop(target); // optimistic — instant feedback on the icon
+    const next = await window.bridge.window.setAlwaysOnTop(target);
     setAlwaysOnTop(next);
   };
 
@@ -63,8 +67,14 @@ export const AppNavbar = () => {
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [clear]);
 
+  const [refreshing, setRefreshing] = useState(false);
+
   const refresh = () => {
-    window.location.reload();
+    // Gentle re-fetch of every card's data, not a full app reload. Spin the
+    // icon briefly so the click registers as an action, not a dead button.
+    requestRefresh();
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 800);
   };
 
   return (
@@ -116,45 +126,16 @@ export const AppNavbar = () => {
         )}
 
         <Button
-          icon="refresh"
+          icon={<Icon className={refreshing ? 'animate-spin' : undefined}
+            icon="refresh"
+                />}
           minimal
           onClick={refresh}
         />
 
-        <Tooltip
-          compact
-          content={alwaysOnTop ? 'Always on top: on' : 'Keep window always on top'}
-          hoverOpenDelay={500}
-          placement="bottom"
-        >
-          <Button
-            active={alwaysOnTop}
-            aria-label="Toggle always on top"
-            icon="pin"
-            minimal
-            onClick={toggleAlwaysOnTop}
-          />
-        </Tooltip>
-
-        <Navbar.Divider />
-
-        <NavLink
-          className={({ isActive }) => clsx(Classes.BUTTON, Classes.MINIMAL, isActive && Classes.ACTIVE)}
-          to="/"
-        >
-          <Icon icon="home" />
-        </NavLink>
-
         <Navbar.Divider />
 
         <ButtonGroup minimal>
-          {themeSource !== 'system' && (
-            <Button
-              icon="contrast"
-              onClick={toggleDarkMode}
-            />
-          )}
-
           {claudeInstalled && claudeEnabled && (
             <Tooltip
               compact
@@ -172,11 +153,47 @@ export const AppNavbar = () => {
             </Tooltip>
           )}
 
+          <Tooltip
+            compact
+            content={alwaysOnTop ? 'Always on top: on' : 'Keep window always on top'}
+            hoverOpenDelay={500}
+            placement="bottom"
+          >
+            <Button
+              aria-label="Toggle always on top"
+              icon={<PinIcon
+                size={16}
+                style={alwaysOnTop ? { color: '#F5854A' } : undefined}
+                    />}
+              minimal
+              onClick={toggleAlwaysOnTop}
+            />
+          </Tooltip>
+
+          {themeSource !== 'system' && (
+            <Tooltip compact
+              content="Toggle dark mode"
+              hoverOpenDelay={500}
+              placement="bottom"
+            >
+              <Button
+                icon="contrast"
+                minimal
+                onClick={toggleDarkMode}
+              />
+            </Tooltip>
+          )}
+
           <NavLink
-            className={({ isActive }) => clsx(Classes.BUTTON, Classes.MINIMAL, isActive && Classes.ACTIVE)}
+            className={clsx(Classes.BUTTON, Classes.MINIMAL)}
             to="/settings"
           >
-            <Icon icon="settings" />
+            {({ isActive }) => (
+              <SettingsGearIcon
+                className={isActive ? 'text-[#F5854A]' : undefined}
+                size={16}
+              />
+            )}
           </NavLink>
         </ButtonGroup>
 

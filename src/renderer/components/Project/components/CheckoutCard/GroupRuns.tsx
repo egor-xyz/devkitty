@@ -100,7 +100,9 @@ export const GroupRuns: FC<Props> = ({
         />
       )}
 
-      {done.length > 0 && (
+      {/* The root card omits the "Passing checks" fold — its finished runs are
+          already reachable through History. Per-branch groups keep it. */}
+      {done.length > 0 && !isRoot && (
         <FoldChip
           icon="tick-circle"
           label="Passing checks"
