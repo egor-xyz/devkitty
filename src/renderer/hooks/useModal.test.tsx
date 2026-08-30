@@ -1,34 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+// @vitest-environment jsdom
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-// Mock all the modal component imports
-vi.mock('renderer/components/Modals/GitMergeModal', () => ({
-  GitMergeModal: () => null
-}));
-vi.mock('renderer/components/Modals/GitResetModal', () => ({
-  GitResetModal: () => null
-}));
-vi.mock('renderer/components/Modals/GroupModal/GroupModal', () => ({
-  GroupModal: () => null
-}));
-vi.mock('renderer/components/Modals/TrayStickerModal', () => ({
-  TrayStickerModal: () => null
-}));
-vi.mock('renderer/components/Modals/WorktreeAddModal/WorktreeAddModal', () => ({
-  WorktreeAddModal: () => null
-}));
-vi.mock('renderer/components/Project/components/RemoveAlert', () => ({
-  RemoveAlert: () => null
-}));
-vi.mock('renderer/components/Project/components/RemoveAlert/RemoveAlert', () => ({
-  RemoveAlert: () => null
-}));
-vi.mock('renderer/components/Project/components/RemoveGroupAlert/RemoveGroupAlert', () => ({
-  RemoveGroupAlert: () => null
-}));
-vi.mock('renderer/components/Project/components/RemoveWorktreeAlert/RemoveWorktreeAlert', () => ({
-  RemoveWorktreeAlert: () => null
-}));
-
+import { useDarkModeStore } from './useDarkMode';
 import { useModal } from './useModal';
 
 describe('useModal', () => {
@@ -37,49 +10,86 @@ describe('useModal', () => {
     useModal.setState({ activeModal: undefined });
   });
 
-  describe('initial state', () => {
-    it('should have no active modal', () => {
-      expect(useModal.getState().activeModal).toBeUndefined();
-    });
-  });
-
   describe('openModal', () => {
-    it('should set the active modal', () => {
-      const modal = {
-        name: 'git:merge' as const,
-        props: { branches: ['main', 'develop'], id: 'proj-1' }
-      };
+    it('should set the active modal in the store for remove:project', () => {
+      const modal = { name: 'remove:project' as const, props: { id: 'project-1', name: 'My Project' } };
 
-      useModal.getState().openModal(modal as any);
+      useModal.getState().openModal(modal);
 
       expect(useModal.getState().activeModal).toEqual(modal);
     });
 
-    it('should replace existing active modal', () => {
-      const firstModal = {
-        name: 'git:merge' as const,
-        props: { branches: [], id: '1' }
-      };
-      const secondModal = {
-        name: 'git:reset' as const,
-        props: { branches: [], currentBranch: 'main', id: '2' }
-      };
+    it('should set the active modal in the store for group', () => {
+      const modal = { name: 'group' as const, props: {} };
 
-      useModal.getState().openModal(firstModal as any);
-      useModal.getState().openModal(secondModal as any);
+      useModal.getState().openModal(modal);
 
-      expect(useModal.getState().activeModal?.name).toBe('git:reset');
+      expect(useModal.getState().activeModal).toEqual(modal);
+    });
+
+    it('should set the active modal in the store for sticker:add', () => {
+      const modal = { name: 'sticker:add' as const, props: {} };
+
+      useModal.getState().openModal(modal);
+
+      expect(useModal.getState().activeModal).toEqual(modal);
     });
   });
 
-  describe('Modal component', () => {
-    it('should return null when no active modal is set', () => {
-      useModal.setState({ activeModal: undefined });
+  describe('Modal', () => {
+    it('should return null when there is no active modal', () => {
+      expect(useModal.getState().Modal()).toBeNull();
+    });
 
-      const ModalComponent = useModal.getState().Modal;
-      const result = ModalComponent();
+    it('should return an element with the current dark mode and default isOpen of true', () => {
+      useDarkModeStore.setState({ darkMode: true });
+      useModal.getState().openModal({ name: 'remove:project', props: { id: 'project-1', name: 'My Project' } });
 
-      expect(result).toBeNull();
+      const element = useModal.getState().Modal();
+
+      expect(element).not.toBeNull();
+      expect(element?.props.darkMode).toBe(true);
+      expect(element?.props.isOpen).toBe(true);
+    });
+
+    it('should return null when the active modal name does not match any known modal', () => {
+      useModal.setState({
+        activeModal: { name: 'not:a:real:modal', props: {} } as unknown as ReturnType<
+          typeof useModal.getState
+        >['activeModal']
+      });
+
+      expect(useModal.getState().Modal()).toBeNull();
+    });
+
+    describe('onClose', () => {
+      beforeEach(() => {
+        vi.useFakeTimers();
+      });
+
+      afterEach(() => {
+        vi.useRealTimers();
+      });
+
+      it('should immediately set isOpen to false when called', () => {
+        useModal.getState().openModal({ name: 'remove:project', props: { id: 'project-1', name: 'My Project' } });
+
+        const element = useModal.getState().Modal();
+        element?.props.onClose();
+
+        expect(useModal.getState().activeModal).toMatchObject({ isOpen: false, name: 'remove:project' });
+      });
+
+      it('should clear the active modal after the animation delay elapses', () => {
+        useModal.getState().openModal({ name: 'remove:project', props: { id: 'project-1', name: 'My Project' } });
+
+        const element = useModal.getState().Modal();
+        element?.props.onClose();
+
+        vi.advanceTimersByTime(100);
+
+        expect(useModal.getState().activeModal).toBeUndefined();
+      });
     });
   });
 });

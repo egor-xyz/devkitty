@@ -92,6 +92,28 @@ describe('shellsLaunch', () => {
       expect(mockSpawn).toHaveBeenCalledWith('open', ['-b', 'dev.warp.Warp-Stable', '/some/path']);
     });
 
+    it('should launch cmux using open -b with bundle ID', () => {
+      const foundShell = { path: '/Applications/cmux.app', shell: Shell.cmux };
+
+      launch(foundShell, '/some/path');
+
+      expect(mockSpawn).toHaveBeenCalledWith('open', ['-b', 'com.cmuxterm.app', '/some/path']);
+    });
+
+    it('should launch PowerShell Core using open -b with bundle ID', () => {
+      const foundShell = { path: '/Applications/PowerShell.app', shell: Shell.PowerShellCore };
+
+      launch(foundShell, '/some/path');
+
+      expect(mockSpawn).toHaveBeenCalledWith('open', ['-b', 'com.microsoft.powershell', '/some/path']);
+    });
+
+    it('should throw an error when given an unrecognized shell type', () => {
+      const foundShell = { path: '/Applications/Unknown.app', shell: 'SomeUnknownShell' as Shell };
+
+      expect(() => launch(foundShell, '/some/path')).toThrow('Unknown shell: SomeUnknownShell');
+    });
+
     it('should return the spawned child process', () => {
       const foundShell = { path: '/Applications/Terminal.app', shell: Shell.Terminal };
 
