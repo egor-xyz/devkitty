@@ -152,7 +152,6 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
 
         <div className="overflow-hidden flex flex-col min-w-0 flex-1">
           <div className="flex items-center overflow-hidden mb-0.5 gap-2">
-            {draft && '[DRAFT] '}
 
             {/* GitHub's own state badges: purple merged, red closed, filled and
                 carrying the matching icon. shrink-0 and nowrap — a state is
@@ -246,7 +245,7 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
         {/* Labels + tags sit here, not in the title line, so they centre
             against the full card height (like the avatar and buttons) even when
             the title wraps to two lines. */}
-        {(labels.length > 0 || tags.length > 0 || review?.state || reviewers.length > 0) && (
+        {(labels.length > 0 || tags.length > 0 || review?.state || reviewers.length > 0 || draft) && (
           <div className="flex items-center gap-2 shrink-0">
             {labels.map((label: { color: string; id: number; name: string }) => (
               <div
@@ -276,10 +275,20 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
             ))}
 
             {/* Review verdict renders LAST so it sits closest to the action
-                buttons. GitHub-style: green "Approved", red "Changes requested",
-                or neutral "In review" while awaiting a verdict. Hover opens the
-                full Reviewers panel (avatars + per-reviewer status). */}
-            {review?.state === 'approved' && (
+                buttons. A draft PR is not reviewable, so it shows a "Draft"
+                badge instead of any review state. Otherwise, GitHub-style:
+                green "Approved", red "Changes requested", or neutral "In review"
+                while awaiting a verdict. Hover opens the full Reviewers panel. */}
+            {draft && (
+              <div className="flex items-center gap-1.5 rounded-full border border-bp-gray-2 dark:border-bp-gray-3 px-2.5 py-1 text-[11px] text-bp-gray-1 dark:text-bp-gray-4 shrink-0">
+                <Icon icon="git-branch"
+                  size={12}
+                />
+                Draft
+              </div>
+            )}
+
+            {!draft && review?.state === 'approved' && (
               <Popover content={reviewersPanel || undefined}
                 interactionKind="hover"
                 placement="bottom"
@@ -293,7 +302,7 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
               </Popover>
             )}
 
-            {review?.state === 'changes_requested' && (
+            {!draft && review?.state === 'changes_requested' && (
               <Popover content={reviewersPanel || undefined}
                 interactionKind="hover"
                 placement="bottom"
@@ -307,7 +316,7 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
               </Popover>
             )}
 
-            {!review?.state && reviewers.length > 0 && (
+            {!draft && !review?.state && reviewers.length > 0 && (
               <Popover content={reviewersPanel || undefined}
                 interactionKind="hover"
                 placement="bottom"
