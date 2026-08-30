@@ -1,5 +1,6 @@
 import { Button, ButtonGroup, Collapse, Menu, MenuDivider, MenuItem, Popover, Tooltip } from '@blueprintjs/core';
 import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
+import { FaCopy, FaRegCopy } from 'react-icons/fa';
 import { getStatusIcon } from 'renderer/assets/gitHubStatusUtils';
 import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
 import { useModal } from 'renderer/hooks/useModal';
@@ -272,8 +273,7 @@ export const Workflow: FC<Props> = ({ isRoot = false, onRefresh, project, run, s
           >
             <Button
               aria-label="Copy run link"
-              icon={copied ? 'tick' : 'link'}
-              intent={copied ? 'success' : 'none'}
+              icon={copied ? <FaCopy size={14} /> : <FaRegCopy size={14} />}
               onClick={copyLink}
             />
           </Tooltip>

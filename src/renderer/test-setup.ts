@@ -81,28 +81,49 @@ const mockBridge = {
   }
 };
 
-// Set up window with bridge and matchMedia for renderer store evaluation
-Object.defineProperty(globalThis, 'window', {
-  configurable: true,
-  value: {
-    addEventListener: vi.fn(),
-    bridge: mockBridge,
-    clearInterval: vi.fn(),
-    matchMedia: vi.fn(() => ({
-      addEventListener: vi.fn(),
-      matches: false,
-      removeEventListener: vi.fn()
-    })),
-    navigator: { onLine: true },
-    removeEventListener: vi.fn(),
-    setInterval: vi.fn()
-  },
-  writable: true
-});
+// Augment window rather than replace it. In the node env there is no window, so
+// we create a plain stub; under jsdom (`// @vitest-environment jsdom`) a real
+// window/document already exists and must be kept intact so React hooks can
+// mount — we only attach the bridge and fill any gaps.
+const g = globalThis as unknown as {
+  navigator?: { onLine: boolean };
+  window?: Record<string, unknown>;
+};
 
-// Also set navigator.onLine for useOnLine hook
-Object.defineProperty(globalThis, 'navigator', {
-  configurable: true,
-  value: { onLine: true },
-  writable: true
-});
+if (!g.window) {
+  Object.defineProperty(globalThis, 'window', {
+    configurable: true,
+    value: {
+      addEventListener: vi.fn(),
+      clearInterval: vi.fn(),
+      matchMedia: vi.fn(() => ({
+        addEventListener: vi.fn(),
+        matches: false,
+        removeEventListener: vi.fn()
+      })),
+      navigator: { onLine: true },
+      removeEventListener: vi.fn(),
+      setInterval: vi.fn()
+    },
+    writable: true
+  });
+}
+
+// Every renderer store/hook reads window.bridge at import time.
+(g.window as Record<string, unknown>).bridge = mockBridge;
+if (!(g.window as Record<string, unknown>).matchMedia) {
+  (g.window as Record<string, unknown>).matchMedia = vi.fn(() => ({
+    addEventListener: vi.fn(),
+    matches: false,
+    removeEventListener: vi.fn()
+  }));
+}
+
+// useOnLine reads navigator.onLine. jsdom provides a real navigator; node does not.
+if (!g.navigator) {
+  Object.defineProperty(globalThis, 'navigator', {
+    configurable: true,
+    value: { onLine: true },
+    writable: true
+  });
+}

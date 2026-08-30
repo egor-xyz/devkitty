@@ -111,24 +111,22 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
   const isClosed = !isMerged && state === 'closed';
   const totalUnresolvedComments = unresolvedThreads.reduce((sum, t) => sum + t.count, 0);
 
+  const applyChecks = useCallback((res: Awaited<ReturnType<typeof window.bridge.gitAPI.getPRChecks>>) => {
+    if (!res.success) return;
+    if (res.checks) setChecks(res.checks);
+    if (res.review) setReview(res.review);
+    setBehind(Boolean(res.behind));
+    setMergeableState(res.mergeableState ?? 'unknown');
+    setUnresolvedComments(res.unresolvedComments ?? 0);
+    setUnresolvedThreads(res.unresolvedThreads ?? []);
+    setAutoMergeAllowed(Boolean(res.autoMergeAllowed));
+    setAutoMergeEnabled(Boolean(res.autoMergeEnabled));
+    setAllowedMergeMethods(res.allowedMergeMethods ?? []);
+  }, []);
+
   const fetchChecks = useCallback(async () => {
-    const res = await window.bridge.gitAPI.getPRChecks(projectId, number);
-    if (res.success && res.checks) {
-      setChecks(res.checks);
-    }
-    if (res.success && res.review) {
-      setReview(res.review);
-    }
-    if (res.success) {
-      setBehind(Boolean(res.behind));
-      setMergeableState(res.mergeableState ?? 'unknown');
-      setUnresolvedComments(res.unresolvedComments ?? 0);
-      setUnresolvedThreads(res.unresolvedThreads ?? []);
-      setAutoMergeAllowed(Boolean(res.autoMergeAllowed));
-      setAutoMergeEnabled(Boolean(res.autoMergeEnabled));
-      setAllowedMergeMethods(res.allowedMergeMethods ?? []);
-    }
-  }, [projectId, number]);
+    applyChecks(await window.bridge.gitAPI.getPRChecks(projectId, number));
+  }, [applyChecks, projectId, number]);
 
   // Refetch on mount, whenever the PR advances (new head commit / updated_at),
   // and on a slow interval so a base that moved on GitHub — which changes
@@ -165,13 +163,27 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
     setUpdating(true);
     const res = await window.bridge.gitAPI.updateBranch(projectId, number, method);
     const toaster = await appToaster;
-    if (res.success) {
-      toaster.show({ icon: 'git-merge', intent: 'success', message: `Updated #${number} with the base branch` });
-      setBehind(false);
-      await fetchChecks();
-    } else {
+    if (!res.success) {
       toaster.show({ icon: 'warning-sign', intent: 'warning', message: cleanApiError(res.message, 'Failed to update branch'), timeout: 0 });
+      setUpdating(false);
+      return;
     }
+    toaster.show({ icon: 'git-merge', intent: 'success', message: `Updated #${number} with the base branch` });
+    // GitHub recomputes the PR's behind/mergeable state asynchronously after
+    // update-branch, so an immediate read still reports "behind". Poll fresh PR
+    // data until it settles (or give up) instead of trusting one stale read.
+    // The button stays in its updating spinner throughout, then clears on real
+    // state — no flicker back to "Update branch".
+    let settled = false;
+    for (let attempt = 0; attempt < 6 && !settled; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 800 : 1500));
+      const next = await window.bridge.gitAPI.getPRChecks(projectId, number);
+      if (next.success && !next.behind) {
+        applyChecks(next);
+        settled = true;
+      }
+    }
+    if (!settled) await fetchChecks();
     setUpdating(false);
   };
 

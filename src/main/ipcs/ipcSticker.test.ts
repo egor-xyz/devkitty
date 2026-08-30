@@ -62,5 +62,30 @@ describe('ipcSticker', () => {
 
       expect(mockTray.destroy).toHaveBeenCalled();
     });
+
+    it('should destroy the tray and clear the reference when the tray is clicked', async () => {
+      await handlers['sticker:add']({}, 'Test');
+
+      const clickHandler = mockTray.on.mock.calls.find(([event]) => event === 'click')?.[1];
+
+      clickHandler();
+
+      expect(mockTray.destroy).toHaveBeenCalled();
+    });
+
+    it('should not attempt to destroy the tray again if it was already cleared by a previous click', async () => {
+      await handlers['sticker:add']({}, 'Test');
+
+      const clickHandler = mockTray.on.mock.calls.find(([event]) => event === 'click')?.[1];
+
+      // First click destroys the tray and clears the module-level reference
+      clickHandler();
+      mockTray.destroy.mockClear();
+
+      // A second click should find no tray to destroy
+      clickHandler();
+
+      expect(mockTray.destroy).not.toHaveBeenCalled();
+    });
   });
 });
