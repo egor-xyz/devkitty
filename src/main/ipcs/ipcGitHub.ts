@@ -278,7 +278,89 @@ ipcMain.handle('git:api:getPRChecks', async (_, id: string, prNumber: number) =>
       status: check.status
     }));
 
-    return { checks, success: true };
+    // Review status, GitHub-style: the effective state per reviewer is their
+    // most recent non-comment review. A PR reads as "approved" when at least
+    // one reviewer's latest review is APPROVED and none is CHANGES_REQUESTED.
+    const { data: reviews } = await octokit().rest.pulls.listReviews({
+      owner,
+      per_page: 100,
+      pull_number: prNumber,
+      repo
+    });
+
+    type ReviewerState = 'approved' | 'changes_requested' | 'commented' | 'pending';
+    type Reviewer = {
+      avatarUrl: string;
+      login: string;
+      reReviewRequested: boolean;
+      state: ReviewerState;
+    };
+
+    const stateMap: Record<string, ReviewerState> = {
+      APPROVED: 'approved',
+      CHANGES_REQUESTED: 'changes_requested',
+      COMMENTED: 'commented'
+    };
+
+    // The PR author is never their own reviewer, even when they leave review
+    // comments on the thread — GitHub keeps them out of the Reviewers panel.
+    const authorLogin = pr.user?.login;
+
+    // Build one entry per reviewer, keyed by login. GitHub's rule: a reviewer's
+    // effective state is their most recent APPROVED / CHANGES_REQUESTED verdict;
+    // a COMMENTED review never overrides an existing verdict. Reviews arrive
+    // oldest-first, so verdicts overwrite freely while COMMENTED only fills a
+    // reviewer who has no verdict yet.
+    const byLogin = new Map<string, Reviewer>();
+    for (const rev of reviews) {
+      const login = rev.user?.login;
+      const mapped = rev.state ? stateMap[rev.state] : undefined;
+      if (!login || !mapped) continue; // skip DISMISSED / PENDING drafts
+      if (login === authorLogin) continue;
+      const existing = byLogin.get(login);
+      if (mapped === 'commented' && existing && existing.state !== 'commented') continue;
+      byLogin.set(login, {
+        avatarUrl: rev.user?.avatar_url ?? '',
+        login,
+        reReviewRequested: false,
+        state: mapped
+      });
+    }
+
+    // Requested reviewers who have not reviewed yet are "pending". If they
+    // already have a verdict, a fresh request means GitHub is asking for a
+    // re-review — flag it (shows the spinner next to their prior verdict, and
+    // makes that prior approval stale so it no longer counts toward "approved").
+    for (const rr of pr.requested_reviewers ?? []) {
+      const login = 'login' in rr ? rr.login : undefined;
+      if (!login || login === authorLogin) continue;
+      const existing = byLogin.get(login);
+      if (existing) {
+        existing.reReviewRequested = true;
+      } else {
+        byLogin.set(login, {
+          avatarUrl: 'avatar_url' in rr ? rr.avatar_url : '',
+          login,
+          reReviewRequested: false,
+          state: 'pending'
+        });
+      }
+    }
+
+    const reviewers = [...byLogin.values()];
+    // A re-requested approval is stale — it does not count toward the overall
+    // "approved" verdict, matching GitHub ("At least 1 approving review is
+    // required" persists after a re-request).
+    const approvedBy = reviewers.filter((r) => r.state === 'approved' && !r.reReviewRequested).map((r) => r.login);
+    const changesRequestedBy = reviewers.filter((r) => r.state === 'changes_requested').map((r) => r.login);
+
+    let reviewState: 'approved' | 'changes_requested' | null = null;
+    if (changesRequestedBy.length > 0) reviewState = 'changes_requested';
+    else if (approvedBy.length > 0) reviewState = 'approved';
+
+    const review = { approvedBy, changesRequestedBy, reviewers, state: reviewState };
+
+    return { checks, review, success: true };
   } catch (e) {
     log.error(e);
     return { message: e.message, success: false };

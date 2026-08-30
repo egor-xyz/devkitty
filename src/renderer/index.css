@@ -408,6 +408,55 @@
   background-color: rgba(255, 255, 255, 0.09) !important;
 }
 
+/* Sunset toasts — the default Blueprint intent colours (orange warning, red
+   danger) read as flat off-theme blocks over the plum app. Reskin every toast
+   to the same plum glass as popovers so notifications match the surface. The
+   toaster is portaled to <body>, but the Sunset flag is mirrored onto <html>,
+   so .theme-sunset reaches it. Intent is kept as a thin left accent stripe. */
+.theme-sunset .bp6-toast {
+  background-color: #2a1230 !important;
+  background-image: linear-gradient(160deg, rgba(77, 20, 16, 0.97) 0%, rgba(54, 15, 54, 0.98) 52%, rgba(36, 16, 63, 0.99) 100%) !important;
+  border-left: 3px solid rgba(199, 188, 228, 0.35) !important;
+  box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(199, 188, 228, 0.14) !important;
+  color: #efe8f5 !important;
+}
+.theme-sunset .bp6-toast.bp6-intent-warning {
+  border-left-color: #d98a3d !important;
+}
+.theme-sunset .bp6-toast.bp6-intent-danger {
+  border-left-color: #f85149 !important;
+}
+.theme-sunset .bp6-toast.bp6-intent-success {
+  border-left-color: #3fb950 !important;
+}
+.theme-sunset .bp6-toast .bp6-toast-message {
+  color: #efe8f5 !important;
+}
+/* The toast's leading intent icon and text stay legible on the plum glass. */
+.theme-sunset .bp6-toast > .bp6-icon {
+  color: #efe8f5 !important;
+}
+/* The dismiss (X) button: Blueprint renders it as an opaque dark square that
+   sits wrong on the plum toast. Make it a transparent minimal glyph. */
+.theme-sunset .bp6-toast .bp6-button,
+.theme-sunset .bp6-toast .bp6-button:hover,
+.theme-sunset .bp6-toast .bp6-button.bp6-active {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: rgba(239, 232, 245, 0.75) !important;
+}
+.theme-sunset .bp6-toast .bp6-button .bp6-icon {
+  color: rgba(239, 232, 245, 0.75) !important;
+}
+.theme-sunset .bp6-toast .bp6-button:hover {
+  background: rgba(255, 255, 255, 0.1) !important;
+  color: #ffffff !important;
+}
+.theme-sunset .bp6-toast .bp6-button:hover .bp6-icon {
+  color: #ffffff !important;
+}
+
 /* Solid, opaque sticky-header surface for Sunset — sticky rows must never let
    scrolling content bleed through, so this is fully opaque (applied in the
    component, not via a fragile dark: utility override). */

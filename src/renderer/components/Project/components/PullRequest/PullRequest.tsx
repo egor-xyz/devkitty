@@ -19,6 +19,30 @@ type Props = {
   tags?: string[];
 };
 
+type Review = {
+  approvedBy: string[];
+  changesRequestedBy: string[];
+  reviewers: Reviewer[];
+  state: 'approved' | 'changes_requested' | null;
+};
+
+type Reviewer = {
+  avatarUrl: string;
+  login: string;
+  reReviewRequested: boolean;
+  state: 'approved' | 'changes_requested' | 'commented' | 'pending';
+};
+
+const reviewerStatus = (r: Reviewer): { color: string; icon: 'chat' | 'cross' | 'dot' | 'tick'; label: string } => {
+  // Icons mirror GitHub's Reviewers panel 1:1: bare green check for approved,
+  // red cross for changes requested, a comment bubble for a commented review,
+  // and a faint dot for an awaiting/requested reviewer.
+  if (r.state === 'approved') return { color: 'text-[#3fb950]', icon: 'tick', label: 'approved' };
+  if (r.state === 'changes_requested') return { color: 'text-[#f85149]', icon: 'cross', label: 'requested changes' };
+  if (r.state === 'commented') return { color: 'text-bp-gray-3', icon: 'chat', label: 'commented' };
+  return { color: 'text-bp-gray-3', icon: 'dot', label: 'awaiting review' };
+};
+
 const getChecksSummary = (checks: Check[]) => {
   if (checks.length === 0) return null;
 
@@ -35,12 +59,16 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
   const isClosed = !isMerged && state === 'closed';
   const isSunset = useIsSunset();
   const [checks, setChecks] = useState<Check[]>([]);
+  const [review, setReview] = useState<null | Review>(null);
 
   useEffect(() => {
     const fetchChecks = async () => {
       const res = await window.bridge.gitAPI.getPRChecks(projectId, number);
       if (res.success && res.checks) {
         setChecks(res.checks);
+      }
+      if (res.success && res.review) {
+        setReview(res.review);
       }
     };
     fetchChecks();
@@ -51,6 +79,60 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
   };
 
   const summary = getChecksSummary(checks);
+
+  // GitHub-style Reviewers panel: every reviewer with their avatar and current
+  // status icon (approved / requested changes / commented / awaiting).
+  const reviewers = review?.reviewers ?? [];
+  const reviewersPanel = reviewers.length > 0 && (
+    <div className="min-w-[240px] px-3.5 py-3">
+      <div className="mb-2.5 text-[11px] font-semibold uppercase tracking-[0.08em] text-bp-gray-3">Reviewers</div>
+
+      <div className="flex flex-col gap-1">
+        {reviewers.map((r) => {
+          const status = reviewerStatus(r);
+          return (
+            <div className="flex items-center gap-2.5 rounded-md px-1.5 py-1 -mx-1.5 hover:bg-white/5"
+              key={r.login}
+            >
+              {r.avatarUrl ? (
+                <img alt={r.login}
+                  className="w-5 h-5 rounded-full object-cover shrink-0 ring-1 ring-white/10"
+                  src={r.avatarUrl}
+                />
+              ) : (
+                <Icon className="shrink-0"
+                  icon="user"
+                  size={16}
+                />
+              )}
+
+              <span className="flex-1 text-xs font-medium truncate">{r.login.replace('[bot]', '')}</span>
+
+              {r.reReviewRequested && (
+                <Tooltip compact
+                  content="Re-review requested"
+                >
+                  <Icon className="text-bp-gray-3"
+                    icon="refresh"
+                    size={12}
+                  />
+                </Tooltip>
+              )}
+
+              <Tooltip compact
+                content={status.label}
+              >
+                <Icon className={status.color}
+                  icon={status.icon}
+                  size={14}
+                />
+              </Tooltip>
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
 
   return (
     <div
@@ -164,12 +246,12 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
         {/* Labels + tags sit here, not in the title line, so they centre
             against the full card height (like the avatar and buttons) even when
             the title wraps to two lines. */}
-        {(labels.length > 0 || tags.length > 0) && (
+        {(labels.length > 0 || tags.length > 0 || review?.state || reviewers.length > 0) && (
           <div className="flex items-center gap-2 shrink-0">
             {labels.map((label: { color: string; id: number; name: string }) => (
               <div
                 className={cn(
-                  'rounded-full border px-1.5 py-px text-[10px] shrink-0',
+                  'rounded-full border px-2.5 py-1 text-[11px] shrink-0',
                   'border-[color-mix(in_srgb,var(--label)_45%,transparent)]',
                   'text-[color-mix(in_srgb,var(--label)_70%,black)]',
                   'dark:text-[color-mix(in_srgb,var(--label)_80%,white)]'
@@ -181,10 +263,10 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
               </div>
             ))}
 
-            {tags.map((tag) => (
+            {tags.filter((tag) => tag !== 'My').map((tag) => (
               <div
                 className={cn(
-                  'rounded-full border border-bp-gray-2 dark:border-bp-gray-3 px-1.5 py-px text-[10px]',
+                  'rounded-full border border-bp-gray-2 dark:border-bp-gray-3 px-2.5 py-1 text-[11px]',
                   'text-bp-gray-1 dark:text-bp-gray-4'
                 )}
                 key={`${number}-${tag}`}
@@ -192,6 +274,52 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
                 {tag}
               </div>
             ))}
+
+            {/* Review verdict renders LAST so it sits closest to the action
+                buttons. GitHub-style: green "Approved", red "Changes requested",
+                or neutral "In review" while awaiting a verdict. Hover opens the
+                full Reviewers panel (avatars + per-reviewer status). */}
+            {review?.state === 'approved' && (
+              <Popover content={reviewersPanel || undefined}
+                interactionKind="hover"
+                placement="bottom"
+              >
+                <div className="flex items-center gap-1.5 rounded-full border border-[#1a7f37]/45 dark:border-[#3fb950]/45 px-2.5 py-1 text-[11px] text-[#1a7f37] dark:text-[#3fb950] shrink-0 cursor-default">
+                  <Icon icon="tick-circle"
+                    size={12}
+                  />
+                  Approved
+                </div>
+              </Popover>
+            )}
+
+            {review?.state === 'changes_requested' && (
+              <Popover content={reviewersPanel || undefined}
+                interactionKind="hover"
+                placement="bottom"
+              >
+                <div className="flex items-center gap-1.5 rounded-full border border-[#cf222e]/45 dark:border-[#f85149]/45 px-2.5 py-1 text-[11px] text-[#cf222e] dark:text-[#f85149] shrink-0 cursor-default">
+                  <Icon icon="cross-circle"
+                    size={12}
+                  />
+                  Changes requested
+                </div>
+              </Popover>
+            )}
+
+            {!review?.state && reviewers.length > 0 && (
+              <Popover content={reviewersPanel || undefined}
+                interactionKind="hover"
+                placement="bottom"
+              >
+                <div className="flex items-center gap-1.5 rounded-full border border-bp-gray-2 dark:border-bp-gray-3 px-2.5 py-1 text-[11px] text-bp-gray-1 dark:text-bp-gray-4 shrink-0 cursor-default">
+                  <Icon icon="eye-open"
+                    size={12}
+                  />
+                  In review
+                </div>
+              </Popover>
+            )}
           </div>
         )}
       </div>
