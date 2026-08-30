@@ -21,14 +21,33 @@ const mockBridge = {
     reset: vi.fn()
   },
   gitAPI: {
+    cancelRun: vi.fn(),
+    disableAutoMerge: vi.fn().mockResolvedValue({ success: true }),
+    enableAutoMerge: vi.fn().mockResolvedValue({ success: true }),
+    getConflictFiles: vi.fn().mockResolvedValue({ files: [], success: true }),
     getJobs: vi.fn(),
     getOpenPulls: vi.fn(),
     getPinnedRuns: vi.fn(),
+    getPRChecks: vi.fn().mockResolvedValue({
+      autoMergeAllowed: false,
+      autoMergeEnabled: false,
+      behind: false,
+      checks: [],
+      mergeableState: 'unknown',
+      review: null,
+      success: true,
+      unresolvedComments: 0,
+      unresolvedThreads: []
+    }),
     getPulls: vi.fn(),
     getRuns: vi.fn(),
     getRunsPage: vi.fn(),
+    mergePR: vi.fn().mockResolvedValue({ success: true }),
+    rerunFailedJobs: vi.fn(),
+    rerunWorkflow: vi.fn(),
     reset: vi.fn(),
-    searchRuns: vi.fn()
+    searchRuns: vi.fn(),
+    updateBranch: vi.fn().mockResolvedValue({ success: true })
   },
   launch: {
     editor: vi.fn(),
@@ -47,6 +66,10 @@ const mockBridge = {
   },
   sticker: {
     add: vi.fn()
+  },
+  window: {
+    getAlwaysOnTop: vi.fn().mockResolvedValue(false),
+    setAlwaysOnTop: vi.fn().mockResolvedValue(false)
   },
   worktree: {
     add: vi.fn(),

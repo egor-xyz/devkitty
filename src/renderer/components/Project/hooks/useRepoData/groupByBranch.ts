@@ -81,10 +81,20 @@ export const buildDetailGroups = (
   runsByBranch: Record<string, Run[]>,
   branch: string
 ): DetailGroup[] => {
-  const groups: DetailGroup[] = pulls.map((pull) => ({
-    pull,
-    runs: pull.pull.head?.ref ? (runsByBranch[pull.pull.head.ref] ?? []) : []
-  }));
+  // GitHub's PR UI shows checks for the PR's HEAD commit only — runs from
+  // earlier commits on the same branch (a since-superseded failing build, say)
+  // are not the PR's current state and must not surface under it. Scope each
+  // pull's runs to its head SHA; runs from older commits fall through to the
+  // branch's loose bucket (or vanish once the branch view no longer needs them).
+  const groups: DetailGroup[] = pulls.map((pull) => {
+    const ref = pull.pull.head?.ref;
+    const sha = pull.pull.head?.sha;
+    const branchRuns = ref ? (runsByBranch[ref] ?? []) : [];
+    return {
+      pull,
+      runs: sha ? branchRuns.filter((run) => run.head_sha === sha) : branchRuns
+    };
+  });
 
   const claimed = new Set(pulls.map(({ pull }) => pull.head?.ref));
   const loose = claimed.has(branch) ? [] : (runsByBranch[branch] ?? []);
@@ -243,10 +253,40 @@ export const groupPullsByBranch = (pulls: PullWithTags[]): Record<string, PullWi
 
 // `countPerBranch` caps how many runs a branch keeps; left out, it keeps them
 // all and the card decides what to show.
+// When a workflow is re-run, GitHub creates a fresh run record for the same
+// workflow on the same commit. GitHub's own PR UI shows only the latest attempt
+// and hides the superseded ones — otherwise a stale failed attempt keeps a red X
+// on a workflow that has since passed. Collapse each (workflow, commit) to its
+// newest attempt so the card matches GitHub. Keyed on head_sha (not head_branch)
+// so genuinely different commits on a branch stay as distinct rows.
+export const dedupeSupersededRuns = (runs: Run[]): Run[] => {
+  const latest = new Map<string, Run>();
+
+  for (const run of runs) {
+    const workflow = run.path ?? (run.workflow_id == null ? '' : String(run.workflow_id));
+    // Only collapse when a run carries a stable (workflow, commit) identity;
+    // without both, treat it as unique (keyed by id) so nothing is dropped.
+    const key = run.head_sha && workflow ? `${workflow}|${run.head_sha}` : `id:${run.id}`;
+    const current = latest.get(key);
+    if (!current) {
+      latest.set(key, run);
+      continue;
+    }
+    // Prefer the higher run_attempt, falling back to the newer created_at.
+    const isNewer =
+      (run.run_attempt ?? 0) > (current.run_attempt ?? 0) ||
+      ((run.run_attempt ?? 0) === (current.run_attempt ?? 0) &&
+        new Date(run.created_at).getTime() > new Date(current.created_at).getTime());
+    if (isNewer) latest.set(key, run);
+  }
+
+  return [...latest.values()];
+};
+
 export const groupRunsByBranch = (runs: Run[], countPerBranch?: number): Record<string, Run[]> => {
   const grouped: Record<string, Run[]> = Object.create(null);
 
-  for (const run of runs) {
+  for (const run of dedupeSupersededRuns(runs)) {
     const branch = run.head_branch;
     if (!branch) continue;
 

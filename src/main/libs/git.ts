@@ -19,6 +19,15 @@ export const getGit = async (id: string) => {
   return git;
 };
 
+export const getProjectPath = (id: string): string => {
+  // @ts-ignore tmp
+  const projects = settings.get('projects');
+  // @ts-ignore tmp
+  const project = projects.find((project) => project.id === id);
+  if (!project) throw new Error('Project not found');
+  return project.filePath;
+};
+
 export const parseWorktreeList = (output: string): Worktree[] => {
   const worktrees: Worktree[] = [];
   const blocks = output.trim().split('\n\n');

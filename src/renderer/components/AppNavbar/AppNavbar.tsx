@@ -1,6 +1,6 @@
 import { Button, ButtonGroup, Classes, Icon, Navbar, Tooltip } from '@blueprintjs/core';
 import clsx from 'clsx';
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router';
 import Devkitty from 'renderer/assets/devkitty.svg?react';
 import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
@@ -23,6 +23,18 @@ export const AppNavbar = () => {
   const { clear, query, setQuery } = useFilter();
   const searchRef = useRef<HTMLInputElement>(null);
   const onHome = useLocation().pathname === '/';
+  const [alwaysOnTop, setAlwaysOnTop] = useState(false);
+
+  // Reflect the window's real pinned state on mount (it survives across
+  // reloads within a session).
+  useEffect(() => {
+    window.bridge.window.getAlwaysOnTop().then(setAlwaysOnTop);
+  }, []);
+
+  const toggleAlwaysOnTop = async () => {
+    const next = await window.bridge.window.setAlwaysOnTop(!alwaysOnTop);
+    setAlwaysOnTop(next);
+  };
 
   // Leaving the project list drops the filter, so coming back is never
   // silently narrowed by something typed a page ago.
@@ -108,6 +120,21 @@ export const AppNavbar = () => {
           minimal
           onClick={refresh}
         />
+
+        <Tooltip
+          compact
+          content={alwaysOnTop ? 'Always on top: on' : 'Keep window always on top'}
+          hoverOpenDelay={500}
+          placement="bottom"
+        >
+          <Button
+            active={alwaysOnTop}
+            aria-label="Toggle always on top"
+            icon="pin"
+            minimal
+            onClick={toggleAlwaysOnTop}
+          />
+        </Tooltip>
 
         <Navbar.Divider />
 

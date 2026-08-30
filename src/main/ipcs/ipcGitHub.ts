@@ -1,12 +1,35 @@
+import { execFile } from 'child_process';
 import { ipcMain, safeStorage } from 'electron';
 import log from 'electron-log';
 import { Octokit } from 'octokit';
 import { type PullType, type Run } from 'types/gitHub';
+import { promisify } from 'util';
 
-import { getRepoInfo } from '../libs/git';
+import { getProjectPath, getRepoInfo } from '../libs/git';
 import { settings } from '../settings';
 
 const protectedBranches = ['master', 'main'];
+
+const execFileAsync = promisify(execFile);
+
+// Runs a `gh` command so PR mutations happen server-side on GitHub (never a
+// local checkout), using the user's own `gh auth` session. Returns gh's own
+// stderr as the error message — it is already human-readable ("Pull request is
+// not mergeable", "merge conflict between base and head", …).
+const runGh = async (args: string[]): Promise<{ message?: string; success: boolean }> => {
+  try {
+    await execFileAsync('gh', args, { maxBuffer: 1024 * 1024 });
+    return { success: true };
+  } catch (e) {
+    const err = e as { message?: string; stderr?: string; };
+    const raw = (err.stderr || err.message || 'gh command failed').trim();
+    // Keep the last meaningful line, then strip gh's leading status glyph
+    // ("X ", "✗ ", "! ", …) so the toast reads as a plain sentence.
+    const lines = raw.split('\n').map((l) => l.trim()).filter((l) => l.length > 0 && !l.startsWith('Usage:'));
+    const message = (lines.at(-1) ?? raw).replace(/^[X✗✔✓!•\-–]\s+/u, '').trim();
+    return { message: message || raw, success: false };
+  }
+};
 
 const octokit = () => {
   const { gitHubToken } = settings.get('appSettings');
@@ -278,7 +301,289 @@ ipcMain.handle('git:api:getPRChecks', async (_, id: string, prNumber: number) =>
       status: check.status
     }));
 
-    return { checks, success: true };
+    // Review status, GitHub-style: the effective state per reviewer is their
+    // most recent non-comment review. A PR reads as "approved" when at least
+    // one reviewer's latest review is APPROVED and none is CHANGES_REQUESTED.
+    const { data: reviews } = await octokit().rest.pulls.listReviews({
+      owner,
+      per_page: 100,
+      pull_number: prNumber,
+      repo
+    });
+
+    type ReviewerState = 'approved' | 'changes_requested' | 'commented' | 'pending';
+    type Reviewer = {
+      avatarUrl: string;
+      login: string;
+      reReviewRequested: boolean;
+      state: ReviewerState;
+    };
+
+    const stateMap: Record<string, ReviewerState> = {
+      APPROVED: 'approved',
+      CHANGES_REQUESTED: 'changes_requested',
+      COMMENTED: 'commented'
+    };
+
+    // The PR author is never their own reviewer, even when they leave review
+    // comments on the thread — GitHub keeps them out of the Reviewers panel.
+    const authorLogin = pr.user?.login;
+
+    // Build one entry per reviewer, keyed by login. GitHub's rule: a reviewer's
+    // effective state is their most recent APPROVED / CHANGES_REQUESTED verdict;
+    // a COMMENTED review never overrides an existing verdict. Reviews arrive
+    // oldest-first, so verdicts overwrite freely while COMMENTED only fills a
+    // reviewer who has no verdict yet.
+    const byLogin = new Map<string, Reviewer>();
+    for (const rev of reviews) {
+      const login = rev.user?.login;
+      const mapped = rev.state ? stateMap[rev.state] : undefined;
+      if (!login || !mapped) continue; // skip DISMISSED / PENDING drafts
+      if (login === authorLogin) continue;
+      const existing = byLogin.get(login);
+      if (mapped === 'commented' && existing && existing.state !== 'commented') continue;
+      byLogin.set(login, {
+        avatarUrl: rev.user?.avatar_url ?? '',
+        login,
+        reReviewRequested: false,
+        state: mapped
+      });
+    }
+
+    // Requested reviewers who have not reviewed yet are "pending". If they
+    // already have a verdict, a fresh request means GitHub is asking for a
+    // re-review — flag it (shows the spinner next to their prior verdict, and
+    // makes that prior approval stale so it no longer counts toward "approved").
+    for (const rr of pr.requested_reviewers ?? []) {
+      const login = 'login' in rr ? rr.login : undefined;
+      if (!login || login === authorLogin) continue;
+      const existing = byLogin.get(login);
+      if (existing) {
+        existing.reReviewRequested = true;
+      } else {
+        byLogin.set(login, {
+          avatarUrl: 'avatar_url' in rr ? rr.avatar_url : '',
+          login,
+          reReviewRequested: false,
+          state: 'pending'
+        });
+      }
+    }
+
+    const reviewers = [...byLogin.values()];
+    // A re-requested approval is stale — it does not count toward the overall
+    // "approved" verdict, matching GitHub ("At least 1 approving review is
+    // required" persists after a re-request).
+    const approvedBy = reviewers.filter((r) => r.state === 'approved' && !r.reReviewRequested).map((r) => r.login);
+    const changesRequestedBy = reviewers.filter((r) => r.state === 'changes_requested').map((r) => r.login);
+
+    let reviewState: 'approved' | 'changes_requested' | null = null;
+    if (changesRequestedBy.length > 0) reviewState = 'changes_requested';
+    else if (approvedBy.length > 0) reviewState = 'approved';
+
+    const review = { approvedBy, changesRequestedBy, reviewers, state: reviewState };
+
+    // One GraphQL round-trip for the things REST can't give us: unresolved
+    // review conversations (GitHub blocks merge on these), and whether auto-merge
+    // is available / already armed for this PR.
+    let unresolvedComments = 0;
+    let unresolvedThreads: { avatarUrl: string; count: number; login: string; path: null | string }[] = [];
+    let autoMergeAllowed = false;
+    let autoMergeEnabled = false;
+    try {
+      const gql = await octokit().graphql<{
+        repository: {
+          autoMergeAllowed: boolean;
+          pullRequest: {
+            autoMergeRequest: null | { enabledAt: string };
+            reviewThreads: {
+              nodes: {
+                comments: { nodes: { author: null | { avatarUrl: string; login: string } }[]; totalCount: number };
+                isResolved: boolean;
+                path: null | string;
+              }[];
+            };
+            viewerCanEnableAutoMerge: boolean;
+          };
+        };
+      }>(
+        `query ($owner: String!, $repo: String!, $num: Int!) {
+          repository(owner: $owner, name: $repo) {
+            autoMergeAllowed
+            pullRequest(number: $num) {
+              reviewThreads(first: 100) {
+                nodes {
+                  isResolved
+                  path
+                  comments(first: 1) {
+                    totalCount
+                    nodes { author { login avatarUrl } }
+                  }
+                }
+              }
+              viewerCanEnableAutoMerge
+              autoMergeRequest { enabledAt }
+            }
+          }
+        }`,
+        { num: prNumber, owner, repo }
+      );
+      const gqlPr = gql.repository.pullRequest;
+      const unresolved = gqlPr.reviewThreads.nodes.filter((t) => !t.isResolved);
+      unresolvedComments = unresolved.length;
+      unresolvedThreads = unresolved.map((t) => ({
+        avatarUrl: t.comments.nodes[0]?.author?.avatarUrl ?? '',
+        count: t.comments.totalCount,
+        login: t.comments.nodes[0]?.author?.login ?? 'unknown',
+        path: t.path
+      }));
+      autoMergeEnabled = Boolean(gqlPr.autoMergeRequest);
+      autoMergeAllowed = gql.repository.autoMergeAllowed && gqlPr.viewerCanEnableAutoMerge;
+    } catch (gqlErr) {
+      log.error(gqlErr);
+    }
+
+    // Out-of-date detection, independent of mergeable_state: mergeable_state
+    // collapses to 'blocked'/'unstable' when other rules block the merge, hiding
+    // the "behind" fact. Comparing base...head gives behind_by directly, so the
+    // "Update branch" affordance shows whenever the branch is actually behind.
+    let behind = false;
+    try {
+      const { data: cmp } = await octokit().rest.repos.compareCommits({
+        base: pr.base.ref,
+        head: sha,
+        owner,
+        repo
+      });
+      behind = (cmp.behind_by ?? 0) > 0;
+    } catch (cmpErr) {
+      log.error(cmpErr);
+    }
+
+    return {
+      // mergeable_state: clean | unstable | has_hooks (mergeable) vs
+      // blocked | dirty | behind | draft | unknown (not). Renderer uses it to
+      // enable/disable the merge button, matching GitHub.
+      autoMergeAllowed,
+      autoMergeEnabled,
+      behind,
+      checks,
+      mergeable: pr.mergeable ?? null,
+      mergeableState: pr.mergeable_state ?? 'unknown',
+      review,
+      success: true,
+      unresolvedComments,
+      unresolvedThreads
+    };
+  } catch (e) {
+    log.error(e);
+    return { message: e.message, success: false };
+  }
+});
+
+ipcMain.handle(
+  'git:api:mergePR',
+  async (_, id: string, prNumber: number, method: 'merge' | 'rebase' | 'squash') => {
+    try {
+      const { owner, repo } = await getRepoInfo(id);
+      if (!owner || !repo) throw new Error('Project not found');
+
+      // `gh pr merge` merges on GitHub's side (not the local clone). The method
+      // flag makes it non-interactive.
+      const flag = method === 'squash' ? '--squash' : method === 'rebase' ? '--rebase' : '--merge';
+      return await runGh(['pr', 'merge', String(prNumber), '--repo', `${owner}/${repo}`, flag]);
+    } catch (e) {
+      log.error(e);
+      return { message: e.message, success: false };
+    }
+  }
+);
+
+ipcMain.handle(
+  'git:api:updateBranch',
+  async (_, id: string, prNumber: number, method: 'merge' | 'rebase' = 'merge') => {
+    try {
+      const { owner, repo } = await getRepoInfo(id);
+      if (!owner || !repo) throw new Error('Project not found');
+
+      // `gh pr update-branch` updates the PR head with its base on GitHub's side
+      // — a merge commit by default, or a rebase with --rebase.
+      const args = ['pr', 'update-branch', String(prNumber), '--repo', `${owner}/${repo}`];
+      if (method === 'rebase') args.push('--rebase');
+      return await runGh(args);
+    } catch (e) {
+      log.error(e);
+      return { message: e.message, success: false };
+    }
+  }
+);
+
+ipcMain.handle(
+  'git:api:enableAutoMerge',
+  async (_, id: string, prNumber: number, method: 'merge' | 'rebase' | 'squash') => {
+    try {
+      const { owner, repo } = await getRepoInfo(id);
+      if (!owner || !repo) throw new Error('Project not found');
+
+      // `gh pr merge --auto` arms auto-merge: GitHub merges once every required
+      // check and review passes. Method flag picks the strategy.
+      const flag = method === 'squash' ? '--squash' : method === 'rebase' ? '--rebase' : '--merge';
+      return await runGh(['pr', 'merge', String(prNumber), '--repo', `${owner}/${repo}`, '--auto', flag]);
+    } catch (e) {
+      log.error(e);
+      return { message: e.message, success: false };
+    }
+  }
+);
+
+ipcMain.handle('git:api:disableAutoMerge', async (_, id: string, prNumber: number) => {
+  try {
+    const { owner, repo } = await getRepoInfo(id);
+    if (!owner || !repo) throw new Error('Project not found');
+
+    return await runGh(['pr', 'merge', String(prNumber), '--repo', `${owner}/${repo}`, '--disable-auto']);
+  } catch (e) {
+    log.error(e);
+    return { message: e.message, success: false };
+  }
+});
+
+// Which files conflict between base and head — the list GitHub shows under
+// "This branch has conflicts that must be resolved". Computed locally with
+// `git merge-tree` (read-only: writes nothing, pushes nothing) against the
+// project's own clone, since GitHub exposes no API for the conflicting paths.
+ipcMain.handle('git:api:getConflictFiles', async (_, id: string, prNumber: number) => {
+  try {
+    const { owner, repo } = await getRepoInfo(id);
+    if (!owner || !repo) throw new Error('Project not found');
+    const cwd = getProjectPath(id);
+
+    const { data: pr } = await octokit().rest.pulls.get({ owner, pull_number: prNumber, repo });
+    const base = pr.base.ref;
+    const head = pr.head.ref;
+
+    // Make sure both tips are present locally before the merge test.
+    await execFileAsync('git', ['-C', cwd, 'fetch', 'origin', base, head], { maxBuffer: 1024 * 1024 });
+
+    try {
+      await execFileAsync(
+        'git',
+        ['-C', cwd, 'merge-tree', '--write-tree', '--name-only', `origin/${base}`, `origin/${head}`],
+        { maxBuffer: 8 * 1024 * 1024 }
+      );
+      // Exit 0 → merges cleanly, no conflicts.
+      return { files: [], success: true };
+    } catch (mergeErr) {
+      // Exit 1 → conflicts. stdout is: <tree-oid>\n<conflicted paths…>\n\n<info>
+      const out = ((mergeErr as { stdout?: string }).stdout ?? '').split('\n');
+      out.shift(); // drop the tree OID line
+      const files: string[] = [];
+      for (const line of out) {
+        if (line.trim() === '') break; // blank line ends the file list
+        files.push(line.trim());
+      }
+      return { files, success: true };
+    }
   } catch (e) {
     log.error(e);
     return { message: e.message, success: false };
