@@ -390,10 +390,12 @@ ipcMain.handle('git:api:getPRChecks', async (_, id: string, prNumber: number) =>
     let unresolvedThreads: { avatarUrl: string; count: number; login: string; path: null | string }[] = [];
     let autoMergeAllowed = false;
     let autoMergeEnabled = false;
+    let allowedMergeMethods: ('merge' | 'rebase' | 'squash')[] = [];
     try {
       const gql = await octokit().graphql<{
         repository: {
           autoMergeAllowed: boolean;
+          mergeCommitAllowed: boolean;
           pullRequest: {
             autoMergeRequest: null | { enabledAt: string };
             reviewThreads: {
@@ -405,11 +407,16 @@ ipcMain.handle('git:api:getPRChecks', async (_, id: string, prNumber: number) =>
             };
             viewerCanEnableAutoMerge: boolean;
           };
+          rebaseMergeAllowed: boolean;
+          squashMergeAllowed: boolean;
         };
       }>(
         `query ($owner: String!, $repo: String!, $num: Int!) {
           repository(owner: $owner, name: $repo) {
             autoMergeAllowed
+            squashMergeAllowed
+            mergeCommitAllowed
+            rebaseMergeAllowed
             pullRequest(number: $num) {
               reviewThreads(first: 100) {
                 nodes {
@@ -439,6 +446,12 @@ ipcMain.handle('git:api:getPRChecks', async (_, id: string, prNumber: number) =>
       }));
       autoMergeEnabled = Boolean(gqlPr.autoMergeRequest);
       autoMergeAllowed = gql.repository.autoMergeAllowed && gqlPr.viewerCanEnableAutoMerge;
+      // Only the merge methods the repo actually enables, in GitHub's order.
+      allowedMergeMethods = [
+        ...(gql.repository.squashMergeAllowed ? (['squash'] as const) : []),
+        ...(gql.repository.mergeCommitAllowed ? (['merge'] as const) : []),
+        ...(gql.repository.rebaseMergeAllowed ? (['rebase'] as const) : [])
+      ];
     } catch (gqlErr) {
       log.error(gqlErr);
     }
@@ -464,6 +477,7 @@ ipcMain.handle('git:api:getPRChecks', async (_, id: string, prNumber: number) =>
       // mergeable_state: clean | unstable | has_hooks (mergeable) vs
       // blocked | dirty | behind | draft | unknown (not). Renderer uses it to
       // enable/disable the merge button, matching GitHub.
+      allowedMergeMethods,
       autoMergeAllowed,
       autoMergeEnabled,
       behind,

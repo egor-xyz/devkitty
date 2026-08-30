@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { addHidden, hiddenPullsKey, hiddenRunsKey, parseHidden } from 'renderer/utils/hidden';
 import { type IgnoredWorkflow, isWorkflowHidden, parseIgnored, type RunContext } from 'renderer/utils/ignoredWorkflows';
+import { refreshEvent } from 'renderer/utils/refresh';
 import { unhideEvent } from 'renderer/utils/unhide';
 import { type Run } from 'types/gitHub';
 import { type Project } from 'types/project';
@@ -355,6 +356,20 @@ export const useRepoData = (
     const res = await window.bridge.gitAPI.getPinnedRuns(project.id);
     if (res.success) setPinnedRuns(res.runs ?? []);
   }, [gitHubToken, project.id]);
+
+  // The navbar refresh triggers a gentle in-place re-fetch of everything this
+  // card shows, instead of reloading the whole app.
+  useEffect(() => {
+    const onRefresh = () => {
+      getRuns(true, true);
+      getPulls();
+      getPinnedRuns();
+    };
+
+    window.addEventListener(refreshEvent, onRefresh);
+
+    return () => window.removeEventListener(refreshEvent, onRefresh);
+  }, [getRuns, getPulls, getPinnedRuns]);
 
   useEffect(() => {
     getPinnedRuns();

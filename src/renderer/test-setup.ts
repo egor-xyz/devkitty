@@ -29,6 +29,7 @@ const mockBridge = {
     getOpenPulls: vi.fn(),
     getPinnedRuns: vi.fn(),
     getPRChecks: vi.fn().mockResolvedValue({
+      allowedMergeMethods: [],
       autoMergeAllowed: false,
       autoMergeEnabled: false,
       behind: false,

@@ -10,6 +10,25 @@ export const SettingsIntegrations = () => {
   const { claudeEnabled, editors, gitHubToken, selectedEditor, selectedShell, set, shells } = useAppSettings();
   const [token, setToken] = useState(gitHubToken ?? '');
 
+  // Dev-only demo mode. The preload picks the fake bridge at startup from this
+  // flag, so flipping it has to reload the window to take effect.
+  const readDemo = () => {
+    try {
+      return localStorage.getItem('dk-demo') === '1';
+    } catch {
+      return false;
+    }
+  };
+  const [demoMode] = useState(readDemo);
+  const toggleDemo = () => {
+    try {
+      localStorage.setItem('dk-demo', demoMode ? '0' : '1');
+    } catch {
+      /* ignore */
+    }
+    location.reload();
+  };
+
   const saveToken = async () => {
     await set({ gitHubToken: token }, true);
 
@@ -50,6 +69,20 @@ export const SettingsIntegrations = () => {
         label="Usage integration"
         onChange={() => set({ claudeEnabled: !(claudeEnabled ?? true) })}
       />
+
+      {import.meta.env.DEV && (
+        <>
+          <h3 className="text-sm font-semibold mt-4 mb-2.5">Developer</h3>
+
+          <Switch
+            checked={demoMode}
+            label="Demo mode — fill app with fake data"
+            onChange={toggleDemo}
+          />
+
+          <p className="text-[11px] text-bp-gray-2 -mt-1">Dev only. Reloads the window. Never available in a production build.</p>
+        </>
+      )}
 
       {editors.length !== 0 && Boolean(selectedEditor) && (
         <>
