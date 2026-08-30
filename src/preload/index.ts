@@ -28,6 +28,10 @@ const bridge = {
   },
   gitAPI: {
     cancelRun: (id: string, runId: number) => ipcRenderer.invoke('git:api:cancelRun', id, runId),
+    disableAutoMerge: (id: string, prNumber: number) => ipcRenderer.invoke('git:api:disableAutoMerge', id, prNumber),
+    enableAutoMerge: (id: string, prNumber: number, method: 'merge' | 'rebase' | 'squash') =>
+      ipcRenderer.invoke('git:api:enableAutoMerge', id, prNumber, method),
+    getConflictFiles: (id: string, prNumber: number) => ipcRenderer.invoke('git:api:getConflictFiles', id, prNumber),
     getJobs: (id: string, runId: number) => ipcRenderer.invoke('git:api:getJobs', id, runId),
     getOpenPulls: (id: string) => ipcRenderer.invoke('git:api:getOpenPulls', id),
     getPinnedRuns: (id: string) => ipcRenderer.invoke('git:api:getPinnedRuns', id),
@@ -35,10 +39,14 @@ const bridge = {
     getPulls: (id: string, type: (typeof pullTypes)[number]) => ipcRenderer.invoke('git:api:getPulls', id, type),
     getRuns: (id: string, deep = false) => ipcRenderer.invoke('git:api:getRuns', id, deep),
     getRunsPage: (id: string, page: number, branch?: string) => ipcRenderer.invoke('git:api:getRunsPage', id, page, branch),
+    mergePR: (id: string, prNumber: number, method: 'merge' | 'rebase' | 'squash') =>
+      ipcRenderer.invoke('git:api:mergePR', id, prNumber, method),
     rerunFailedJobs: (id: string, runId: number) => ipcRenderer.invoke('git:api:rerunFailedJobs', id, runId),
     rerunWorkflow: (id: string, runId: number) => ipcRenderer.invoke('git:api:rerunWorkflow', id, runId),
     reset: (id: string, origin: string, target: string) => ipcRenderer.invoke('git:api:reset', id, origin, target),
-    searchRuns: (id: string, query: string) => ipcRenderer.invoke('git:api:searchRuns', id, query)
+    searchRuns: (id: string, query: string) => ipcRenderer.invoke('git:api:searchRuns', id, query),
+    updateBranch: (id: string, prNumber: number, method: 'merge' | 'rebase' = 'merge') =>
+      ipcRenderer.invoke('git:api:updateBranch', id, prNumber, method)
   },
   launch: {
     editor: (fullPath: string, editor: FoundEditor) => ipcRenderer.invoke('launch:editor', { editor, fullPath }),
@@ -62,6 +70,10 @@ const bridge = {
   },
   sticker: {
     add: (text: string) => ipcRenderer.invoke('sticker:add', text)
+  },
+  window: {
+    getAlwaysOnTop: (): Promise<boolean> => ipcRenderer.invoke('window:getAlwaysOnTop'),
+    setAlwaysOnTop: (flag: boolean): Promise<boolean> => ipcRenderer.invoke('window:setAlwaysOnTop', flag)
   },
   worktree: {
     add: (id: string, repoName: string, branch: string, newBranch?: string, copyEnvLocal?: boolean) =>

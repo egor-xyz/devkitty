@@ -8,3 +8,4 @@ import './ipcNotification';
 import './ipcSticker';
 import './ipcWorktree';
 import './ipcClaude';
+import './ipcWindow';

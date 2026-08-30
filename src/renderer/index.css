@@ -342,16 +342,16 @@
    "washed" look); a hair lighter than the rows plus a border + shadow so it
    reads as a raised button (never vanishes into the row). */
 .theme-sunset.dark .bp6-button:not(.bp6-minimal):not([class*='bp6-intent-']) {
-  background-color: #342c41 !important;
+  background-color: rgba(255, 255, 255, 0.1) !important;
   background-image: none !important;
-  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14), 0 1px 2px rgba(0, 0, 0, 0.4) !important;
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.14) !important;
   color: #e6dff0 !important;
 }
 .theme-sunset.dark .bp6-button:not(.bp6-minimal):not([class*='bp6-intent-']):hover {
-  background-color: #443a54 !important;
+  background-color: rgba(255, 255, 255, 0.18) !important;
 }
 .theme-sunset.dark .bp6-button:not(.bp6-minimal):not([class*='bp6-intent-']):active {
-  background-color: #4e4360 !important;
+  background-color: rgba(255, 255, 255, 0.22) !important;
 }
 /* Toggled/selected — fill stays the same; the icon and a thin ring pick up the
    Sunset magenta accent, so "active" reads as an accent, not a differently
@@ -406,6 +406,46 @@
 .theme-sunset .dark .bp6-menu-item:hover,
 .theme-sunset .bp6-dark .bp6-menu-item:hover {
   background-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+/* Sunset toasts — the default Blueprint intent colours (orange warning, red
+   danger) read as flat off-theme blocks over the plum app. Reskin every toast
+   to the same plum glass as popovers so notifications match the surface. The
+   toaster is portaled to <body>, but the Sunset flag is mirrored onto <html>,
+   so .theme-sunset reaches it. */
+.theme-sunset .bp6-toast {
+  background-color: #2a1230 !important;
+  background-image: linear-gradient(160deg, rgba(77, 20, 16, 0.97) 0%, rgba(54, 15, 54, 0.98) 52%, rgba(36, 16, 63, 0.99) 100%) !important;
+  box-shadow: 0 12px 40px -8px rgba(0, 0, 0, 0.6), inset 0 0 0 1px rgba(199, 188, 228, 0.14) !important;
+  color: #efe8f5 !important;
+}
+.theme-sunset .bp6-toast .bp6-toast-message {
+  color: #efe8f5 !important;
+}
+/* The toast's leading intent icon and text stay legible on the plum glass. */
+.theme-sunset .bp6-toast > .bp6-icon {
+  color: #efe8f5 !important;
+}
+/* The dismiss (X) button. The general Sunset button rule above
+   (.theme-sunset.dark .bp6-button:not(.bp6-minimal):not([intent])) gives it an
+   opaque dark fill; match that selector's specificity — scoped inside the toast
+   — so this transparent-glyph treatment wins instead of the dark square. */
+.theme-sunset.dark .bp6-toast .bp6-button:not(.bp6-minimal):not([class*='bp6-intent-']),
+.theme-sunset.dark .bp6-toast .bp6-button:not(.bp6-minimal):not([class*='bp6-intent-']).bp6-active {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
+  color: rgba(239, 232, 245, 0.75) !important;
+}
+.theme-sunset.dark .bp6-toast .bp6-button:not(.bp6-minimal):not([class*='bp6-intent-']) .bp6-icon {
+  color: rgba(239, 232, 245, 0.75) !important;
+}
+.theme-sunset.dark .bp6-toast .bp6-button:not(.bp6-minimal):not([class*='bp6-intent-']):hover {
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: #ffffff !important;
+}
+.theme-sunset.dark .bp6-toast .bp6-button:not(.bp6-minimal):not([class*='bp6-intent-']):hover .bp6-icon {
+  color: #ffffff !important;
 }
 
 /* Solid, opaque sticky-header surface for Sunset — sticky rows must never let
