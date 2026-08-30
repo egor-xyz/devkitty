@@ -387,7 +387,18 @@ export const pullsById: Record<string, any[]> = {
     pull({
       branch: 'feature/checkout-redesign',
       createdAgo: 6 * hour,
-      labels: [label(1, 'feature', '0e8a16'), label(2, 'needs review', 'fbca04'), label(20, 'frontend', 'c5def5')],
+      labels: [
+        label(1, 'feature', '0e8a16'),
+        label(2, 'needs review', 'fbca04'),
+        label(20, 'frontend', 'c5def5'),
+        label(30, 'checkout', '1d76db'),
+        label(31, 'payments', '5319e7'),
+        label(32, 'priority: high', 'e11d21'),
+        label(33, 'design', 'd4c5f9'),
+        label(34, 'a11y', '0e8a16'),
+        label(35, 'needs QA', 'fbca04'),
+        label(36, 'epic: q3', 'bfd4f2')
+      ],
       number: 142,
       title: 'Redesign checkout flow with saved payment methods',
       user: users.you
@@ -504,6 +515,142 @@ export const checksByPR: Record<number, any[]> = {
   143: [check(1431, 'build', 'failure'), check(1432, 'lint', 'success')],
   144: [check(1441, 'build', 'success'), check(1442, 'visual', null, 'in_progress'), check(1443, 'lint', 'success')],
   210: [check(2101, 'ios', 'success'), check(2102, 'android', 'cancelled')]
+};
+
+// ---- PR review status / mergeability (getPRChecks) ----
+// The rich object the real getPRChecks returns: review verdict + per-reviewer
+// statuses, mergeable state (clean / behind / dirty / unstable), unresolved
+// comment threads, and auto-merge availability. Shaped so the demo cards show
+// off every PR action added today — approve badge, green Merge split button,
+// Update branch, Resolve conflicts, unresolved-comment pill, Auto-merge on.
+const reviewer = (u: any, state: string, reReviewRequested = false) => ({
+  avatarUrl: u.avatar_url,
+  login: u.login,
+  reReviewRequested,
+  state
+});
+
+const thread = (u: any, count: number, path: null | string) => ({
+  avatarUrl: u.avatar_url,
+  count,
+  login: u.login,
+  path
+});
+
+const prChecks = (o: {
+  allowedMergeMethods?: string[];
+  approvedBy?: string[];
+  autoMergeAllowed?: boolean;
+  autoMergeEnabled?: boolean;
+  behind?: boolean;
+  changesRequestedBy?: string[];
+  mergeableState?: string;
+  number: number;
+  reviewers?: any[];
+  reviewState?: 'approved' | 'changes_requested' | null;
+  unresolvedThreads?: any[];
+}) => {
+  const threads = o.unresolvedThreads ?? [];
+  const ms = o.mergeableState ?? 'clean';
+  return {
+    allowedMergeMethods: o.allowedMergeMethods ?? ['squash', 'merge', 'rebase'],
+    autoMergeAllowed: o.autoMergeAllowed ?? false,
+    autoMergeEnabled: o.autoMergeEnabled ?? false,
+    behind: o.behind ?? false,
+    checks: checksByPR[o.number] ?? [],
+    mergeable: ['clean', 'has_hooks', 'unstable'].includes(ms),
+    mergeableState: ms,
+    review:
+      o.reviewers && o.reviewers.length
+        ? {
+            approvedBy: o.approvedBy ?? [],
+            changesRequestedBy: o.changesRequestedBy ?? [],
+            reviewers: o.reviewers,
+            state: o.reviewState ?? null
+          }
+        : null,
+    success: true,
+    unresolvedComments: threads.reduce((n: number, t: any) => n + t.count, 0),
+    unresolvedThreads: threads
+  };
+};
+
+export const prChecksByPR: Record<number, any> = {
+  // The "everything" card for UI testing: approved badge + green Merge split
+  // button + 10 labels (→ +7 overflow pill) + unresolved-comment pill, all at
+  // once. unstable state (a check pending) still counts as mergeable.
+  142: prChecks({
+    approvedBy: [users.mei.login],
+    autoMergeAllowed: true,
+    mergeableState: 'unstable',
+    number: 142,
+    reviewers: [reviewer(users.mei, 'approved'), reviewer(users.jules, 'commented')],
+    reviewState: 'approved',
+    unresolvedThreads: [thread(users.jules, 2, 'web/checkout/PaymentForm.tsx'), thread(users.mei, 1, 'web/checkout/index.tsx')]
+  }),
+  // Draft + build failing + conflicts → unclickable Resolve conflicts, 2 unresolved threads.
+  143: prChecks({
+    changesRequestedBy: [users.jules.login],
+    mergeableState: 'dirty',
+    number: 143,
+    reviewers: [reviewer(users.jules, 'changes_requested')],
+    reviewState: 'changes_requested',
+    unresolvedThreads: [thread(users.jules, 2, 'src/auth/session.ts'), thread(users.mei, 1, 'src/auth/redirect.ts')]
+  }),
+  // Behind base → Update branch split; visual check still running; 1 unresolved.
+  144: prChecks({
+    behind: true,
+    mergeableState: 'behind',
+    number: 144,
+    reviewers: [reviewer(users.you, 'pending')],
+    unresolvedThreads: [thread(users.you, 1, 'src/theme/toggle.tsx')]
+  }),
+  // Auto-merge already armed (squash) → "Auto-merge on" pill; approved; unstable (a check pending).
+  88: prChecks({
+    allowedMergeMethods: ['squash'],
+    approvedBy: [users.you.login],
+    autoMergeAllowed: true,
+    autoMergeEnabled: true,
+    mergeableState: 'unstable',
+    number: 88,
+    reviewers: [reviewer(users.you, 'approved')],
+    reviewState: 'approved'
+  }),
+  // Dependabot PR, single allowed method (squash → no dropdown caret), no reviews.
+  138: prChecks({ allowedMergeMethods: ['squash'], mergeableState: 'clean', number: 138 }),
+  // Changes requested, Lighthouse failing → blocked, no merge button.
+  61: prChecks({
+    changesRequestedBy: [users.you.login],
+    mergeableState: 'blocked',
+    number: 61,
+    reviewers: [reviewer(users.you, 'changes_requested'), reviewer(users.jules, 'commented')],
+    reviewState: 'changes_requested',
+    unresolvedThreads: [thread(users.you, 3, 'web/pricing/page.tsx')]
+  }),
+  // Merged PR — card shows Merged state.
+  55: prChecks({ approvedBy: [users.mei.login], mergeableState: 'clean', number: 55, reviewers: [reviewer(users.mei, 'approved')], reviewState: 'approved' }),
+  // Unstable (pending) with unresolved comments.
+  74: prChecks({
+    mergeableState: 'unstable',
+    number: 74,
+    reviewers: [reviewer(users.jules, 'commented')],
+    unresolvedThreads: [thread(users.jules, 2, 'src/email/retry.ts')]
+  }),
+  // Behind + changes requested on mobile.
+  210: prChecks({
+    behind: true,
+    changesRequestedBy: [users.mei.login],
+    mergeableState: 'behind',
+    number: 210,
+    reviewers: [reviewer(users.mei, 'changes_requested'), reviewer(users.you, 'approved')],
+    reviewState: 'changes_requested'
+  })
+};
+
+// Conflicting files surfaced on hover of the unclickable "Resolve conflicts"
+// button, per PR that is in the `dirty` state above.
+export const conflictFilesByPR: Record<number, string[]> = {
+  143: ['src/auth/session.ts', 'src/auth/redirect.ts', 'package.json']
 };
 
 // ---- Claude usage ----

@@ -1,15 +1,20 @@
 /* eslint-disable */
 // Demo bridge: a full drop-in for the real `window.bridge`, returning the fake
-// data in ./data. Selected in preload only when DK_DEMO=1. No IPC, no git, no
-// network — every method resolves with a canned value.
+// data in ./data. Selected in preload only when DK_DEMO=1. No git, no network —
+// every method resolves with a canned value. The one exception is the `window`
+// namespace: always-on-top is a real OS action (not data), so it still goes
+// through IPC so the pin works while demoing.
+
+import { ipcRenderer } from 'electron';
 
 import {
   authoredPRNumbers,
-  checksByPR,
   claudeAccounts,
+  conflictFilesByPR,
   gitStatusById,
   groups,
   jobsForRun,
+  prChecksByPR,
   projects,
   pullsById,
   reviewRequestedPRNumbers,
@@ -64,20 +69,26 @@ export const demoBridge = {
   },
   gitAPI: {
     cancelRun: () => ok(),
+    disableAutoMerge: () => ok({ message: 'Auto-merge disabled' }),
+    enableAutoMerge: () => ok({ message: 'Auto-merge enabled' }),
+    getConflictFiles: (_id: string, prNumber: number) => ok({ files: conflictFilesByPR[prNumber] ?? [] }),
     getJobs: (_id: string, runId: number) => ok({ jobs: jobsForRun(runId) }),
     getOpenPulls: (id: string) => ok({ pulls: pullsById[id] ?? [] }),
     getPinnedRuns: () => ok({ runs: [] }),
-    getPRChecks: (_id: string, prNumber: number) => ok({ checks: checksByPR[prNumber] ?? [] }),
+    getPRChecks: (_id: string, prNumber: number) =>
+      Promise.resolve(prChecksByPR[prNumber] ?? { allowedMergeMethods: [], autoMergeAllowed: false, autoMergeEnabled: false, behind: false, checks: [], mergeable: false, mergeableState: 'unknown', review: null, success: true, unresolvedComments: 0, unresolvedThreads: [] }),
     getPulls: (id: string, type: string) => {
       const nums = type === 'author' ? authoredPRNumbers[id] : type === 'review-requested' ? reviewRequestedPRNumbers[id] : [];
       return ok({ pulls: (nums ?? []).map((number) => ({ number })) });
     },
     getRuns: (id: string) => ok({ runs: runsById[id] ?? [] }),
     getRunsPage: () => ok({ last: true, runs: [] }),
+    mergePR: () => ok({ message: 'Pull request merged' }),
     rerunFailedJobs: () => ok(),
     rerunWorkflow: () => ok(),
     reset: () => ok({ message: 'Branch reset' }),
-    searchRuns: () => ok({ runs: [] })
+    searchRuns: () => ok({ runs: [] }),
+    updateBranch: () => ok({ message: 'Branch updated' })
   },
   launch: {
     editor: noop,
@@ -102,6 +113,10 @@ export const demoBridge = {
   },
   sticker: {
     add: noop
+  },
+  window: {
+    getAlwaysOnTop: () => ipcRenderer.invoke('window:getAlwaysOnTop'),
+    setAlwaysOnTop: (flag: boolean) => ipcRenderer.invoke('window:setAlwaysOnTop', flag)
   },
   worktree: {
     add: () => ok({ message: 'Worktree added' }),
