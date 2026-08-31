@@ -1,9 +1,12 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
+import { subscribe } from 'renderer/services/poller';
 import { appToaster } from 'renderer/utils/appToaster';
 import { type GitStatus } from 'types/project';
 
 import { useAppSettings } from './useAppSettings';
 import { useProjects } from './useProjects';
+
+const gitStatusKey = (id: string) => `gitStatus:${id}`;
 
 export const useGit = () => {
   const { fetchInterval } = useAppSettings();
@@ -11,11 +14,8 @@ export const useGit = () => {
   const [gitStatus, setGitStatus] = useState<GitStatus>();
   const [loading, setLoading] = useState(false);
   // Which project this hook keeps polling. State, not a ref, so changing the
-  // interval or hiding the window can rebuild the timer.
+  // project rebuilds the coordinator subscription below.
   const [polledId, setPolledId] = useState<string>();
-
-  const inFlight = useRef(false);
-  const unmounted = useRef(false);
 
   /**
    * `polling` asks the hook to keep this project's status fresh from now on.
@@ -24,59 +24,32 @@ export const useGit = () => {
    */
   const getStatus = async (id: string, polling = true, silent = false) => {
     if (polling) setPolledId(id);
-    if (inFlight.current) return;
 
-    inFlight.current = true;
     if (!silent) setLoading(true);
 
     const res = await window.bridge.git.getStatus(id);
-    inFlight.current = false;
-
-    if (unmounted.current) return;
 
     setGitStatus(res);
     if (!silent) setLoading(false);
   };
 
-  // One timer, rebuilt whenever the project or the interval changes, and idle
-  // while the window is hidden — a background window polling git and fetching
-  // from every remote every few seconds buys nothing.
+  // The shared poller coordinator owns the recurring timer, pausing while the
+  // window is hidden/offline and catching up on visible/focus/online — no
+  // more per-hook `setInterval` or `visibilitychange` listener. Ticks are
+  // always silent: they only refresh `gitStatus` in place, never `loading`.
   useEffect(() => {
-    if (!polledId || fetchInterval <= 2000) return;
+    if (!polledId) return;
 
-    let timer: null | number = null;
+    const unsubscribe = subscribe<GitStatus>(
+      {
+        fetch: () => window.bridge.git.getStatus(polledId),
+        interval: () => (fetchInterval <= 2000 ? Infinity : fetchInterval),
+        key: gitStatusKey(polledId)
+      },
+      (data) => setGitStatus(data)
+    );
 
-    const tick = () => getStatus(polledId, false, true);
-
-    const start = () => {
-      if (!timer) timer = window.setInterval(tick, fetchInterval);
-    };
-
-    const stop = () => {
-      if (timer) {
-        window.clearInterval(timer);
-        timer = null;
-      }
-    };
-
-    const onVisibility = () => {
-      if (document.hidden) {
-        stop();
-        return;
-      }
-
-      tick();
-      start();
-    };
-
-    start();
-    document.addEventListener('visibilitychange', onVisibility);
-
-    return () => {
-      stop();
-      document.removeEventListener('visibilitychange', onVisibility);
-    };
-     
+    return unsubscribe;
   }, [fetchInterval, polledId]);
 
   const checkout = async (id: string, branch: string) => {
@@ -139,10 +112,6 @@ export const useGit = () => {
       console.log(e, e.git, 'git');
     }
   };
-
-  useEffect(() => () => {
-      unmounted.current = true;
-    }, []);
 
   const addWorktree = async (id: string, repoName: string, branch: string, newBranch?: string) => {
     const res = await window.bridge.worktree.add(id, repoName, branch, newBranch);

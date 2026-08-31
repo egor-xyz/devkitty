@@ -280,11 +280,20 @@ ipcMain.handle('git:api:getPRChecks', async (_, id: string, prNumber: number) =>
     const { owner, repo } = await getRepoInfo(id);
     if (!owner || !repo) throw new Error('Project not found');
 
-    const { data: pr } = await octokit().rest.pulls.get({
+    let { data: pr } = await octokit().rest.pulls.get({
       owner,
       pull_number: prNumber,
       repo
     });
+
+    // GitHub computes mergeable/mergeable_state asynchronously; the first read
+    // after any change returns mergeable: null (state 'unknown'). Poll briefly
+    // so the Merge affordance reflects the real state instead of staying hidden
+    // behind a stale "unknown".
+    for (let attempt = 0; attempt < 3 && pr.mergeable === null; attempt += 1) {
+      await new Promise((resolve) => setTimeout(resolve, 700));
+      ({ data: pr } = await octokit().rest.pulls.get({ owner, pull_number: prNumber, repo }));
+    }
 
     const {sha} = pr.head;
 
