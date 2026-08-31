@@ -1,9 +1,10 @@
 import { Button, ButtonGroup, Collapse, Menu, MenuDivider, MenuItem, Popover, Tooltip } from '@blueprintjs/core';
-import { type FC, useCallback, useEffect, useMemo, useState } from 'react';
+import { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FaCopy, FaRegCopy } from 'react-icons/fa';
 import { getStatusIcon } from 'renderer/assets/gitHubStatusUtils';
 import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
 import { useModal } from 'renderer/hooks/useModal';
+import { refresh, subscribe } from 'renderer/services/poller';
 import { cn } from 'renderer/utils/cn';
 import { addScope, parseIgnored, type WorkflowScope } from 'renderer/utils/ignoredWorkflows';
 import { timeAgo } from 'renderer/utils/timeAgo';
@@ -143,59 +144,47 @@ export const Workflow: FC<Props> = ({ isRoot = false, onRefresh, project, run, s
     setIsOpen(!isOpen);
   };
 
+  // `conclusion`/`onRefresh` are read through refs inside the subscription
+  // below so that their churn never forces a resubscribe — per the poller's
+  // README, only a changed `key` (here, `isOpen`/`id`/`project.id`) should.
+  const conclusionRef = useRef(conclusion);
+  conclusionRef.current = conclusion;
+  const onRefreshRef = useRef(onRefresh);
+  onRefreshRef.current = onRefresh;
+
   useEffect(() => {
-    if (!isOpen || jobs.length === 0) return;
+    if (!isOpen) return;
 
-    const pollJobs = async () => {
-      const res = await window.bridge.gitAPI.getJobs(project.id, id);
-      if (res.success && res.jobs) {
-        setJobs(res.jobs);
+    const unsubscribe = subscribe(
+      {
+        fetch: (): Promise<{ jobs?: Job[]; success: boolean }> => window.bridge.gitAPI.getJobs(project.id, id),
+        // Keep polling every 5s while the run is in flight; once it has
+        // concluded, stop auto-polling entirely.
+        interval: () => (conclusionRef.current ? Infinity : 5000),
+        key: `jobs:${id}`
+      },
+      (res) => {
+        if (res.success && res.jobs) {
+          setJobs(res.jobs);
 
-        // If all jobs are done but the workflow run hasn't updated yet, trigger a refresh
-        if (!conclusion && res.jobs.length > 0 && res.jobs.every((j: Job) => j.conclusion)) {
-          onRefresh?.();
+          // If all jobs are done but the workflow run hasn't updated yet, trigger a refresh
+          if (!conclusionRef.current && res.jobs.length > 0 && res.jobs.every((j: Job) => j.conclusion)) {
+            onRefreshRef.current?.();
+          }
         }
       }
-    };
+    );
 
-    // Final fetch when workflow completes to get final job/step statuses
-    if (conclusion) {
-      pollJobs();
-      return;
+    return unsubscribe;
+  }, [isOpen, id, project.id]);
+
+  // Force one more fetch as soon as the run concludes, so job/step statuses
+  // reflect the final state instead of waiting for the next scheduled poll.
+  useEffect(() => {
+    if (isOpen && conclusion) {
+      refresh(`jobs:${id}`);
     }
-
-    let jobPollTimer: null | number = null;
-
-    const startJobPolling = () => {
-      if (!jobPollTimer) {
-        jobPollTimer = window.setInterval(pollJobs, 5000);
-      }
-    };
-
-    const stopJobPolling = () => {
-      if (jobPollTimer) {
-        window.clearInterval(jobPollTimer);
-        jobPollTimer = null;
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        stopJobPolling();
-      } else {
-        pollJobs();
-        startJobPolling();
-      }
-    };
-
-    startJobPolling();
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      stopJobPolling();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [isOpen, jobs.length, id, project.id, conclusion, onRefresh]);
+  }, [conclusion, isOpen, id]);
 
   return (
     <>

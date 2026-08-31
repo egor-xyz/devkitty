@@ -2,9 +2,9 @@ import { Button, ButtonGroup, Icon, Menu, MenuDivider, MenuItem, Popover, Toolti
 import { type FC, useCallback, useEffect, useState } from 'react';
 import { FaCopy, FaRegCopy } from 'react-icons/fa';
 import { useIsSunset } from 'renderer/hooks/useAppSettings';
+import { mutate, refresh, usePoll } from 'renderer/services/poller';
 import { appToaster } from 'renderer/utils/appToaster';
 import { cn } from 'renderer/utils/cn';
-import { refreshEvent } from 'renderer/utils/refresh';
 import { timeAgo } from 'renderer/utils/timeAgo';
 import { type Pull } from 'types/gitHub';
 
@@ -16,6 +16,9 @@ type Check = {
   name: string;
   status: string;
 };
+
+type ChecksResult = Awaited<ReturnType<typeof window.bridge.gitAPI.getPRChecks>>;
+type MutationResult = { message?: string; success: boolean };
 
 type MergeMethod = 'merge' | 'rebase' | 'squash';
 
@@ -111,7 +114,7 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
   const isClosed = !isMerged && state === 'closed';
   const totalUnresolvedComments = unresolvedThreads.reduce((sum, t) => sum + t.count, 0);
 
-  const applyChecks = useCallback((res: Awaited<ReturnType<typeof window.bridge.gitAPI.getPRChecks>>) => {
+  const applyChecks = useCallback((res: ChecksResult) => {
     if (!res.success) return;
     if (res.checks) setChecks(res.checks);
     if (res.review) setReview(res.review);
@@ -124,28 +127,42 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
     setAllowedMergeMethods(res.allowedMergeMethods ?? []);
   }, []);
 
-  const fetchChecks = useCallback(async () => {
-    applyChecks(await window.bridge.gitAPI.getPRChecks(projectId, number));
-  }, [applyChecks, projectId, number]);
+  // One shared-coordinator poll per PR, keyed so every subscriber (this card,
+  // any other view of the same PR) shares one cache entry and one fetch. The
+  // coordinator owns the timer, pause-when-hidden/offline, refetch-on-focus,
+  // in-flight dedupe and error backoff — no local setInterval / refresh-event
+  // listener needed here.
+  const pollKey = `prChecks:${projectId}:${number}`;
 
-  // Refetch on mount, whenever the PR advances (new head commit / updated_at),
-  // and on a slow interval so a base that moved on GitHub — which changes
-  // "behind" / mergeable state without touching the PR object — is not shown
-  // stale (e.g. an "Update branch" button lingering after the branch caught up).
+  const { data: checksData } = usePoll<ChecksResult>({
+    fetch: () => window.bridge.gitAPI.getPRChecks(projectId, number),
+    // Poll hot (every 8s) while anything is still in flux — a check not done,
+    // GitHub still computing mergeable state, or the branch behind base — and
+    // back off to once a minute once everything has settled.
+    interval: (data) => {
+      if (!data || !data.success) return 8000;
+      const checksInFlux = (data.checks ?? []).some((c: Check) => c.status !== 'completed');
+      const inFlux = checksInFlux || data.mergeableState === 'unknown' || data.behind === true;
+      return inFlux ? 8000 : 60000;
+    },
+    key: pollKey
+  });
+
   useEffect(() => {
-    fetchChecks();
-    const timer = setInterval(fetchChecks, 30000);
-    return () => clearInterval(timer);
+    if (!checksData) return;
+    applyChecks(checksData);
+    // Clear the "Update branch" spinner only on a real read that reports the
+    // branch caught up — never on a stale one, and never by giving up.
+    if (checksData.success && !checksData.behind) setUpdating(false);
+  }, [applyChecks, checksData]);
 
-  }, [fetchChecks, pull.head?.sha, pull.updated_at]);
-
-  // Navbar refresh also refreshes this PR's review / mergeable / behind /
-  // unresolved states, not just runs and pulls.
+  // A new head commit or updated_at means GitHub has fresh PR data even though
+  // the poll key itself hasn't changed — re-heat this key now instead of
+  // waiting out the adaptive interval.
   useEffect(() => {
-    const onRefresh = () => fetchChecks();
-    window.addEventListener(refreshEvent, onRefresh);
-    return () => window.removeEventListener(refreshEvent, onRefresh);
-  }, [fetchChecks]);
+    refresh(pollKey);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [pull.head?.sha, pull.updated_at]);
 
   const openInBrowser = () => {
     window.open(html_url, '_blank');
@@ -161,7 +178,12 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
 
   const updateBranch = async (method: 'merge' | 'rebase' = 'merge') => {
     setUpdating(true);
-    const res = await window.bridge.gitAPI.updateBranch(projectId, number, method);
+    // mutate() runs the bridge call, then hot re-polls prChecks (now, +800ms,
+    // +1500ms); the adaptive interval above keeps polling every 8s for as long
+    // as GitHub still reports "behind" (its recompute is asynchronous), so this
+    // settles on its own without a hand-rolled retry loop. The spinner clears
+    // in the poll-apply effect above, only on a real "not behind" read.
+    const res = await mutate<MutationResult>(pollKey, () => window.bridge.gitAPI.updateBranch(projectId, number, method));
     const toaster = await appToaster;
     if (!res.success) {
       toaster.show({ icon: 'warning-sign', intent: 'warning', message: cleanApiError(res.message, 'Failed to update branch'), timeout: 0 });
@@ -169,32 +191,15 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
       return;
     }
     toaster.show({ icon: 'git-merge', intent: 'success', message: `Updated #${number} with the base branch` });
-    // GitHub recomputes the PR's behind/mergeable state asynchronously after
-    // update-branch, so an immediate read still reports "behind". Poll fresh PR
-    // data until it settles (or give up) instead of trusting one stale read.
-    // The button stays in its updating spinner throughout, then clears on real
-    // state — no flicker back to "Update branch".
-    let settled = false;
-    for (let attempt = 0; attempt < 6 && !settled; attempt += 1) {
-      await new Promise((resolve) => setTimeout(resolve, attempt === 0 ? 800 : 1500));
-      const next = await window.bridge.gitAPI.getPRChecks(projectId, number);
-      if (next.success && !next.behind) {
-        applyChecks(next);
-        settled = true;
-      }
-    }
-    if (!settled) await fetchChecks();
-    setUpdating(false);
   };
 
   const mergePR = async (method: 'merge' | 'rebase' | 'squash') => {
     setMerging(true);
-    const res = await window.bridge.gitAPI.mergePR(projectId, number, method);
+    const res = await mutate<MutationResult>(pollKey, () => window.bridge.gitAPI.mergePR(projectId, number, method));
     const toaster = await appToaster;
     if (res.success) {
       toaster.show({ icon: 'git-merge', intent: 'success', message: `Merged #${number}` });
       setJustMerged(true);
-      await fetchChecks();
     } else {
       toaster.show({ icon: 'warning-sign', intent: 'warning', message: cleanApiError(res.message, 'Failed to merge'), timeout: 0 });
     }
@@ -203,12 +208,11 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
 
   const enableAutoMerge = async (method: 'merge' | 'rebase' | 'squash') => {
     setMerging(true);
-    const res = await window.bridge.gitAPI.enableAutoMerge(projectId, number, method);
+    const res = await mutate<MutationResult>(pollKey, () => window.bridge.gitAPI.enableAutoMerge(projectId, number, method));
     const toaster = await appToaster;
     if (res.success) {
       toaster.show({ icon: 'automatic-updates', intent: 'success', message: `Auto-merge enabled for #${number}` });
       setAutoMergeEnabled(true);
-      await fetchChecks();
     } else {
       toaster.show({ icon: 'warning-sign', intent: 'warning', message: cleanApiError(res.message, 'Failed to enable auto-merge'), timeout: 0 });
     }
@@ -217,12 +221,11 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
 
   const disableAutoMerge = async () => {
     setMerging(true);
-    const res = await window.bridge.gitAPI.disableAutoMerge(projectId, number);
+    const res = await mutate<MutationResult>(pollKey, () => window.bridge.gitAPI.disableAutoMerge(projectId, number));
     const toaster = await appToaster;
     if (res.success) {
       toaster.show({ icon: 'automatic-updates', intent: 'success', message: `Auto-merge disabled for #${number}` });
       setAutoMergeEnabled(false);
-      await fetchChecks();
     } else {
       toaster.show({ icon: 'warning-sign', intent: 'warning', message: cleanApiError(res.message, 'Failed to disable auto-merge'), timeout: 0 });
     }
@@ -455,7 +458,7 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
             {unresolvedComments > 0 && (
               <Popover
                 content={
-                  <div className="min-w-[220px] px-3.5 py-3">
+                  <div className="min-w-[220px] max-w-[340px] px-3.5 py-3">
                     <div className="mb-2 text-[11px] font-semibold uppercase tracking-[0.08em] text-bp-gray-3">
                       {unresolvedComments} unresolved {unresolvedComments === 1 ? 'conversation' : 'conversations'}
                     </div>

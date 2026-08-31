@@ -1,11 +1,11 @@
 import { Button, ButtonGroup, Classes, Collapse, Spinner, Tag, Tooltip } from '@blueprintjs/core';
-import { type FC, type ReactNode, useCallback, useEffect, useState } from 'react';
+import { type FC, type ReactNode, useState } from 'react';
 import { FaCopy, FaRegCopy } from 'react-icons/fa';
 import { GitStatusBadge } from 'renderer/components/GitStatusBadge';
 import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
 import { useModal } from 'renderer/hooks/useModal';
+import { usePoll } from 'renderer/services/poller';
 import { cn } from 'renderer/utils/cn';
-import { refreshEvent } from 'renderer/utils/refresh';
 import { type Run } from 'types/gitHub';
 import { type GitStatus, type Project } from 'types/project';
 import { type Worktree } from 'types/worktree';
@@ -72,7 +72,6 @@ export const CheckoutCard: FC<Props> = ({
     selectedShell
   } = useAppSettings();
   const isSunset = useIsSunset();
-  const [status, setStatus] = useState<CheckoutStatus | null>(null);
   const [showStray, setShowStray] = useState(false);
   const [showHidden, setShowHidden] = useState(false);
   const [showAllOwn, setShowAllOwn] = useState(false);
@@ -87,57 +86,36 @@ export const CheckoutCard: FC<Props> = ({
   const { isMain } = worktree;
   const abbreviated = worktree.path.replace(/^.*\//, '.../');
 
-  const fetchStatus = useCallback(async () => {
-    if (isMain) return;
+  // Main's status arrives with the repo poll (via `gitStatus`), but a
+  // worktree has no such feed — it keeps its own subscription on the shared
+  // poller coordinator so the ahead/behind counts don't go stale through
+  // every rebase and push. The coordinator owns the recurring timer (pausing
+  // while hidden/offline and catching up on visible/focus/online, and
+  // deduping this key against any other subscriber of the same worktree), so
+  // there's no local `setInterval`, `visibilitychange` check, or
+  // `refreshEvent` listener here anymore — a gentle refresh from the navbar
+  // now goes through `refresh()`/`mutate()` on the coordinator itself.
+  const { data: worktreeStatus } = usePoll<Awaited<ReturnType<typeof window.bridge.worktree.getStatus>>>({
+    fetch: () => (isMain ? Promise.resolve({ success: false }) : window.bridge.worktree.getStatus(worktree.path)),
+    interval: () => (isMain ? Infinity : fetchInterval > 2000 ? fetchInterval : 10000),
+    key: `worktreeStatus:${worktree.path}`
+  });
 
-    const res = await window.bridge.worktree.getStatus(worktree.path);
-    if (res.success && res.status) {
-      setStatus({
-        ahead: res.status.ahead,
-        behind: res.status.behind,
-        modified: res.status.modified
-      });
-    }
-  }, [isMain, worktree.path]);
-
-  useEffect(() => {
-    if (isMain) {
-      setStatus(
-        gitStatus?.status
-          ? {
-              ahead: gitStatus.status.ahead,
-              behind: gitStatus.status.behind,
-              modified: gitStatus.status.modified
-            }
-          : null
-      );
-      return;
-    }
-
-    fetchStatus();
-  }, [fetchStatus, gitStatus, isMain]);
-
-  // Main's status arrives with the repo poll, but a worktree has no such feed —
-  // without its own clock the ahead/behind counts stayed at whatever they were
-  // when the card mounted, through every rebase and push.
-  useEffect(() => {
-    if (isMain) return;
-
-    const timer = window.setInterval(() => {
-      if (!document.hidden) fetchStatus();
-    }, fetchInterval > 2000 ? fetchInterval : 10000);
-
-    return () => window.clearInterval(timer);
-  }, [fetchInterval, fetchStatus, isMain]);
-
-  // Gentle refresh from the navbar re-reads git status in place.
-  useEffect(() => {
-    const onRefresh = () => fetchStatus();
-
-    window.addEventListener(refreshEvent, onRefresh);
-
-    return () => window.removeEventListener(refreshEvent, onRefresh);
-  }, [fetchStatus]);
+  const status: CheckoutStatus | null = isMain
+    ? gitStatus?.status
+      ? {
+          ahead: gitStatus.status.ahead,
+          behind: gitStatus.status.behind,
+          modified: gitStatus.status.modified
+        }
+      : null
+    : worktreeStatus?.success && worktreeStatus.status
+      ? {
+          ahead: worktreeStatus.status.ahead,
+          behind: worktreeStatus.status.behind,
+          modified: worktreeStatus.status.modified
+        }
+      : null;
 
   const copyToClipboard = () => {
     setCopyIcon(

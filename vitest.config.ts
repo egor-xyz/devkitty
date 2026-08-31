@@ -20,6 +20,7 @@ export default defineConfig({
         'src/main/settings.ts',
         'src/preload/**/*.ts',
         'src/renderer/hooks/**/*.{ts,tsx}',
+        'src/renderer/services/**/*.ts',
         'src/renderer/utils/**/*.ts',
         'src/renderer/assets/gitHubStatusUtils.ts'
       ],

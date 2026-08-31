@@ -8,29 +8,41 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 // *before* `./useClaudeUsage` is imported below. Static imports are hoisted above plain
 // statements, but `vi.hoisted` callbacks run before that hoisted import, so the mutation
 // belongs there.
-const { accountsMock, appSettingsSetMock, detectMock, settingsGetMock, usageMock } = vi.hoisted(() => {
-  // The module's top-level `init()` call fires the instant it's imported below,
-  // long before any test's `beforeEach` runs, so these need harmless resolved
-  // defaults up front to avoid an unhandled rejection during import.
-  const accountsMock = vi.fn().mockResolvedValue([]);
-  const detectMock = vi.fn().mockResolvedValue({ installed: false });
-  const usageMock = vi.fn().mockResolvedValue(undefined);
-  const settingsGetMock = vi.fn().mockResolvedValue({});
-  const appSettingsSetMock = vi.fn();
+const { accountsMock, appSettingsSetMock, detectMock, settingsGetMock, subscribeMock, unsubscribeMocks, usageMock } =
+  vi.hoisted(() => {
+    // The module's top-level `init()` call fires the instant it's imported below,
+    // long before any test's `beforeEach` runs, so these need harmless resolved
+    // defaults up front to avoid an unhandled rejection during import.
+    const accountsMock = vi.fn().mockResolvedValue([]);
+    const detectMock = vi.fn().mockResolvedValue({ installed: false });
+    const usageMock = vi.fn().mockResolvedValue(undefined);
+    const settingsGetMock = vi.fn().mockResolvedValue({});
+    const appSettingsSetMock = vi.fn();
 
-  const existingWindow = (globalThis as { window?: { bridge?: Record<string, unknown> } }).window;
+    // The store subscribes to the shared poller coordinator directly (imperative
+    // `subscribe()`, not the `usePoll` hook, since the key is dynamic). Mock it so
+    // these tests can assert *how* the store drives the coordinator (key, fetch,
+    // interval) without running the coordinator's real timer/visibility machinery.
+    const unsubscribeMocks: ReturnType<typeof vi.fn>[] = [];
+    const subscribeMock = vi.fn((_spec: unknown, _onData: (data: unknown) => void) => {
+      const unsub = vi.fn();
+      unsubscribeMocks.push(unsub);
+      return unsub;
+    });
 
-  (globalThis as unknown as { window: unknown }).window = {
-    ...existingWindow,
-    bridge: {
-      ...existingWindow?.bridge,
-      claude: { accounts: accountsMock, detect: detectMock, usage: usageMock },
-      settings: { ...(existingWindow?.bridge?.settings as Record<string, unknown>), get: settingsGetMock }
-    }
-  };
+    const existingWindow = (globalThis as { window?: { bridge?: Record<string, unknown> } }).window;
 
-  return { accountsMock, appSettingsSetMock, detectMock, settingsGetMock, usageMock };
-});
+    (globalThis as unknown as { window: unknown }).window = {
+      ...existingWindow,
+      bridge: {
+        ...existingWindow?.bridge,
+        claude: { accounts: accountsMock, detect: detectMock, usage: usageMock },
+        settings: { ...(existingWindow?.bridge?.settings as Record<string, unknown>), get: settingsGetMock }
+      }
+    };
+
+    return { accountsMock, appSettingsSetMock, detectMock, settingsGetMock, subscribeMock, unsubscribeMocks, usageMock };
+  });
 
 vi.mock('./useAppSettings', () => ({
   useAppSettings: {
@@ -38,7 +50,20 @@ vi.mock('./useAppSettings', () => ({
   }
 }));
 
-import { CLAUDE_POLL_MS, useClaudeUsage } from './useClaudeUsage';
+vi.mock('renderer/services/poller', () => ({
+  subscribe: subscribeMock
+}));
+
+import { __resetClaudeUsagePollingForTests, CLAUDE_POLL_MS, useClaudeUsage } from './useClaudeUsage';
+
+type UsagePollSpec = { fetch: () => Promise<ClaudeUsage>; interval: (data?: ClaudeUsage) => number; key: string };
+
+const lastSubscription = () => {
+  const call = subscribeMock.mock.calls.at(-1);
+  if (!call) throw new Error('subscribe() was never called');
+  const [spec, onData] = call as [UsagePollSpec, (data: ClaudeUsage) => void];
+  return { onData, spec };
+};
 
 const accountA: ClaudeAccount = { dir: '/Users/x/.claude', label: 'claude' };
 const accountB: ClaudeAccount = { dir: '/Users/x/.claude-b', label: 'claude-b' };
@@ -78,11 +103,13 @@ const resetStore = () => {
     usage: undefined,
     usageByDir: {}
   });
+  __resetClaudeUsagePollingForTests();
 };
 
 describe('useClaudeUsage store', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    unsubscribeMocks.length = 0;
 
     // Sensible defaults so any call that isn't overridden per-test resolves cleanly.
     detectMock.mockResolvedValue({ installed: true, version: '1.0.0' });
@@ -254,5 +281,83 @@ describe('useClaudeUsage store', () => {
 
   it('polls at a fixed one-minute interval', () => {
     expect(CLAUDE_POLL_MS).toBe(60000);
+  });
+
+  describe('poller coordinator subscription', () => {
+    it('subscribes to claudeUsage:<dir> with a 60s interval when init activates an account', async () => {
+      accountsMock.mockResolvedValue([accountA]);
+      settingsGetMock.mockResolvedValue({});
+      usageMock.mockResolvedValue(makeUsage(accountA));
+
+      await useClaudeUsage.getState().init();
+
+      expect(subscribeMock).toHaveBeenCalledTimes(1);
+      const { spec } = lastSubscription();
+      expect(spec.key).toBe(`claudeUsage:${accountA.dir}`);
+      expect(spec.interval(undefined)).toBe(CLAUDE_POLL_MS);
+    });
+
+    it("subscription's fetch calls window.bridge.claude.usage with the currently active account", async () => {
+      accountsMock.mockResolvedValue([accountA]);
+      usageMock.mockResolvedValue(makeUsage(accountA));
+
+      await useClaudeUsage.getState().init();
+
+      const { spec } = lastSubscription();
+      const usage = makeUsage(accountA);
+      usageMock.mockClear();
+      usageMock.mockResolvedValue(usage);
+
+      await expect(spec.fetch()).resolves.toEqual(usage);
+      expect(usageMock).toHaveBeenCalledWith(accountA);
+    });
+
+    it('onData writes usage into usageByDir and, while the dir is still active, into usage/loading', async () => {
+      accountsMock.mockResolvedValue([accountA]);
+      usageMock.mockResolvedValue(makeUsage(accountA));
+
+      await useClaudeUsage.getState().init();
+
+      const { onData } = lastSubscription();
+      const nextUsage = makeUsage(accountA);
+      onData(nextUsage);
+
+      const state = useClaudeUsage.getState();
+      expect(state.usageByDir[accountA.dir]).toEqual(nextUsage);
+      expect(state.usage).toEqual(nextUsage);
+      expect(state.loading).toBe(false);
+    });
+
+    it('onData caches usage for its dir but ignores it as the active usage once another account is active', async () => {
+      accountsMock.mockResolvedValue([accountA, accountB]);
+      usageMock.mockImplementation((account: ClaudeAccount) => Promise.resolve(makeUsage(account)));
+
+      await useClaudeUsage.getState().init();
+      const { onData } = lastSubscription();
+
+      // The user switches away from accountA before its subscription delivers data.
+      useClaudeUsage.setState({ activeDir: accountB.dir, usage: undefined });
+      const staleUsage = makeUsage(accountA);
+      onData(staleUsage);
+
+      const state = useClaudeUsage.getState();
+      expect(state.usageByDir[accountA.dir]).toEqual(staleUsage);
+      expect(state.usage).toBeUndefined();
+    });
+
+    it('unsubscribes the old key and subscribes the new key when the active account changes', async () => {
+      accountsMock.mockResolvedValue([accountA, accountB]);
+      usageMock.mockImplementation((account: ClaudeAccount) => Promise.resolve(makeUsage(account)));
+
+      await useClaudeUsage.getState().init();
+      expect(subscribeMock).toHaveBeenCalledTimes(1);
+      const [firstUnsubscribe] = unsubscribeMocks;
+
+      useClaudeUsage.getState().setActive(accountB.dir);
+
+      expect(firstUnsubscribe).toHaveBeenCalledTimes(1);
+      expect(subscribeMock).toHaveBeenCalledTimes(2);
+      expect(lastSubscription().spec.key).toBe(`claudeUsage:${accountB.dir}`);
+    });
   });
 });
