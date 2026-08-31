@@ -1,16 +1,44 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react';
+import { type GitStatus } from 'types/project';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { useAppSettings } from './useAppSettings';
 import { useGit } from './useGit';
 import { useProjects } from './useProjects';
 
-const { showToast } = vi.hoisted(() => ({ showToast: vi.fn() }));
+const { showToast, subscribeMock, unsubscribeMocks } = vi.hoisted(() => {
+  const unsubscribeMocks: ReturnType<typeof vi.fn>[] = [];
+  const subscribeMock = vi.fn(() => {
+    const unsub = vi.fn();
+    unsubscribeMocks.push(unsub);
+    return unsub;
+  });
+
+  return { showToast: vi.fn(), subscribeMock, unsubscribeMocks };
+});
 
 vi.mock('renderer/utils/appToaster', () => ({
   appToaster: Promise.resolve({ show: showToast })
 }));
+
+// `useGit` hands the recurring background poll to the shared poller
+// coordinator (`renderer/services/poller`). Mocking `subscribe` lets these
+// tests assert *how* the hook drives the coordinator (key, fetch, interval)
+// and drive its `onData` callback directly, without running the
+// coordinator's real timer/visibility machinery.
+vi.mock('renderer/services/poller', () => ({
+  subscribe: subscribeMock
+}));
+
+type GitStatusPollSpec = { fetch: () => Promise<GitStatus>; interval: (data?: GitStatus) => number; key: string };
+
+const lastSubscription = () => {
+  const call = subscribeMock.mock.calls.at(-1);
+  if (!call) throw new Error('subscribe() was never called');
+  const [spec, onData] = call as [GitStatusPollSpec, (data: GitStatus) => void];
+  return { onData, spec };
+};
 
 // Waits for one microtask tick so pending promise callbacks (e.g. from
 // `await window.bridge.git.getStatus(...)`) have a chance to run inside `act`.
@@ -22,6 +50,7 @@ const flush = () => act(async () => {
 describe('useGit', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    unsubscribeMocks.length = 0;
 
     useAppSettings.setState({ fetchInterval: 10000 });
     useProjects.setState({ projects: [] });
@@ -67,12 +96,16 @@ describe('useGit', () => {
       expect(result.current.gitStatus).toEqual({ success: true });
     });
 
-    it('short-circuits a concurrent call while one is already in flight', async () => {
+    // The coordinator (mocked out here) owns fetch-dedupe for its own ticks;
+    // a manual `getStatus` call is a direct, ungated bridge call now that the
+    // old `inFlight` ref is gone, so two concurrent manual calls do fetch
+    // twice — a deliberate behavior change from the pre-migration hook.
+    it('performs a separate fetch for each concurrent manual call', async () => {
       let resolveFirst: (value: { success: boolean }) => void;
       const firstRead = new Promise<{ success: boolean }>((resolve) => {
         resolveFirst = resolve;
       });
-      vi.mocked(window.bridge.git.getStatus).mockReturnValueOnce(firstRead);
+      vi.mocked(window.bridge.git.getStatus).mockReturnValueOnce(firstRead).mockResolvedValueOnce({ success: true });
 
       const { result } = renderHook(() => useGit());
 
@@ -83,7 +116,7 @@ describe('useGit', () => {
         secondCall = result.current.getStatus('project-1', false);
       });
 
-      expect(window.bridge.git.getStatus).toHaveBeenCalledTimes(1);
+      expect(window.bridge.git.getStatus).toHaveBeenCalledTimes(2);
 
       await act(async () => {
         resolveFirst({ success: true });
@@ -91,7 +124,7 @@ describe('useGit', () => {
         await secondCall;
       });
 
-      expect(window.bridge.git.getStatus).toHaveBeenCalledTimes(1);
+      expect(window.bridge.git.getStatus).toHaveBeenCalledTimes(2);
     });
 
     it('ignores a resolved read after the component has unmounted', async () => {
@@ -121,9 +154,8 @@ describe('useGit', () => {
     });
   });
 
-  describe('polling', () => {
-    it('starts a timer that re-fetches the status silently on every tick', async () => {
-      vi.useFakeTimers();
+  describe('polling coordinator subscription', () => {
+    it('subscribes to gitStatus:<id> when getStatus is called with polling=true', async () => {
       vi.mocked(window.bridge.git.getStatus).mockResolvedValue({ success: true });
 
       const { result } = renderHook(() => useGit());
@@ -133,26 +165,69 @@ describe('useGit', () => {
       });
       await flush();
 
-      expect(window.bridge.git.getStatus).toHaveBeenCalledTimes(1);
+      expect(subscribeMock).toHaveBeenCalledTimes(1);
+      expect(lastSubscription().spec.key).toBe('gitStatus:project-1');
+    });
 
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(10000);
+    it("the subscription's fetch calls window.bridge.git.getStatus with the polled id", async () => {
+      vi.mocked(window.bridge.git.getStatus).mockResolvedValue({ success: true });
+
+      const { result } = renderHook(() => useGit());
+
+      act(() => {
+        result.current.getStatus('project-1');
+      });
+      await flush();
+
+      const { spec } = lastSubscription();
+      vi.mocked(window.bridge.git.getStatus).mockClear();
+      await spec.fetch();
+
+      expect(window.bridge.git.getStatus).toHaveBeenCalledWith('project-1');
+    });
+
+    it('the subscription interval is the configured fetchInterval, or Infinity at/below 2 seconds', async () => {
+      vi.mocked(window.bridge.git.getStatus).mockResolvedValue({ success: true });
+
+      const { rerender, result } = renderHook(() => useGit());
+
+      act(() => {
+        result.current.getStatus('project-1');
+      });
+      await flush();
+
+      expect(lastSubscription().spec.interval(undefined)).toBe(10000);
+
+      useAppSettings.setState({ fetchInterval: 2000 });
+      rerender();
+      await flush();
+
+      expect(lastSubscription().spec.interval(undefined)).toBe(Infinity);
+    });
+
+    it("onData from the subscription updates gitStatus silently, never touching loading", async () => {
+      vi.mocked(window.bridge.git.getStatus).mockResolvedValue({ success: true });
+
+      const { result } = renderHook(() => useGit());
+
+      act(() => {
+        result.current.getStatus('project-1');
+      });
+      await flush();
+
+      const { onData } = lastSubscription();
+      const tickStatus = { branchSummary: { current: 'main' }, success: true } as const;
+
+      act(() => {
+        onData(tickStatus as unknown as GitStatus);
       });
 
-      expect(window.bridge.git.getStatus).toHaveBeenCalledTimes(2);
-
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(10000);
-      });
-
-      expect(window.bridge.git.getStatus).toHaveBeenCalledTimes(3);
-      // Ticks are silent: loading never flips true for them.
+      expect(result.current.gitStatus).toEqual(tickStatus);
+      // A tick is a background refresh: it must never flip `loading` true.
       expect(result.current.loading).toBe(false);
     });
 
-    it('does not start a timer when the fetch interval is at or below 2 seconds', async () => {
-      vi.useFakeTimers();
-      useAppSettings.setState({ fetchInterval: 2000 });
+    it('unsubscribes the old key and subscribes the new key when the polled project id changes', async () => {
       vi.mocked(window.bridge.git.getStatus).mockResolvedValue({ success: true });
 
       const { result } = renderHook(() => useGit());
@@ -161,84 +236,21 @@ describe('useGit', () => {
         result.current.getStatus('project-1');
       });
       await flush();
-
-      expect(window.bridge.git.getStatus).toHaveBeenCalledTimes(1);
-
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(60000);
-      });
-
-      // Still just the one manual call — no interval was ever created.
-      expect(window.bridge.git.getStatus).toHaveBeenCalledTimes(1);
-    });
-
-    it('rebuilds the timer when the polled project id changes', async () => {
-      vi.useFakeTimers();
-      vi.mocked(window.bridge.git.getStatus).mockResolvedValue({ success: true });
-
-      const { result } = renderHook(() => useGit());
-
-      act(() => {
-        result.current.getStatus('project-1');
-      });
-      await flush();
-      expect(window.bridge.git.getStatus).toHaveBeenCalledWith('project-1');
+      expect(subscribeMock).toHaveBeenCalledTimes(1);
+      const [firstUnsubscribe] = unsubscribeMocks;
 
       act(() => {
         result.current.getStatus('project-2');
       });
       await flush();
-      expect(window.bridge.git.getStatus).toHaveBeenLastCalledWith('project-2');
 
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(10000);
-      });
-
-      expect(window.bridge.git.getStatus).toHaveBeenLastCalledWith('project-2');
+      expect(firstUnsubscribe).toHaveBeenCalledTimes(1);
+      expect(subscribeMock).toHaveBeenCalledTimes(2);
+      expect(lastSubscription().spec.key).toBe('gitStatus:project-2');
     });
 
-    it('stops polling while the window is hidden and resumes with an immediate refresh once visible again', async () => {
-      vi.useFakeTimers();
+    it('unsubscribes on unmount', async () => {
       vi.mocked(window.bridge.git.getStatus).mockResolvedValue({ success: true });
-
-      const { result } = renderHook(() => useGit());
-
-      act(() => {
-        result.current.getStatus('project-1');
-      });
-      await flush();
-      expect(window.bridge.git.getStatus).toHaveBeenCalledTimes(1);
-
-      Object.defineProperty(document, 'hidden', { configurable: true, value: true });
-      await act(async () => {
-        document.dispatchEvent(new Event('visibilitychange'));
-      });
-
-      // Hidden: the interval is cleared, so time passing fetches nothing more.
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(30000);
-      });
-      expect(window.bridge.git.getStatus).toHaveBeenCalledTimes(1);
-
-      Object.defineProperty(document, 'hidden', { configurable: true, value: false });
-      await act(async () => {
-        document.dispatchEvent(new Event('visibilitychange'));
-      });
-
-      // Becoming visible triggers an immediate silent refresh and restarts the timer.
-      expect(window.bridge.git.getStatus).toHaveBeenCalledTimes(2);
-
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(10000);
-      });
-      expect(window.bridge.git.getStatus).toHaveBeenCalledTimes(3);
-    });
-
-    it('clears the timer and removes the visibility listener on unmount', async () => {
-      vi.useFakeTimers();
-      vi.mocked(window.bridge.git.getStatus).mockResolvedValue({ success: true });
-
-      const removeSpy = vi.spyOn(document, 'removeEventListener');
 
       const { result, unmount } = renderHook(() => useGit());
 
@@ -246,18 +258,11 @@ describe('useGit', () => {
         result.current.getStatus('project-1');
       });
       await flush();
-      expect(window.bridge.git.getStatus).toHaveBeenCalledTimes(1);
+      const [unsub] = unsubscribeMocks;
 
       unmount();
 
-      expect(removeSpy).toHaveBeenCalledWith('visibilitychange', expect.any(Function));
-
-      await act(async () => {
-        await vi.advanceTimersByTimeAsync(60000);
-      });
-
-      // No further ticks after unmount — the interval was cleared.
-      expect(window.bridge.git.getStatus).toHaveBeenCalledTimes(1);
+      expect(unsub).toHaveBeenCalledTimes(1);
     });
   });
 

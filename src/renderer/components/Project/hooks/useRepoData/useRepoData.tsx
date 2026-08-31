@@ -1,10 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
+import { refresh as refreshPoller, subscribe } from 'renderer/services/poller';
 import { addHidden, hiddenPullsKey, hiddenRunsKey, parseHidden } from 'renderer/utils/hidden';
 import { type IgnoredWorkflow, isWorkflowHidden, parseIgnored, type RunContext } from 'renderer/utils/ignoredWorkflows';
 import { refreshEvent } from 'renderer/utils/refresh';
 import { unhideEvent } from 'renderer/utils/unhide';
-import { type Run } from 'types/gitHub';
+import { type Pull, type Run } from 'types/gitHub';
 import { type Project } from 'types/project';
 
 import {
@@ -23,6 +24,11 @@ import {
 // A pinned workflow costs one API call each, so it refreshes once a minute
 // rather than on every poll.
 const pinnedInterval = 60000;
+
+// Below this, the pre-poller-migration code refused to start the repeating
+// runs poll at all — kept so an absurdly low setting still can't hammer the
+// API every tick.
+const minRunsPollInterval = 2000;
 
 const getHidden = (key: string): Set<number> =>
   new Set(parseHidden(sessionStorage.getItem(key)).map((entry) => entry.id));
@@ -45,6 +51,12 @@ const hide = (key: string, id: number, label: string) => {
  * `worktreeBranches` scopes desktop notifications: the fetch covers the whole
  * repo, but only checkouts on this machine — and pull requests you opened —
  * are worth interrupting you for.
+ *
+ * Polling itself (the shared timer, pause-while-hidden/offline,
+ * refetch-on-visible/focus/online, in-flight dedupe, backoff) is delegated to
+ * the shared poller coordinator (`renderer/services/poller`). This hook only
+ * owns what the coordinator can't know about: the exact fetch args, how the
+ * fetched data is merged into state, and desktop-notification arming.
  */
 export const useRepoData = (
   project: Project,
@@ -75,16 +87,40 @@ export const useRepoData = (
     gitHubToken
   } = useAppSettings();
 
-  const runsIntervalId = useRef<null | number>(null);
-  const pullsIntervalId = useRef<null | number>(null);
   const prevConclusions = useRef<Map<number, null | string>>(new Map());
-  const initialRunsFetched = useRef(false);
   const notifyArmed = useRef(false);
   const notifyBranches = useRef<Set<string>>(new Set());
   const hiddenWorkflows = useRef<IgnoredWorkflow[]>([]);
   // The pieces `getRuns` needs to place a run in root vs worktree, kept in a ref
   // so a branch-list change never rebuilds the poll.
   const rootContext = useRef<{ mainBranch: string; worktrees: Set<string> }>({ mainBranch: '', worktrees: new Set() });
+
+  // The runs/pulls/pinned-runs poller subscriptions are set up once per
+  // project (see the `subscribe` calls below) and must not be torn down and
+  // rebuilt every time a setting or `pollRuns` changes — so their `fetch`/
+  // `interval` closures read the *latest* values off these refs instead of
+  // closing over props/state directly.
+  const pollRunsRef = useRef(pollRuns);
+  pollRunsRef.current = pollRuns;
+  const fetchIntervalRef = useRef(fetchInterval);
+  fetchIntervalRef.current = fetchInterval;
+  const pullsIntervalRef = useRef(gitHubPulls.pollInterval);
+  pullsIntervalRef.current = gitHubPulls.pollInterval;
+  const ignoreDependabotRef = useRef(ignoreDependabot);
+  ignoreDependabotRef.current = ignoreDependabot;
+  const notificationsRef = useRef(notifications);
+  notificationsRef.current = notifications;
+  const projectNameRef = useRef(project.name);
+  projectNameRef.current = project.name;
+
+  // One-shot overrides consumed by the very next runs fetch. `nextRunsFetchDeep`
+  // starts `true` so the first fetch of this hook's life walks back through
+  // history pages, same as the old `first = !initialRunsFetched.current`.
+  // Both refs are also set by a manual refresh (see `refresh` below and the
+  // `refreshEvent` listener) to reproduce the exact arm/deep args those call
+  // sites used to pass straight to `getRuns`.
+  const nextRunsFetchDeep = useRef(true);
+  const nextRunsFetchArmOverride = useRef<boolean | null>(null);
 
   // Stored data may still be the legacy `string[]`, so it is parsed forward on
   // every read rather than trusted to match the current shape.
@@ -102,14 +138,14 @@ export const useRepoData = (
     [mainBranch, worktreeBranches]
   );
 
-  // Refs, not deps: `getRuns` reads them when it fires, and rebuilding it would
-  // restart the poll every time a setting changes.
+  // Refs, not deps: the runs poll reads them when it fires, and rebuilding it
+  // would restart the poll every time a setting changes.
   useEffect(() => {
     hiddenWorkflows.current = ignored;
   }, [ignored]);
 
-  // A ref, not state: `getRuns` reads it at fire time and must not be rebuilt
-  // (and so restart the poll) every time a branch list changes identity.
+  // A ref, not state: the runs poll reads it at fire time and must not be
+  // rebuilt (and so restart the poll) every time a branch list changes identity.
   useEffect(() => {
     notifyBranches.current = notifiableBranches(worktreeBranches, pulls);
   }, [pulls, worktreeBranches]);
@@ -119,20 +155,19 @@ export const useRepoData = (
   }, [mainBranch, worktreeBranches]);
 
   /**
-   * `arm` is passed only by the *polling* fetch. The mount fetch runs for every
-   * repo, collapsed ones included, so it primes `prevConclusions` with `null`
-   * for anything still in flight. Notifying off that map would fire a burst of
-   * hours-old results the moment a card is first expanded — so notifications
-   * stay disarmed until a polling fetch has primed the map itself.
+   * Processes one `getRuns` response: merges it into state and fires desktop
+   * notifications. `arm` is true only for a fetch that belongs to a
+   * "continuous polling session" (expanded + visible); the mount fetch primes
+   * `prevConclusions` with `null` for anything still in flight, and notifying
+   * off that map would fire a burst of hours-old results the moment a card is
+   * first expanded — so notifications stay disarmed until an armed fetch has
+   * primed the map itself.
    */
-  const getRuns = useCallback(async (arm = false, deep = false) => {
-    if (!gitHubToken) return;
-
-    const res = await window.bridge.gitAPI.getRuns(project.id, deep);
+  const processRuns = useCallback((res: { runs?: Run[]; success: boolean }, arm: boolean) => {
     setRunsLoaded(true);
     if (!res.success) return;
 
-    const nextRuns: Run[] = ignoreDependabot
+    const nextRuns: Run[] = ignoreDependabotRef.current
       ? (res.runs ?? []).filter((run: Run) => !run.actor?.login?.toLowerCase().includes('dependabot'))
       : (res.runs ?? []);
 
@@ -152,13 +187,13 @@ export const useRepoData = (
             path: run.path
           })
         ) &&
-        notifications &&
+        notificationsRef.current &&
         notifyBranches.current.has(run.head_branch ?? '')
       ) {
         const status = run.conclusion === 'success' ? 'passed' : 'failed';
         const event = run.event !== 'workflow_dispatch' ? run.event : 'manual';
         window.bridge.notification.show(
-          `${project.name}: ${run.name} ${status}`,
+          `${projectNameRef.current}: ${run.name} ${status}`,
           `${event} » ${run.head_branch} (#${run.run_number})\n${run.display_title}`
         );
       }
@@ -170,7 +205,7 @@ export const useRepoData = (
     // Merge rather than replace, so a run does not vanish the moment a busy
     // repo pushes it off the first page.
     setRuns((prev) => mergeRuns(prev, nextRuns, Date.now()));
-  }, [gitHubToken, ignoreDependabot, notifications, project.id, project.name]);
+  }, []);
 
   /**
    * Walks the repo's run history a page at a time, with no date window — the
@@ -207,114 +242,115 @@ export const useRepoData = (
     [exhaustedHistory, gitHubToken, loadingHistory, project.id]
   );
 
-  const getPulls = useCallback(async () => {
+  // Subscribes once per project to the shared poller: it owns the single
+  // timer, pausing while hidden/offline, and refetching stale data on
+  // visible/focus/online. `fetch`/`interval` read their inputs off refs (see
+  // above) so a setting or `pollRuns` change never resubscribes — that would
+  // both restart the coordinator's cache entry for this key needlessly and
+  // (via the cache-hit replay on subscribe) risk re-running notification
+  // arming against already-processed data.
+  useEffect(() => {
     if (!gitHubToken) return;
 
+    const fetchRuns = async () => {
+      const deep = nextRunsFetchDeep.current;
+      nextRunsFetchDeep.current = false;
+
+      const armOverride = nextRunsFetchArmOverride.current;
+      nextRunsFetchArmOverride.current = null;
+      const arm = armOverride ?? pollRunsRef.current;
+
+      const res = await window.bridge.gitAPI.getRuns(project.id, deep);
+      return { arm, res };
+    };
+
+    const unsubscribe = subscribe(
+      {
+        fetch: fetchRuns,
+        interval: () => (pollRunsRef.current && fetchIntervalRef.current > minRunsPollInterval ? fetchIntervalRef.current : Infinity),
+        key: `runs:${project.id}`
+      },
+      ({ arm, res }) => processRuns(res, arm)
+    );
+
+    return unsubscribe;
+  }, [gitHubToken, processRuns, project.id]);
+
+  // `notifyArmed` means "prevConclusions was primed by a fetch inside the
+  // current continuous polling session". Collapsing a card stops the runs
+  // poll (via the `interval` above returning `Infinity`) without unsubscribing
+  // it, so disarming has to happen here explicitly rather than by tearing the
+  // subscription down.
+  useEffect(() => {
+    if (!pollRuns) {
+      notifyArmed.current = false;
+      return;
+    }
+
+    // Expanding a card (or mounting already expanded) shouldn't wait for the
+    // next scheduled tick — nudge the coordinator to fetch now.
+    refreshPoller(`runs:${project.id}`);
+    refreshPoller(`pinnedRuns:${project.id}`);
+  }, [pollRuns, project.id]);
+
+  // Same disarm the old `visibilitychange` handler did while hidden. Fetching
+  // itself is already paused by the coordinator while the tab is hidden; this
+  // only keeps `notifyArmed` from staying (or resuming) true across a gap
+  // nobody was watching, so the catch-up fetch on return never fires a burst
+  // of stale notifications.
+  useEffect(() => {
+    const onVisibilityChange = () => {
+      if (document.hidden) notifyArmed.current = false;
+    };
+
+    document.addEventListener('visibilitychange', onVisibilityChange);
+
+    return () => document.removeEventListener('visibilitychange', onVisibilityChange);
+  }, []);
+
+  const fetchPulls = useCallback(async () => {
     const [openRes, authorRes, reviewRes] = await Promise.all([
       window.bridge.gitAPI.getOpenPulls(project.id),
       window.bridge.gitAPI.getPulls(project.id, 'author'),
       window.bridge.gitAPI.getPulls(project.id, 'review-requested')
     ]);
 
-    if (!openRes.success || !authorRes.success || !reviewRes.success) return;
+    return { authorRes, openRes, reviewRes };
+  }, [project.id]);
 
-    const numbersOf = (res: { pulls?: { number: number }[] }) => (res.pulls ?? []).map((item) => item.number);
+  const handlePullsData = useCallback(
+    ({
+      authorRes,
+      openRes,
+      reviewRes
+    }: {
+      authorRes: { pulls?: { number: number }[]; success: boolean };
+      openRes: { pulls?: Pull[]; success: boolean };
+      reviewRes: { pulls?: { number: number }[]; success: boolean };
+    }) => {
+      if (!openRes.success || !authorRes.success || !reviewRes.success) return;
 
-    setPulls(tagPulls(openRes.pulls ?? [], numbersOf(authorRes), numbersOf(reviewRes)));
-  }, [gitHubToken, project.id]);
+      const numbersOf = (res: { pulls?: { number: number }[] }) => (res.pulls ?? []).map((item) => item.number);
 
-  useEffect(() => {
-    if (!gitHubToken) return;
-
-    // One fetch per mount even while details are hidden, so the repo has
-    // something to show the moment they are switched on.
-    // The first fetch walks back through pages so a quiet branch has its runs
-    // from the start; the polls that follow only need the newest page.
-    if (!initialRunsFetched.current || pollRuns) {
-      const first = !initialRunsFetched.current;
-      initialRunsFetched.current = true;
-      getRuns(pollRuns, first);
-    }
-
-    // `notifyArmed` means "prevConclusions was primed by a fetch inside the
-    // current continuous polling session". Whenever polling stops the map goes
-    // stale, so disarm — otherwise resuming fires a burst of notifications for
-    // runs that concluded while nobody was watching.
-    if (!pollRuns) {
-      notifyArmed.current = false;
-      return;
-    }
-
-    const startPolling = () => {
-      if (!runsIntervalId.current && fetchInterval > 2000) {
-        runsIntervalId.current = window.setInterval(() => getRuns(), fetchInterval);
-      }
-    };
-
-    const stopPolling = () => {
-      if (runsIntervalId.current) {
-        window.clearInterval(runsIntervalId.current);
-        runsIntervalId.current = null;
-      }
-    };
-
-    const handleVisibilityChange = () => {
-      if (document.hidden) {
-        stopPolling();
-        notifyArmed.current = false;
-      } else {
-        getRuns(true);
-        startPolling();
-      }
-    };
-
-    startPolling();
-    document.addEventListener('visibilitychange', handleVisibilityChange);
-
-    return () => {
-      stopPolling();
-      document.removeEventListener('visibilitychange', handleVisibilityChange);
-    };
-  }, [fetchInterval, getRuns, gitHubToken, pollRuns]);
+      setPulls(tagPulls(openRes.pulls ?? [], numbersOf(authorRes), numbersOf(reviewRes)));
+    },
+    []
+  );
 
   useEffect(() => {
     if (!gitHubToken) return;
 
-    getPulls();
+    const unsubscribe = subscribe(
+      {
+        fetch: fetchPulls,
+        interval: () => pullsIntervalRef.current,
+        key: `pulls:${project.id}`
+      },
+      handlePullsData
+    );
 
-    const start = () => {
-      // Guarding on the ref alone left the old timer running at the old
-      // interval whenever the setting changed.
-      if (!pullsIntervalId.current) {
-        pullsIntervalId.current = window.setInterval(getPulls, gitHubPulls.pollInterval);
-      }
-    };
-
-    const stop = () => {
-      if (pullsIntervalId.current) {
-        window.clearInterval(pullsIntervalId.current);
-        pullsIntervalId.current = null;
-      }
-    };
-
-    const onVisibility = () => {
-      if (document.hidden) {
-        stop();
-        return;
-      }
-
-      getPulls();
-      start();
-    };
-
-    start();
-    document.addEventListener('visibilitychange', onVisibility);
-
-    return () => {
-      stop();
-      document.removeEventListener('visibilitychange', onVisibility);
-    };
-  }, [getPulls, gitHubPulls.pollInterval, gitHubToken]);
+    return unsubscribe;
+  }, [fetchPulls, gitHubToken, handlePullsData, project.id]);
 
   const hidePull = useCallback(
     (pullId: number, label = `#${pullId}`) => {
@@ -350,63 +386,45 @@ export const useRepoData = (
    * that last ran days ago still shows. One call per pinned workflow, so this
    * runs on its own slow clock rather than with the poll.
    */
-  const getPinnedRuns = useCallback(async () => {
+  const fetchPinnedRuns = useCallback(() => window.bridge.gitAPI.getPinnedRuns(project.id), [project.id]);
+
+  const handlePinnedRunsData = useCallback((res: { runs?: Run[]; success: boolean }) => {
+    if (res.success) setPinnedRuns(res.runs ?? []);
+  }, []);
+
+  useEffect(() => {
     if (!gitHubToken) return;
 
-    const res = await window.bridge.gitAPI.getPinnedRuns(project.id);
-    if (res.success) setPinnedRuns(res.runs ?? []);
-  }, [gitHubToken, project.id]);
+    const unsubscribe = subscribe(
+      {
+        fetch: fetchPinnedRuns,
+        interval: () => (pollRunsRef.current ? pinnedInterval : Infinity),
+        key: `pinnedRuns:${project.id}`
+      },
+      handlePinnedRunsData
+    );
 
-  // The navbar refresh triggers a gentle in-place re-fetch of everything this
-  // card shows, instead of reloading the whole app.
+    return unsubscribe;
+  }, [fetchPinnedRuns, gitHubToken, handlePinnedRunsData, project.id]);
+
+  // Bridges both worlds during the poller migration: `requestRefresh` (the
+  // navbar's "refresh everything" action) still dispatches this legacy DOM
+  // event for any not-yet-migrated listener, alongside the shared coordinator
+  // refresh it now also triggers. This hook is migrated, so it no longer
+  // fetches off the event itself — the coordinator's own `refresh()` call
+  // (already wired into `requestRefresh`) does that — but it still needs the
+  // *deep*, force-armed fetch the old `getRuns(true, true)` call made, so it
+  // primes the same one-shot refs a manual `refresh()` below uses.
   useEffect(() => {
     const onRefresh = () => {
-      getRuns(true, true);
-      getPulls();
-      getPinnedRuns();
+      nextRunsFetchDeep.current = true;
+      nextRunsFetchArmOverride.current = true;
     };
 
     window.addEventListener(refreshEvent, onRefresh);
 
     return () => window.removeEventListener(refreshEvent, onRefresh);
-  }, [getRuns, getPulls, getPinnedRuns]);
-
-  useEffect(() => {
-    getPinnedRuns();
-
-    if (!pollRuns) return;
-
-    let timer: null | number = null;
-
-    const start = () => {
-      if (!timer) timer = window.setInterval(getPinnedRuns, pinnedInterval);
-    };
-
-    const stop = () => {
-      if (timer) {
-        window.clearInterval(timer);
-        timer = null;
-      }
-    };
-
-    const onVisibility = () => {
-      if (document.hidden) {
-        stop();
-        return;
-      }
-
-      getPinnedRuns();
-      start();
-    };
-
-    start();
-    document.addEventListener('visibilitychange', onVisibility);
-
-    return () => {
-      stop();
-      document.removeEventListener('visibilitychange', onVisibility);
-    };
-  }, [getPinnedRuns, pollRuns]);
+  }, []);
 
   /**
    * Typing a workflow name asks GitHub for that workflow's runs directly, which
@@ -469,11 +487,16 @@ export const useRepoData = (
     [pullsByBranch]
   );
 
+  // Matches the pre-migration `refresh()`: a deep runs fetch that does *not*
+  // force-arm notifications (unlike the global `refreshEvent`, which does),
+  // plus a plain re-fetch of pulls and pinned runs.
   const refresh = useCallback(() => {
-    getRuns(false, true);
-    getPulls();
-    getPinnedRuns();
-  }, [getPinnedRuns, getPulls, getRuns]);
+    nextRunsFetchDeep.current = true;
+    nextRunsFetchArmOverride.current = false;
+    refreshPoller(`runs:${project.id}`);
+    refreshPoller(`pulls:${project.id}`);
+    refreshPoller(`pinnedRuns:${project.id}`);
+  }, [project.id]);
 
   return {
     clearHiddenPulls,
