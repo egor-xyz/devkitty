@@ -303,19 +303,7 @@ ipcMain.handle('git:api:getPRChecks', async (_, id: string, prNumber: number) =>
       repo
     });
 
-    // GitHub returns every check run for the head SHA, including stale ones a
-    // re-run (or a superseding push) replaced — an old "cancelled"/"failure" run
-    // sits next to the fresh "in_progress" one of the same name. GitHub's own PR
-    // UI shows only the latest run per check name, so dedupe to the newest run
-    // (highest id) per name — otherwise the card counts superseded runs as
-    // failures the PR doesn't actually have.
-    const latestByName = new Map<string, (typeof data.check_runs)[number]>();
-    for (const run of data.check_runs) {
-      const prev = latestByName.get(run.name);
-      if (!prev || run.id > prev.id) latestByName.set(run.name, run);
-    }
-
-    const checks = [...latestByName.values()].map((check) => ({
+    const checks = data.check_runs.map((check) => ({
       conclusion: check.conclusion,
       id: check.id,
       name: check.name,
