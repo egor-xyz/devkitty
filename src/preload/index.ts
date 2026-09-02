@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 import { type AppSettings } from 'types/appSettings';
 import { type ClaudeAccount, type ClaudeDetection, type ClaudeUsage } from 'types/claudeUsage';
+import { type DownscaleResult } from 'types/clipboard';
 import { type FoundEditor } from 'types/foundEditor';
 import { type FoundShell } from 'types/foundShell';
 import { type pullTypes } from 'types/gitHub';
@@ -15,6 +16,13 @@ const bridge = {
     accounts: (): Promise<ClaudeAccount[]> => ipcRenderer.invoke('claude:accounts'),
     detect: (): Promise<ClaudeDetection> => ipcRenderer.invoke('claude:detect'),
     usage: (account: ClaudeAccount): Promise<ClaudeUsage> => ipcRenderer.invoke('claude:usage', account)
+  },
+  clipboard: {
+    onDownscaled: (callback: (result: DownscaleResult) => void) => {
+      const listener = (_: IpcRendererEvent, result: DownscaleResult) => callback(result);
+      ipcRenderer.on('clipboard:downscaled', listener);
+      return () => ipcRenderer.removeListener('clipboard:downscaled', listener);
+    }
   },
   darkMode: {
     on: (callback: (event: IpcRendererEvent, theme: ThemeSource) => void) => ipcRenderer.on('theme-changed', callback),

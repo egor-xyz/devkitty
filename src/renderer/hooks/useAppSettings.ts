@@ -7,6 +7,7 @@ type Actions = {
 
 export const useAppSettings = create<Actions & AppSettings>((set) => ({
   claudeEnabled: true,
+  clipboardDownscale: false,
   editors: [],
   fetchInterval: 10000,
   gitHubActions: {

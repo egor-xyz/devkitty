@@ -2,7 +2,8 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mockIpcRenderer = {
   invoke: vi.fn(),
-  on: vi.fn()
+  on: vi.fn(),
+  removeListener: vi.fn()
 };
 
 const mockContextBridge = {
@@ -25,10 +26,29 @@ describe('preload bridge', () => {
     // Only clear ipcRenderer mocks, not contextBridge (bridge was captured above)
     mockIpcRenderer.invoke.mockClear();
     mockIpcRenderer.on.mockClear();
+    mockIpcRenderer.removeListener.mockClear();
   });
 
   it('should expose bridge on window via contextBridge', () => {
     expect(mockContextBridge.exposeInMainWorld).toHaveBeenCalledWith('bridge', expect.any(Object));
+  });
+
+  describe('clipboard', () => {
+    it('should listen for clipboard:downscaled events and forward the result to the callback', () => {
+      const callback = vi.fn();
+
+      const unsubscribe = bridge.clipboard.onDownscaled(callback);
+
+      expect(mockIpcRenderer.on).toHaveBeenCalledWith('clipboard:downscaled', expect.any(Function));
+
+      const result = { from: { height: 2400, width: 4000 }, to: { height: 720, width: 1200 } };
+      mockIpcRenderer.on.mock.calls[0][1]({}, result);
+      expect(callback).toHaveBeenCalledWith(result);
+
+      expect(typeof unsubscribe).toBe('function');
+      unsubscribe();
+      expect(mockIpcRenderer.removeListener).toHaveBeenCalledWith('clipboard:downscaled', mockIpcRenderer.on.mock.calls[0][1]);
+    });
   });
 
   describe('darkMode', () => {

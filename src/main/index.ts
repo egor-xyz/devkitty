@@ -9,6 +9,7 @@ import { fixPath } from './libs/fixPath';
 fixPath();
 
 import './ipcs';
+import { initClipboardDownscale, stopClipboardWatcher } from './libs/clipboardDownscale';
 import { updateEditorsAndShells } from './libs/integrations/integrations';
 import { loadWindowState, saveBounds } from './libs/window';
 
@@ -78,7 +79,10 @@ app.on('ready', async () => {
   if (isDev) await installReactDevTools();
 
   createWindow();
+  initClipboardDownscale();
 });
+
+app.on('will-quit', () => stopClipboardWatcher());
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {

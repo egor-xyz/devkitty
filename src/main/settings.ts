@@ -18,6 +18,7 @@ export const settings = new Store<Settings>({
   defaults: {
     appSettings: {
       claudeEnabled: true,
+      clipboardDownscale: false,
       editors: [],
       fetchInterval: 10000,
       gitHubActions: {
