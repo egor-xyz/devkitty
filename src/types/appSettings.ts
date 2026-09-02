@@ -5,6 +5,7 @@ import { type IgnoredWorkflow } from './ignoredWorkflow';
 export type AppSettings = {
   claudeAccountDir?: string; // config dir of the account shown in the usage footer
   claudeEnabled: boolean; // master switch for the Claude Code usage integration
+  clipboardDownscale: boolean; // header toggle: auto-shrink clipboard images > 1200px for Claude Code
   editors: FoundEditor[];
   fetchInterval: number;
   gitHubActions: {
