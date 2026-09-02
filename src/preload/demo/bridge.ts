@@ -55,6 +55,9 @@ export const demoBridge = {
     detect: () => Promise.resolve({ installed: true, version: '2.0.14' }),
     usage: (account: { dir: string }) => Promise.resolve(usageByDir[account.dir] ?? usageByDir[claudeAccounts[0].dir])
   },
+  clipboard: {
+    onDownscaled: () => () => {}
+  },
   darkMode: {
     on: noop,
     set: noop,

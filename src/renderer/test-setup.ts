@@ -8,6 +8,9 @@ import { vi } from 'vitest';
 // The stores (useProjects, useGroups, useAppSettings, useDarkMode) have
 // top-level IIFEs that call window.bridge.* at import time
 const mockBridge = {
+  clipboard: {
+    onDownscaled: vi.fn(() => () => {})
+  },
   darkMode: {
     on: vi.fn(),
     set: vi.fn(),

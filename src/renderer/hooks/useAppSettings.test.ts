@@ -69,6 +69,13 @@ describe('useAppSettings', () => {
       expect(window.bridge.settings.set).toHaveBeenCalledWith('appSettings', { fetchInterval: 5000 }, undefined);
     });
 
+    it('should persist clipboardDownscale via bridge', () => {
+      useAppSettings.getState().set({ clipboardDownscale: true });
+
+      expect(useAppSettings.getState().clipboardDownscale).toBe(true);
+      expect(window.bridge.settings.set).toHaveBeenCalledWith('appSettings', { clipboardDownscale: true }, undefined);
+    });
+
     it('should pass safe flag when encrypting', () => {
       useAppSettings.getState().set({ gitHubToken: 'my-token' } as any, true);
 
