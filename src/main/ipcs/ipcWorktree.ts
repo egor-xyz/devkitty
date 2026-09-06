@@ -85,12 +85,15 @@ ipcMain.handle('git:worktree:remove', async (_, id: string, worktreePath: string
   try {
     const git = await getGit(id);
     const args = ['worktree', 'remove', worktreePath];
-    if (force) args.push('--force');
+    // Force twice (-f -f) so it also overrides a locked worktree, not just dirty files.
+    if (force) args.push('--force', '--force');
     await git.raw(args);
 
     return { message: 'Worktree removed', success: true };
   } catch (e) {
-    const needsForce = e.message?.includes('contains modified or untracked files');
+    const needsForce =
+      e.message?.includes('contains modified or untracked files') ||
+      e.message?.includes('locked working tree');
     return { message: e.message, needsForce, success: false };
   }
 });
