@@ -567,18 +567,25 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
       )}
 
         <div className="flex items-center gap-1.5 shrink-0">
-          {/* "Update branch" split button — Blueprint buttons so it inherits the
-            exact same surface as the other action buttons (globe / caret) in
-            every theme, Sunset included. Primary merges the base in; the caret
-            offers merge vs rebase. Shown only when the branch is behind. */}
+          {/* "Update branch" split button — GitHub-style tinted pill in blue so it
+            joins the same visual system as the green Merge button and the
+            green/red status pills, while blue keeps it read as "sync the base in"
+            rather than competing with the primary green merge. Primary merges the
+            base in; the caret offers merge vs rebase. Shown only when behind. */}
           {behind && isOpen && !hasConflicts && (
-            <ButtonGroup>
-              <Button
-                icon="git-merge"
-                loading={updating}
+            <div className={cn('flex shrink-0 rounded-md overflow-hidden border border-[#0969da]/35 dark:border-[#4493f8]/35', updating && 'opacity-60')}>
+              <button
+                className="flex items-center gap-1.5 h-[30px] pl-2.5 pr-3 text-[12px] font-medium text-[#0969da] dark:text-[#4493f8] bg-[#0969da]/10 hover:bg-[#0969da]/[0.18] active:bg-[#0969da]/25 transition-colors disabled:cursor-not-allowed"
+                disabled={updating}
                 onClick={() => updateBranch('merge')}
-                text="Update branch"
-              />
+                type="button"
+              >
+                <Icon icon={updating ? 'refresh' : 'git-merge'}
+                  size={13}
+                />
+
+                {updating ? 'Updating…' : 'Update branch'}
+              </button>
 
               <Popover
                 content={
@@ -594,13 +601,20 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
                     />
                   </Menu>
               }
+                disabled={updating}
                 placement="bottom-end"
               >
-                <Button aria-label="Update branch options"
-                  icon="caret-down"
-                />
+                <button aria-label="Update branch options"
+                  className="flex items-center h-[30px] px-1.5 text-[#0969da] dark:text-[#4493f8] bg-[#0969da]/10 hover:bg-[#0969da]/[0.18] active:bg-[#0969da]/25 transition-colors border-l border-[#0969da]/35 dark:border-[#4493f8]/35 disabled:cursor-not-allowed"
+                  disabled={updating}
+                  type="button"
+                >
+                  <Icon icon="caret-down"
+                    size={12}
+                  />
+                </button>
               </Popover>
-            </ButtonGroup>
+            </div>
         )}
 
           {/* GitHub-style green "Merge" split button: primary squash-merges; the
