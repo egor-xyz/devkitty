@@ -247,12 +247,27 @@ describe('ipcWorktree', () => {
       expect(mockGit.raw).toHaveBeenCalledWith(['worktree', 'remove', '/path/to/worktree']);
     });
 
-    it('should add --force flag when force is true', async () => {
+    it('should add --force twice when force is true (overrides locks too)', async () => {
       mockGit.raw.mockResolvedValue(undefined);
 
       await handlers['git:worktree:remove']({}, 'proj-1', '/path/to/worktree', true);
 
-      expect(mockGit.raw).toHaveBeenCalledWith(['worktree', 'remove', '/path/to/worktree', '--force']);
+      expect(mockGit.raw).toHaveBeenCalledWith([
+        'worktree',
+        'remove',
+        '/path/to/worktree',
+        '--force',
+        '--force'
+      ]);
+    });
+
+    it('should indicate needsForce when worktree is locked', async () => {
+      mockGit.raw.mockRejectedValue(new Error('cannot remove a locked working tree, lock reason: ...'));
+
+      const result = await handlers['git:worktree:remove']({}, 'proj-1', '/path/to/worktree');
+
+      expect(result.success).toBe(false);
+      expect(result.needsForce).toBe(true);
     });
 
     it('should not add --force flag when force is false', async () => {
