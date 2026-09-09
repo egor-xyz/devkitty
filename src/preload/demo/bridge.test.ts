@@ -102,10 +102,10 @@ describe('demoBridge darkMode', () => {
 
 describe('demoBridge git', () => {
   it('resolves canned success objects for the simple git mutations', async () => {
-    await expect(demoBridge.git.checkout()).resolves.toMatchObject({ success: true, message: 'Switched branch' });
-    await expect(demoBridge.git.mergeTo()).resolves.toMatchObject({ success: true, merges: [] });
-    await expect(demoBridge.git.pull()).resolves.toMatchObject({ success: true, message: 'Already up to date' });
-    await expect(demoBridge.git.reset()).resolves.toMatchObject({ success: true, message: 'Reset' });
+    await expect(demoBridge.git.checkout()).resolves.toMatchObject({ message: 'Switched branch', success: true });
+    await expect(demoBridge.git.mergeTo()).resolves.toMatchObject({ merges: [], success: true });
+    await expect(demoBridge.git.pull()).resolves.toMatchObject({ message: 'Already up to date', success: true });
+    await expect(demoBridge.git.reset()).resolves.toMatchObject({ message: 'Reset', success: true });
   });
 
   it('returns the rich git status for a known project id', async () => {
@@ -117,7 +117,7 @@ describe('demoBridge git', () => {
   });
 
   it('returns a not-found status for an unknown project id', async () => {
-    await expect(demoBridge.git.getStatus('nope')).resolves.toMatchObject({ success: false, message: 'Not found' });
+    await expect(demoBridge.git.getStatus('nope')).resolves.toMatchObject({ message: 'Not found', success: false });
   });
 });
 
@@ -130,10 +130,10 @@ describe('demoBridge gitAPI extra', () => {
     await expect(demoBridge.gitAPI.cancelRun()).resolves.toMatchObject({ success: true });
     await expect(demoBridge.gitAPI.rerunFailedJobs()).resolves.toMatchObject({ success: true });
     await expect(demoBridge.gitAPI.rerunWorkflow()).resolves.toMatchObject({ success: true });
-    await expect(demoBridge.gitAPI.reset()).resolves.toMatchObject({ success: true, message: 'Branch reset' });
-    await expect(demoBridge.gitAPI.getPinnedRuns()).resolves.toMatchObject({ success: true, runs: [] });
-    await expect(demoBridge.gitAPI.searchRuns()).resolves.toMatchObject({ success: true, runs: [] });
-    await expect(demoBridge.gitAPI.getRunsPage()).resolves.toMatchObject({ success: true, last: true, runs: [] });
+    await expect(demoBridge.gitAPI.reset()).resolves.toMatchObject({ message: 'Branch reset', success: true });
+    await expect(demoBridge.gitAPI.getPinnedRuns()).resolves.toMatchObject({ runs: [], success: true });
+    await expect(demoBridge.gitAPI.searchRuns()).resolves.toMatchObject({ runs: [], success: true });
+    await expect(demoBridge.gitAPI.getRunsPage()).resolves.toMatchObject({ last: true, runs: [], success: true });
   });
 
   it('returns the open pulls for a known project and an empty list for an unknown one', async () => {
@@ -247,10 +247,10 @@ describe('demoBridge settings', () => {
 
 describe('demoBridge worktree', () => {
   it('resolves canned success objects for the worktree mutations', async () => {
-    await expect(demoBridge.worktree.add()).resolves.toMatchObject({ success: true, message: 'Worktree added' });
-    await expect(demoBridge.worktree.pull()).resolves.toMatchObject({ success: true, message: 'Up to date' });
-    await expect(demoBridge.worktree.remove()).resolves.toMatchObject({ success: true, message: 'Worktree removed' });
-    await expect(demoBridge.worktree.getStatus()).resolves.toMatchObject({ success: true, status: { ahead: 0, behind: 0, modified: [] } });
+    await expect(demoBridge.worktree.add()).resolves.toMatchObject({ message: 'Worktree added', success: true });
+    await expect(demoBridge.worktree.pull()).resolves.toMatchObject({ message: 'Up to date', success: true });
+    await expect(demoBridge.worktree.remove()).resolves.toMatchObject({ message: 'Worktree removed', success: true });
+    await expect(demoBridge.worktree.getStatus()).resolves.toMatchObject({ status: { ahead: 0, behind: 0, modified: [] }, success: true });
   });
 
   it('lists worktrees for a known project and an empty list for an unknown one', async () => {
