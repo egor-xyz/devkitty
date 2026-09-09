@@ -1,7 +1,6 @@
-import { randomUUID } from 'node:crypto';
-
 import { app } from 'electron';
 import log from 'electron-log';
+import { randomUUID } from 'node:crypto';
 
 import { settings } from './settings';
 
@@ -52,9 +51,14 @@ export const track = async (name: string, params?: Record<string, unknown>): Pro
       headers: { 'Content-Type': 'application/json' },
       method: 'POST'
     });
+    const responseText = await response.text();
+
+    if (!response.ok) {
+      log.error('[analytics] GA4 send failed:', response.status, responseText);
+    }
 
     if (debug) {
-      log.info('[analytics] GA4 debug response:', await response.text());
+      log.info('[analytics] GA4 debug response:', responseText);
     }
   } catch (error) {
     log.error('[analytics] failed to send event', error);
