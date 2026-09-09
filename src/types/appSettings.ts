@@ -1,11 +1,14 @@
+import { type AIProviderFilter } from './aiUsage';
 import { type FoundEditor } from './foundEditor';
 import { type FoundShell } from './foundShell';
 import { type IgnoredWorkflow } from './ignoredWorkflow';
 
 export type AppSettings = {
+  aiProvider?: AIProviderFilter;
   claudeAccountDir?: string; // config dir of the account shown in the usage footer
-  claudeEnabled: boolean; // master switch for the Claude Code usage integration
+  claudeEnabled: boolean; // legacy storage key: master switch for AI analytics
   clipboardDownscale: boolean; // header toggle: auto-shrink clipboard images > 1200px for Claude Code
+  codexAccountDir?: string; // Codex profile shown in AI analytics
   editors: FoundEditor[];
   fetchInterval: number;
   gitHubActions: {
@@ -23,7 +26,7 @@ export type AppSettings = {
   selectedEditor?: FoundEditor;
   selectedShell?: FoundShell<string>;
   shells: FoundShell<string>[];
-  showClaudeUsage: boolean; // whether the Claude Code usage footer is shown
+  showClaudeUsage: boolean; // legacy storage key: whether the AI analytics footer is shown
   showLogo: boolean;
   showWorktrees: boolean;
   telemetry: boolean;

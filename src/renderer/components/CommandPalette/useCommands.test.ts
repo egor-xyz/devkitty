@@ -2,10 +2,13 @@
 import { renderHook } from '@testing-library/react';
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const navigateMock = vi.fn();
+const mocks = vi.hoisted(() => ({ navigate: vi.fn(), refresh: vi.fn(), refreshAI: vi.fn() }));
+const storage = new Map<string, string>();
 vi.mock('react-router', () => ({
-  useNavigate: () => navigateMock
+  useNavigate: () => mocks.navigate
 }));
+vi.mock('renderer/hooks/useAIUsage', () => ({ useAIUsage: (selector: (state: { init: () => void }) => unknown) => selector({ init: mocks.refreshAI }) }));
+vi.mock('renderer/utils/refresh', () => ({ requestRefresh: mocks.refresh }));
 
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useCommandPalette } from 'renderer/hooks/useCommandPalette';
@@ -18,6 +21,12 @@ import { useCommands } from './useCommands';
 describe('useCommands', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    storage.clear();
+    vi.stubGlobal('localStorage', {
+      getItem: (key: string) => storage.get(key) ?? null,
+      removeItem: (key: string) => storage.delete(key),
+      setItem: (key: string, value: string) => storage.set(key, value)
+    });
 
     useAppSettings.setState({
       claudeEnabled: true,
@@ -44,6 +53,26 @@ describe('useCommands', () => {
     useFocus.setState({ focusedProjectId: null, focusedWorktreePath: null });
     useWorktrees.setState({ byProject: {} });
     useCommandPalette.setState({ isOpen: true });
+  });
+
+  it('exposes provider-neutral usage commands searchable by either provider', () => {
+    const { result } = renderHook(() => useCommands());
+    const integration = result.current.find((item) => item.id === 'integrations-toggle-claude-enabled');
+    const footer = result.current.find((item) => item.id === 'integrations-toggle-claude-usage');
+    expect(integration?.title).toBe('Toggle AI usage integration');
+    expect(footer?.title).toBe('Toggle AI usage footer');
+    expect(footer?.keywords).toContain('Claude Code Codex');
+    footer?.perform();
+    expect(useAppSettings.getState().showClaudeUsage).toBe(true);
+  });
+
+  it('exposes demo mode in the development command palette', () => {
+    localStorage.setItem('dk-demo', '1');
+    const { result } = renderHook(() => useCommands());
+    expect(result.current.find((item) => item.id === 'developer-toggle-demo-mode')).toMatchObject({
+      active: true,
+      title: 'Toggle Demo mode'
+    });
   });
 
   it('builds one Projects item per project with subtitle and keywords', () => {
@@ -105,7 +134,7 @@ describe('useCommands', () => {
 
     expect(useFocus.getState().focusedProjectId).toBe('1');
     expect(useFocus.getState().focusedWorktreePath).toBe('/path/a');
-    expect(navigateMock).toHaveBeenCalledWith('/');
+    expect(mocks.navigate).toHaveBeenCalledWith('/');
   });
 
   it('calls setFocus and navigates home when a Projects item is performed', () => {
@@ -117,7 +146,7 @@ describe('useCommands', () => {
     item?.perform();
 
     expect(useFocus.getState().focusedProjectId).toBe('1');
-    expect(navigateMock).toHaveBeenCalledWith('/');
+    expect(mocks.navigate).toHaveBeenCalledWith('/');
   });
 
   it('calls useAppSettings.set with the correct partial for a simple toggle', () => {
@@ -171,15 +200,26 @@ describe('useCommands', () => {
 
     const tokenItem = result.current.find((i) => i.id === 'github-navigate-token');
     tokenItem?.perform();
-    expect(navigateMock).toHaveBeenCalledWith('/settings/integrations');
+    expect(mocks.navigate).toHaveBeenCalledWith('/settings/integrations');
 
     const countItem = result.current.find((i) => i.id === 'github-navigate-actions-count');
     countItem?.perform();
-    expect(navigateMock).toHaveBeenCalledWith('/settings/github');
+    expect(mocks.navigate).toHaveBeenCalledWith('/settings/github');
 
     const navItem = result.current.find((i) => i.id === 'navigation-settings-appearance');
     navItem?.perform();
-    expect(navigateMock).toHaveBeenCalledWith('/settings/appearance');
+    expect(mocks.navigate).toHaveBeenCalledWith('/settings/appearance');
+  });
+
+  it('refreshes projects and AI usage from the command palette', () => {
+    const { result } = renderHook(() => useCommands());
+
+    const refresh = result.current.find((item) => item.id === 'navigation-refresh');
+    expect(refresh?.title).toBe('Refresh');
+    refresh?.perform();
+
+    expect(mocks.refresh).toHaveBeenCalledOnce();
+    expect(mocks.refreshAI).toHaveBeenCalledOnce();
   });
 
   it('omits editor and shell items when none are configured', () => {

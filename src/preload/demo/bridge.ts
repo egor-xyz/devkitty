@@ -10,6 +10,8 @@ import { ipcRenderer } from 'electron';
 import {
   authoredPRNumbers,
   claudeAccounts,
+  codexAccounts,
+  codexUsageByDir,
   conflictFilesByPR,
   gitStatusById,
   groups,
@@ -25,8 +27,10 @@ import {
 // Mutable so in-session toggles (theme, worktrees, account switch) stick.
 const store: Record<string, any> = {
   appSettings: {
+    aiProvider: 'both',
     claudeAccountDir: claudeAccounts[0].dir,
     claudeEnabled: true,
+    codexAccountDir: codexAccounts[0].dir,
     editors: [{ editor: 'Visual Studio Code', name: 'Visual Studio Code', path: '/Applications/Visual Studio Code.app' }],
     fetchInterval: 15000,
     gitHubActions: { all: true, count: 5, ignoreDependabot: false, ignoredWorkflows: [], notifications: true, pinnedWorkflows: [] },
@@ -50,6 +54,9 @@ const ok = (extra: Record<string, any> = {}) => Promise.resolve({ success: true,
 const noop = () => Promise.resolve();
 
 export const demoBridge = {
+  analytics: {
+    trackEvent: noop
+  },
   claude: {
     accounts: () => Promise.resolve(claudeAccounts),
     detect: () => Promise.resolve({ installed: true, version: '2.0.14' }),
@@ -57,6 +64,14 @@ export const demoBridge = {
   },
   clipboard: {
     onDownscaled: () => () => {}
+  },
+  codex: {
+    accounts: () => Promise.resolve(codexAccounts),
+    detect: () => Promise.resolve({ installed: true, version: '0.111.0' }),
+    usage: (account: { dir: string }) => {
+      const usage = codexUsageByDir[account.dir];
+      return usage ? Promise.resolve(usage) : Promise.reject(new Error('Unknown Codex profile'));
+    }
   },
   darkMode: {
     on: noop,

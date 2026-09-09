@@ -62,14 +62,6 @@ export const SettingsIntegrations = () => {
         />
       </div>
 
-      <h3 className="text-sm font-semibold mt-4 mb-2.5">Claude Code</h3>
-
-      <Switch
-        checked={claudeEnabled ?? true}
-        label="Usage integration"
-        onChange={() => set({ claudeEnabled: !(claudeEnabled ?? true) })}
-      />
-
       {import.meta.env.DEV && (
         <>
           <h3 className="text-sm font-semibold mt-4 mb-2.5">Developer</h3>
@@ -132,12 +124,29 @@ export const SettingsIntegrations = () => {
         </>
       )}
 
-      <Switch
-        checked={telemetry !== false}
-        className="mt-4"
-        label="Google Analytics"
-        onChange={() => set({ telemetry: !(telemetry !== false) })}
-      />
+      <section className="mt-4">
+        <h3 className="mb-2.5 text-sm font-semibold">AI Analytics</h3>
+
+        <Switch
+          checked={claudeEnabled ?? true}
+          label="AI usage integration"
+          onChange={() => set({ claudeEnabled: !(claudeEnabled ?? true) })}
+        />
+
+        <p className="text-xs text-bp-gray-1 dark:text-bp-gray-4">Scan Claude Code and Codex profiles. View either provider with separate account selections.</p>
+      </section>
+
+      <section className="mt-4">
+        <h3 className="mb-2.5 text-sm font-semibold">Google Analytics</h3>
+
+        <Switch
+          checked={telemetry !== false}
+          label="Share anonymous analytics"
+          onChange={() => set({ telemetry: !(telemetry !== false) })}
+        />
+
+        <p className="text-xs text-bp-gray-1 dark:text-bp-gray-4">Help improve Devkitty by sharing anonymous feature usage and error diagnostics.</p>
+      </section>
     </div>
   );
 };

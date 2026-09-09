@@ -9,4 +9,5 @@ import './ipcNotification';
 import './ipcSticker';
 import './ipcWorktree';
 import './ipcClaude';
+import './ipcCodex';
 import './ipcWindow';

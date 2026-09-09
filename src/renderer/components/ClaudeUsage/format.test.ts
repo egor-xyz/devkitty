@@ -40,5 +40,6 @@ describe('modelLabel', () => {
     expect(modelLabel('claude-opus-5')).toBe('Opus 5');
     expect(modelLabel('claude-haiku-4-5-20251001')).toBe('Haiku');
     expect(modelLabel('claude-future-9')).toBe('future-9');
+    expect(modelLabel('unknown')).toBe('Other');
   });
 });

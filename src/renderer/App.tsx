@@ -1,8 +1,6 @@
 import { Classes, FocusStyleManager } from '@blueprintjs/core';
-import { useEffect } from 'react';
-import { useLocation } from 'react-router';
+import { type CSSProperties, useEffect, useState } from 'react';
 import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
-import { useClaudeUsage } from 'renderer/hooks/useClaudeUsage';
 import { useDarkMode } from 'renderer/hooks/useDarkMode';
 import { useModal } from 'renderer/hooks/useModal';
 import { cn } from 'renderer/utils/cn';
@@ -17,14 +15,9 @@ FocusStyleManager.onlyShowFocusOnTabs();
 export const App = () => {
   const { darkMode } = useDarkMode();
   const { Modal } = useModal();
-  const { claudeEnabled, showClaudeUsage } = useAppSettings();
+  const { claudeEnabled } = useAppSettings();
+  const [footerHeight, setFooterHeight] = useState(0);
   const isSunset = useIsSunset();
-  const hasAccounts = useClaudeUsage((s) => s.accounts.length > 0);
-  // The usage footer never shows on the Settings page — it would sit over the
-  // settings footer chrome — nor when the integration is switched off.
-  const onSettings = useLocation().pathname.startsWith('/settings');
-  const claudeActive = claudeEnabled && !onSettings;
-  const footerVisible = showClaudeUsage && hasAccounts && claudeActive;
 
   // Mirror the Sunset flag AND the dark flag onto <html> so theme rules — and
   // Tailwind's `dark:` variants — also reach Blueprint popovers/menus, which
@@ -41,9 +34,9 @@ export const App = () => {
       className={cn(
         'flex w-full relative flex-col',
         isSunset && 'theme-sunset devkitty-app-bg min-h-screen',
-        footerVisible && 'has-claude-footer',
         darkMode && [Classes.DARK, 'dark']
       )}
+      style={{ '--claude-footer-h': `${footerHeight}px` } as CSSProperties}
     >
       <AppNavbar />
       <Routing />
@@ -51,7 +44,7 @@ export const App = () => {
       <CommandPalette />
       {/* Kept mounted on the Settings route (it reads the route itself) so it
           slides down instead of vanishing. */}
-      {claudeEnabled && <ClaudeFooter />}
+      {(claudeEnabled ?? true) && <ClaudeFooter onHeightChange={setFooterHeight} />}
 
       {isSunset && (
         <>
