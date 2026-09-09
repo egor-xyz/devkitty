@@ -154,7 +154,6 @@ export const GroupCollapse: FC<Props> = ({ collapsed, group, index, onClick, pro
         >
           <div className={Classes.ALIGN_LEFT}>
             <Icon icon={group.icon ?? 'folder-open'} />{' '}
-
             <span>{group.fullName}</span>
           </div>
 

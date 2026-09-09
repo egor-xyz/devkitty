@@ -15,9 +15,7 @@ export const SettingsAppearance = () => {
       <ThemeSelector />
       <Divider className="my-6!" />
       <h3 className="text-sm font-semibold mt-4 mb-2.5">Style</h3>
-
       <StyleSelector />
-
       <Divider className="my-6!" />
       <h3 className="text-sm font-semibold mt-4 mb-2.5">Git</h3>
 

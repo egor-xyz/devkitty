@@ -1,5 +1,4 @@
 import path from 'path';
-
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('fs', () => ({

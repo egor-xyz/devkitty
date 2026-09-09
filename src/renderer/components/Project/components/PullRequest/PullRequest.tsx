@@ -18,9 +18,9 @@ type Check = {
 };
 
 type ChecksResult = Awaited<ReturnType<typeof window.bridge.gitAPI.getPRChecks>>;
-type MutationResult = { message?: string; success: boolean };
-
 type MergeMethod = 'merge' | 'rebase' | 'squash';
+
+type MutationResult = { message?: string; success: boolean };
 
 type Props = {
   onHide?: (pullId: number, label: string) => void;

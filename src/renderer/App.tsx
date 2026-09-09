@@ -9,6 +9,7 @@ import { cn } from 'renderer/utils/cn';
 
 import { AppNavbar } from './components/AppNavbar';
 import { ClaudeFooter } from './components/ClaudeUsage';
+import { CommandPalette } from './components/CommandPalette';
 import { Routing } from './Routing';
 
 FocusStyleManager.onlyShowFocusOnTabs();
@@ -47,6 +48,7 @@ export const App = () => {
       <AppNavbar />
       <Routing />
       <Modal />
+      <CommandPalette />
       {/* Kept mounted on the Settings route (it reads the route itself) so it
           slides down instead of vanishing. */}
       {claudeEnabled && <ClaudeFooter />}

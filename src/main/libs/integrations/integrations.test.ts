@@ -16,9 +16,9 @@ vi.mock('../../settings', () => ({
   }
 }));
 
+import { settings } from '../../settings';
 import { getInstalledApps } from './getInstalledApps';
 import { updateEditorsAndShells } from './integrations';
-import { settings } from '../../settings';
 
 const mockGetInstalledApps = vi.mocked(getInstalledApps);
 const mockSettings = vi.mocked(settings);

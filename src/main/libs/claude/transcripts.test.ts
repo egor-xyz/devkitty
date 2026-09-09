@@ -1,5 +1,4 @@
 import { EventEmitter } from 'events';
-
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 vi.mock('fs', () => ({
@@ -19,9 +18,8 @@ vi.mock('readline', () => ({
 import fs from 'fs';
 import readline from 'readline';
 
-import { LOOKBACK_MS } from './usage';
-
 import { readEntries } from './transcripts';
+import { LOOKBACK_MS } from './usage';
 
 const mockReaddirSync = vi.mocked(fs.readdirSync);
 const mockStatSync = vi.mocked(fs.statSync);

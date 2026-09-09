@@ -5,9 +5,12 @@ import { NavLink, useLocation } from 'react-router';
 import Devkitty from 'renderer/assets/devkitty.svg?react';
 import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
 import { useClaudeUsage } from 'renderer/hooks/useClaudeUsage';
+import { useCommandPalette } from 'renderer/hooks/useCommandPalette';
 import { useDarkMode } from 'renderer/hooks/useDarkMode';
 import { useFilter } from 'renderer/hooks/useFilter';
+import { useFocus } from 'renderer/hooks/useFocus';
 import { useProjects } from 'renderer/hooks/useProjects';
+import { useWorktrees } from 'renderer/hooks/useWorktrees';
 import { appToaster } from 'renderer/utils/appToaster';
 import { cn } from 'renderer/utils/cn';
 import { formatBytes } from 'renderer/utils/formatBytes';
@@ -57,6 +60,7 @@ const ClipboardDownscaleDetail = ({ enabled, last }: { enabled: boolean; last: D
             <div className="flex flex-1 flex-col gap-1 text-xs tabular-nums">
               <div className="flex items-center gap-2">
                 <span className="w-8 shrink-0 text-bp-gray-3">From</span>
+
                 <span className="text-bp-gray-1 dark:text-bp-gray-4">
                   {last.from.width}×{last.from.height} · {formatBytes(last.bytes.from)}
                 </span>
@@ -64,6 +68,7 @@ const ClipboardDownscaleDetail = ({ enabled, last }: { enabled: boolean; last: D
 
               <div className="flex items-center gap-2">
                 <span className="w-8 shrink-0 text-bp-gray-3">To</span>
+
                 <span className="font-medium">
                   {last.to.width}×{last.to.height} · {formatBytes(last.bytes.to)}
                 </span>
@@ -92,8 +97,19 @@ export const AppNavbar = () => {
   const { claudeEnabled, clipboardDownscale, set, showClaudeUsage, showLogo } = useAppSettings();
   const isSunset = useIsSunset();
   const claudeInstalled = useClaudeUsage((s) => s.detection.installed);
-  const { addProject } = useProjects();
-  const { clear, query, setQuery } = useFilter();
+  const { addProject, projects } = useProjects();
+  const { clear } = useFilter();
+  const { clearFocus, focusedProjectId, focusedWorktreePath } = useFocus();
+  const worktreesByProject = useWorktrees((state) => state.byProject);
+  const openPalette = useCommandPalette((state) => state.open);
+  // A focused worktree shows its branch; a focused whole repo shows the repo
+  // name. Fall back to the raw path if the worktree entry is not yet known.
+  const focusedName = focusedWorktreePath
+    ? worktreesByProject[focusedProjectId ?? '']?.find(({ path }) => path === focusedWorktreePath)?.branch ??
+      focusedWorktreePath
+    : focusedProjectId
+      ? projects.find(({ id }) => id === focusedProjectId)?.name
+      : undefined;
   const searchRef = useRef<HTMLInputElement>(null);
   const onHome = useLocation().pathname === '/';
   const [alwaysOnTop, setAlwaysOnTop] = useState(false);
@@ -169,26 +185,20 @@ export const AppNavbar = () => {
     if (!onHome) clear();
   }, [clear, onHome]);
 
-  // ⌘F jumps to the filter, Escape drops it — the shortcuts anything with a
-  // search field is expected to answer to.
+  // ⌘F opens the command palette — the header search box is now a palette
+  // opener, so the search shortcut routes to the same place.
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
       if ((event.metaKey || event.ctrlKey) && event.key === 'f') {
         event.preventDefault();
-        searchRef.current?.focus();
-        searchRef.current?.select();
-      }
-
-      if (event.key === 'Escape' && document.activeElement === searchRef.current) {
-        clear();
-        searchRef.current?.blur();
+        openPalette();
       }
     };
 
     document.addEventListener('keydown', onKeyDown);
 
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [clear]);
+  }, [openPalette]);
 
   const [refreshing, setRefreshing] = useState(false);
 
@@ -241,9 +251,11 @@ export const AppNavbar = () => {
           <div className="flex items-center self-center mr-2">
             <SearchInput
               inputRef={searchRef}
-              onChange={setQuery}
-              onClear={clear}
-              value={query}
+              label={focusedName}
+              onActivate={openPalette}
+              onClear={clearFocus}
+              placeholder="⌘ + K"
+              readOnly
             />
           </div>
         )}
