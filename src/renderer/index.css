@@ -1,6 +1,7 @@
 @import 'normalize.css';
 @import '@blueprintjs/core/lib/css/blueprint.css';
 @import '@blueprintjs/icons/lib/css/blueprint-icons.css';
+@import '@blueprintjs/select/lib/css/blueprint-select.css';
 @import 'tailwindcss';
 
 /* Configure dark mode to use class selector */
@@ -406,6 +407,29 @@
 .theme-sunset .dark .bp6-menu-item:hover,
 .theme-sunset .bp6-dark .bp6-menu-item:hover {
   background-color: rgba(255, 255, 255, 0.09) !important;
+}
+
+/* Command palette (Omnibar) — unify the search header with the results list.
+   The results already pick up the theme via .bp6-menu above, but the input kept
+   Blueprint's default grey, reading as a disconnected bar. Make the input blend
+   into one continuous palette surface. */
+.bp6-dark .bp6-omnibar .bp6-input,
+.bp6-dark.bp6-omnibar .bp6-input {
+  background: transparent !important;
+  box-shadow: inset 0 -1px 0 rgba(255, 255, 255, 0.08) !important;
+}
+.theme-sunset .dark .bp6-omnibar,
+.theme-sunset .bp6-dark .bp6-omnibar,
+.theme-sunset .bp6-dark.bp6-omnibar {
+  background-color: #2a1230 !important;
+  background-image: linear-gradient(160deg, rgba(77, 20, 16, 0.96) 0%, rgba(54, 15, 54, 0.97) 52%, rgba(36, 16, 63, 0.98) 100%) !important;
+}
+.theme-sunset .dark .bp6-omnibar .bp6-menu,
+.theme-sunset .bp6-dark .bp6-omnibar .bp6-menu,
+.theme-sunset .bp6-dark.bp6-omnibar .bp6-menu {
+  background: transparent !important;
+  background-image: none !important;
+  box-shadow: none !important;
 }
 
 /* Sunset toasts — the default Blueprint intent colours (orange warning, red

@@ -2,9 +2,11 @@ import { Button, ButtonGroup, Classes, Collapse, Popover } from '@blueprintjs/co
 import { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useFilter } from 'renderer/hooks/useFilter';
+import { useFocus } from 'renderer/hooks/useFocus';
 import { useGit } from 'renderer/hooks/useGit';
 import { useModal } from 'renderer/hooks/useModal';
 import { useMountEffect } from 'renderer/hooks/useMountEffect';
+import { useWorktrees, type WorktreeEntry } from 'renderer/hooks/useWorktrees';
 import { cn } from 'renderer/utils/cn';
 import { filterGroups, filterWorktrees, matchesQuery, worktreeHaystack } from 'renderer/utils/filter';
 import { type Project as IProject } from 'types/project';
@@ -40,6 +42,7 @@ export const Project: FC<Props> = ({ project }) => {
   const { gitHubToken, showWorktrees: showWorktreesDefault } = useAppSettings();
   const { openModal } = useModal();
   const { query } = useFilter();
+  const { focusedProjectId, focusedWorktreePath } = useFocus();
 
   const { filePath, groupId, id, name } = project;
 
@@ -85,6 +88,25 @@ export const Project: FC<Props> = ({ project }) => {
     runsByBranch,
     runsLoaded
   } = useRepoData(project, anyExpanded, worktreeBranches, mainBranch, query);
+
+  // Publish this card's worktrees to the shared, app-wide store so the
+  // command palette (which never fetches git status itself) can list them —
+  // findable by branch, run name, and pull request title.
+  useEffect(() => {
+    const entries: WorktreeEntry[] = worktrees.map((worktree) => {
+      const searchText = [
+        worktree.branch,
+        ...(runsByBranch[worktree.branch] ?? []).map((run) => run.name ?? ''),
+        ...(pullsByBranch[worktree.branch] ?? []).map(({ pull }) => pull.title ?? '')
+      ]
+        .filter(Boolean)
+        .join(' ');
+
+      return { ...worktree, searchText };
+    });
+
+    useWorktrees.getState().setWorktrees(id, entries);
+  }, [id, pullsByBranch, runsByBranch, worktrees]);
 
   // Worktrees arrive asynchronously — seed each new card from its saved state,
   // defaulting to open when the checkout has an open pull request.
@@ -240,6 +262,20 @@ export const Project: FC<Props> = ({ project }) => {
   const mergedWorktrees = showWorktrees
     ? sortedWorktrees.filter((worktree) => !worktree.isMain && isCheckoutDone(pullsByBranch[worktree.branch]))
     : [];
+
+  // Worktree focus mode (from the command palette): narrow this project's
+  // checkouts down to the one focused worktree. A focused path that matches
+  // nothing here (branch removed, worktree gone) falls back to showing them all.
+  const isWorktreeFocused =
+    focusedProjectId === id &&
+    Boolean(focusedWorktreePath) &&
+    sortedWorktrees.some((worktree) => worktree.path === focusedWorktreePath);
+  const applyWorktreeFocus = (list: Worktree[]) =>
+    isWorktreeFocused ? list.filter((worktree) => worktree.path === focusedWorktreePath) : list;
+
+  const focusedLiveWorktrees = applyWorktreeFocus(liveWorktrees);
+  const focusedMergedWorktrees = applyWorktreeFocus(mergedWorktrees);
+
   const behind = gitStatus?.status?.behind ?? 0;
 
   // Nothing in this repo answers the filter — drop it out of the list.
@@ -257,7 +293,9 @@ export const Project: FC<Props> = ({ project }) => {
   const renderCheckout = (worktree: Worktree) => (
     <CheckoutCard
       done={isCheckoutDone(pullsByBranch[worktree.branch])}
-      expanded={Boolean(expandedPaths[worktree.path])}
+      // Picking a worktree from ⌘K opens it — its contents (or the empty-state)
+      // are the whole point of focusing it, so it never shows as a bare header.
+      expanded={isWorktreeFocused || Boolean(expandedPaths[worktree.path])}
       gitStatus={worktree.isMain ? gitStatus : undefined}
       groups={groupsFor(worktree)}
       hiddenRuns={hiddenRunsByBranch[worktree.branch] ?? []}
@@ -281,6 +319,7 @@ export const Project: FC<Props> = ({ project }) => {
       onToggleExpanded={() => toggleExpanded(worktree.path)}
       project={project}
       runsLoaded={runsLoaded}
+      solo={isWorktreeFocused}
       trailing={
           worktree.isMain ? (
             <div className={cn('flex items-center gap-2.5', !gitStatus && Classes.SKELETON)}>
@@ -353,18 +392,27 @@ export const Project: FC<Props> = ({ project }) => {
         </div>
       )}
 
-      {liveWorktrees.map(renderCheckout)}
+      {focusedLiveWorktrees.map(renderCheckout)}
 
-      {mergedWorktrees.length > 0 && (
-        <FoldDivider
-          className="px-6"
-          icon="git-merge"
-          label="Merged worktrees"
-          onToggle={() => setShowMerged((prev) => !prev)}
-        />
+      {/* Focus mode is a filter: you asked for this one worktree, so show it
+          directly even when merged — no collapsed fold to hide it behind. The
+          fold (with its toggle) only makes sense in the full, unfiltered list. */}
+      {isWorktreeFocused ? (
+        focusedMergedWorktrees.map(renderCheckout)
+      ) : (
+        <>
+          {focusedMergedWorktrees.length > 0 && (
+            <FoldDivider
+              className="px-6"
+              icon="git-merge"
+              label="Merged worktrees"
+              onToggle={() => setShowMerged((prev) => !prev)}
+            />
+          )}
+
+          <Collapse isOpen={showMerged}>{focusedMergedWorktrees.map(renderCheckout)}</Collapse>
+        </>
       )}
-
-      <Collapse isOpen={showMerged}>{mergedWorktrees.map(renderCheckout)}</Collapse>
     </>
   );
 };

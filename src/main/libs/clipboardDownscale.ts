@@ -37,7 +37,7 @@ export const pngDimensions = (png: Buffer): ImageSize | null => {
 };
 
 // Horizontal DPI from the PNG pHYs chunk, or null when it is absent or not in metres.
-export const pngDpi = (png: Buffer): number | null => {
+export const pngDpi = (png: Buffer): null | number => {
   if (png.length < 8 || !png.subarray(0, 8).equals(PNG_SIGNATURE)) return null;
 
   let offset = 8;

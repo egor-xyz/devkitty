@@ -66,8 +66,8 @@ describe('readReportedUsage', () => {
       JSON.stringify({
         capturedAt: 1700000000,
         rate_limits: {
-          five_hour: { used_percentage: 42, resets_at: 1700003600 },
-          seven_day: { used_percentage: 87, resets_at: 1700600000 }
+          five_hour: { resets_at: 1700003600, used_percentage: 42 },
+          seven_day: { resets_at: 1700600000, used_percentage: 87 }
         }
       })
     );
@@ -86,7 +86,7 @@ describe('readReportedUsage', () => {
       JSON.stringify({
         capturedAt: 1700000000,
         rate_limits: {
-          five_hour: { used_percentage: 10, resets_at: 1700003600 }
+          five_hour: { resets_at: 1700003600, used_percentage: 10 }
         }
       })
     );
@@ -101,7 +101,7 @@ describe('readReportedUsage', () => {
       JSON.stringify({
         capturedAt: 1700000000,
         rate_limits: {
-          five_hour: { used_percentage: 10, resets_at: 1700003600 }
+          five_hour: { resets_at: 1700003600, used_percentage: 10 }
         }
       })
     );
@@ -120,7 +120,7 @@ describe('readReportedUsage', () => {
       JSON.stringify({
         capturedAt: 1700000000,
         rate_limits: {
-          five_hour: { used_percentage: 250, resets_at: 1700003600 }
+          five_hour: { resets_at: 1700003600, used_percentage: 250 }
         }
       })
     );
@@ -135,7 +135,7 @@ describe('readReportedUsage', () => {
       JSON.stringify({
         capturedAt: 1700000000,
         rate_limits: {
-          five_hour: { used_percentage: -20, resets_at: 1700003600 }
+          five_hour: { resets_at: 1700003600, used_percentage: -20 }
         }
       })
     );
@@ -150,7 +150,7 @@ describe('readReportedUsage', () => {
       JSON.stringify({
         capturedAt: 1700000000,
         rate_limits: {
-          five_hour: { used_percentage: 10, resets_at: 1700003600 }
+          five_hour: { resets_at: 1700003600, used_percentage: 10 }
         }
       })
     );
@@ -165,7 +165,7 @@ describe('readReportedUsage', () => {
       JSON.stringify({
         capturedAt: 1700000000,
         rate_limits: {
-          five_hour: { used_percentage: 10, resets_at: '2023-11-14T22:13:20.000Z' }
+          five_hour: { resets_at: '2023-11-14T22:13:20.000Z', used_percentage: 10 }
         }
       })
     );
@@ -180,7 +180,7 @@ describe('readReportedUsage', () => {
       JSON.stringify({
         capturedAt: 1700000000,
         rate_limits: {
-          five_hour: { used_percentage: 10, resets_at: 'not-a-real-date' }
+          five_hour: { resets_at: 'not-a-real-date', used_percentage: 10 }
         }
       })
     );
@@ -195,7 +195,7 @@ describe('readReportedUsage', () => {
       JSON.stringify({
         capturedAt: null,
         rate_limits: {
-          five_hour: { used_percentage: 10, resets_at: 1700003600 }
+          five_hour: { resets_at: 1700003600, used_percentage: 10 }
         }
       })
     );

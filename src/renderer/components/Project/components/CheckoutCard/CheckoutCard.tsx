@@ -41,6 +41,9 @@ type Props = {
   onToggleExpanded: () => void;
   project: Project;
   runsLoaded: boolean;
+  // Shown on its own (worktree focus mode) with no main header above it, so it
+  // pins to the very top instead of leaving a gap for a header that isn't there.
+  solo?: boolean;
   trailing?: ReactNode;
   worktree: Worktree;
 };
@@ -60,6 +63,7 @@ export const CheckoutCard: FC<Props> = ({
   onToggleExpanded,
   project,
   runsLoaded,
+  solo,
   trailing,
   worktree
 }) => {
@@ -245,7 +249,7 @@ export const CheckoutCard: FC<Props> = ({
           isSunset ? 'dk-sunset-sticky' : 'bg-bp-light-gray-4 dark:bg-bp-dark-gray-2',
           // The main checkout IS the repo header, so it is taller and pins to
           // the top; worktrees pin just beneath it while their contents scroll.
-          isMain ? 'h-[55px] sticky top-0 z-20' : 'h-[45px] sticky top-[55px] z-10',
+          isMain ? 'h-[55px] sticky top-0 z-20' : solo ? 'h-[45px] sticky top-0 z-20' : 'h-[45px] sticky top-[55px] z-10',
           expanded && 'shadow-[0_2px_6px_-1px_rgba(0,0,0,0.20)] dark:shadow-[0_2px_6px_-1px_rgba(0,0,0,0.6)]',
           deleting && 'opacity-50 pointer-events-none'
         )}
@@ -440,7 +444,7 @@ export const CheckoutCard: FC<Props> = ({
                 onRefresh={onRefresh}
                 project={project}
                 runs={hiddenRuns}
-                stickyTop={isMain ? 55 : 100}
+                stickyTop={isMain ? 55 : solo ? 45 : 100}
               />
             </div>
           )}

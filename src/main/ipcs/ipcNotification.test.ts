@@ -2,13 +2,15 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 
 const handlers: Record<string, (...args: any[]) => any> = {};
 
-const { NotificationMock, mockNotificationShow } = vi.hoisted(() => {
+const { mockNotificationShow, NotificationMock } = vi.hoisted(() => {
   const mockNotificationShow = vi.fn();
+  // Must be a constructable function (used with `new`); do not let --fix turn it into an arrow.
+  // eslint-disable-next-line prefer-arrow-callback
   const NotificationMock: any = vi.fn(function () {
     return { show: mockNotificationShow };
   });
   NotificationMock.isSupported = vi.fn();
-  return { NotificationMock, mockNotificationShow };
+  return { mockNotificationShow, NotificationMock };
 });
 
 vi.mock('electron', () => ({

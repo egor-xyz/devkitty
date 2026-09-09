@@ -5,6 +5,28 @@ import { type Worktree } from 'types/worktree';
 
 import { getGit, parseWorktreeList } from '../libs/git';
 
+// Serialize network git ops (fetch/pull) per repo. getGit() builds a fresh
+// simple-git instance per IPC call, so two handlers — the polled status fetch
+// and a Pull click, say — otherwise spawn concurrent `git` processes on the
+// same repo. Concurrent fetches scramble .git/FETCH_HEAD, which makes the very
+// next pull fail with "Cannot fast-forward to multiple branches". Chaining
+// every fetch/pull per repo id keeps them one-at-a-time. Errors are swallowed
+// in the chain so one failed op never blocks the next.
+const repoLocks = new Map<string, Promise<unknown>>();
+
+const withRepoLock = <T>(id: string, task: () => Promise<T>): Promise<T> => {
+  const run = (repoLocks.get(id) ?? Promise.resolve()).then(task, task);
+  repoLocks.set(
+    id,
+    run.then(
+      () => undefined,
+      () => undefined
+    )
+  );
+
+  return run;
+};
+
 ipcMain.handle('git:getStatus', async (_, id: string): Promise<GitStatus> => {
   try {
     const git = await getGit(id);
@@ -35,7 +57,8 @@ ipcMain.handle('git:getStatus', async (_, id: string): Promise<GitStatus> => {
       /* worktree list not supported or failed */
     }
 
-    git.fetch();
+    // Fire-and-forget, but serialized against any pull on this repo.
+    withRepoLock(id, () => git.fetch());
 
     return { branchSummary, organization, status: gitStatus, success: true, worktrees };
   } catch (e) {
@@ -61,8 +84,9 @@ ipcMain.handle('git:pull', async (e, id: string) => {
 
     // --ff-only, so a repo with no pull.rebase configured does not fail with
     // git's "need to specify how to reconcile divergent branches", and a button
-    // press never rewrites or merges history behind the user's back.
-    await git.pull(['--ff-only']);
+    // press never rewrites or merges history behind the user's back. Locked so
+    // it never runs while a background status fetch is in flight.
+    await withRepoLock(id, () => git.pull(['--ff-only']));
 
     return { message: 'Project pulled', success: true };
   } catch (e) {
@@ -101,7 +125,7 @@ ipcMain.handle('git:mergeTo', async (e, id: string, from: string, target: string
     const git = await getGit(id);
 
     await git.checkout(target);
-    await git.pull();
+    await withRepoLock(id, () => git.pull());
     await git.merge([from]);
     await git.push();
     await git.checkout(from);
