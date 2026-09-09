@@ -202,6 +202,13 @@ export const Project: FC<Props> = ({ project }) => {
     [pullsByBranch, runsByBranch, visibleWorktrees]
   );
 
+  // Focus is an exact selection, so find it before repo visibility and text
+  // filters can remove it. A stale path keeps the normal repo view.
+  const focusedWorktree =
+    focusedProjectId === id && focusedWorktreePath
+      ? worktrees.find((worktree) => worktree.path === focusedWorktreePath)
+      : undefined;
+
   const updateProject = () => {
     refresh();
     getStatus(id);
@@ -263,23 +270,10 @@ export const Project: FC<Props> = ({ project }) => {
     ? sortedWorktrees.filter((worktree) => !worktree.isMain && isCheckoutDone(pullsByBranch[worktree.branch]))
     : [];
 
-  // Worktree focus mode (from the command palette): narrow this project's
-  // checkouts down to the one focused worktree. A focused path that matches
-  // nothing here (branch removed, worktree gone) falls back to showing them all.
-  const isWorktreeFocused =
-    focusedProjectId === id &&
-    Boolean(focusedWorktreePath) &&
-    sortedWorktrees.some((worktree) => worktree.path === focusedWorktreePath);
-  const applyWorktreeFocus = (list: Worktree[]) =>
-    isWorktreeFocused ? list.filter((worktree) => worktree.path === focusedWorktreePath) : list;
-
-  const focusedLiveWorktrees = applyWorktreeFocus(liveWorktrees);
-  const focusedMergedWorktrees = applyWorktreeFocus(mergedWorktrees);
-
   const behind = gitStatus?.status?.behind ?? 0;
 
   // Nothing in this repo answers the filter — drop it out of the list.
-  if (query.trim() && visibleWorktrees.length === 0) return null;
+  if (!focusedWorktree && query.trim() && visibleWorktrees.length === 0) return null;
 
   if (gitStatus && !gitStatus.success) {
     return (
@@ -295,7 +289,7 @@ export const Project: FC<Props> = ({ project }) => {
       done={isCheckoutDone(pullsByBranch[worktree.branch])}
       // Picking a worktree from ⌘K opens it — its contents (or the empty-state)
       // are the whole point of focusing it, so it never shows as a bare header.
-      expanded={isWorktreeFocused || Boolean(expandedPaths[worktree.path])}
+      expanded={Boolean(focusedWorktree) || Boolean(expandedPaths[worktree.path])}
       gitStatus={worktree.isMain ? gitStatus : undefined}
       groups={groupsFor(worktree)}
       hiddenRuns={hiddenRunsByBranch[worktree.branch] ?? []}
@@ -319,7 +313,7 @@ export const Project: FC<Props> = ({ project }) => {
       onToggleExpanded={() => toggleExpanded(worktree.path)}
       project={project}
       runsLoaded={runsLoaded}
-      solo={isWorktreeFocused}
+      solo={Boolean(focusedWorktree)}
       trailing={
           worktree.isMain ? (
             <div className={cn('flex items-center gap-2.5', !gitStatus && Classes.SKELETON)}>
@@ -392,16 +386,15 @@ export const Project: FC<Props> = ({ project }) => {
         </div>
       )}
 
-      {focusedLiveWorktrees.map(renderCheckout)}
-
-      {/* Focus mode is a filter: you asked for this one worktree, so show it
-          directly even when merged — no collapsed fold to hide it behind. The
-          fold (with its toggle) only makes sense in the full, unfiltered list. */}
-      {isWorktreeFocused ? (
-        focusedMergedWorktrees.map(renderCheckout)
+      {/* A valid focus is a direct selection. Repo visibility, text filters,
+          and the merged fold must not remove the selected raw worktree. */}
+      {focusedWorktree ? (
+        renderCheckout(focusedWorktree)
       ) : (
         <>
-          {focusedMergedWorktrees.length > 0 && (
+          {liveWorktrees.map(renderCheckout)}
+
+          {mergedWorktrees.length > 0 && (
             <FoldDivider
               className="px-6"
               icon="git-merge"
@@ -410,7 +403,7 @@ export const Project: FC<Props> = ({ project }) => {
             />
           )}
 
-          <Collapse isOpen={showMerged}>{focusedMergedWorktrees.map(renderCheckout)}</Collapse>
+          <Collapse isOpen={showMerged}>{mergedWorktrees.map(renderCheckout)}</Collapse>
         </>
       )}
     </>

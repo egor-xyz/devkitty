@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { renderHook } from '@testing-library/react';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const mocks = vi.hoisted(() => ({ navigate: vi.fn(), refresh: vi.fn(), refreshAI: vi.fn() }));
 const storage = new Map<string, string>();
@@ -53,6 +53,10 @@ describe('useCommands', () => {
     useFocus.setState({ focusedProjectId: null, focusedWorktreePath: null });
     useWorktrees.setState({ byProject: {} });
     useCommandPalette.setState({ isOpen: true });
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
   });
 
   it('exposes provider-neutral usage commands searchable by either provider', () => {
@@ -156,6 +160,12 @@ describe('useCommands', () => {
     item?.perform();
 
     expect(window.bridge.settings.set).toHaveBeenCalledWith('appSettings', { showLogo: false }, undefined);
+  });
+
+  it('does not expose the global worktree visibility command', () => {
+    const { result } = renderHook(() => useCommands());
+
+    expect(result.current.some((item) => item.id === 'appearance-toggle-show-worktrees')).toBe(false);
   });
 
   it('spreads the whole gitHubActions object when toggling a nested field', () => {

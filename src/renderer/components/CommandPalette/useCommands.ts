@@ -25,7 +25,6 @@ export const useCommands = (): CommandItem[] => {
     shells,
     showClaudeUsage,
     showLogo,
-    showWorktrees,
     theme
   } = useAppSettings();
   const { setTheme, themeSource } = useDarkMode();
@@ -74,15 +73,6 @@ export const useCommands = (): CommandItem[] => {
   }));
 
   const appearanceToggleItems: CommandItem[] = [
-    {
-      active: showWorktrees,
-      closeOnPerform: false,
-      icon: 'diagram-tree',
-      id: 'appearance-toggle-show-worktrees',
-      perform: () => set({ showWorktrees: !showWorktrees }),
-      section: 'Appearance',
-      title: 'Toggle Show worktrees'
-    },
     {
       active: showLogo,
       closeOnPerform: false,
