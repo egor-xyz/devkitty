@@ -7,7 +7,7 @@ vi.mock('electron', () => ({
 }));
 
 import { demoBridge } from './bridge';
-import { claudeAccounts, runsById } from './data';
+import { claudeAccounts, codexAccounts, runsById } from './data';
 
 describe('demoBridge gitAPI', () => {
   beforeEach(() => {
@@ -89,6 +89,16 @@ describe('demoBridge claude', () => {
     const usage = await demoBridge.claude.usage({ dir: '/nowhere' });
 
     expect(usage.account).toMatchObject({ dir: claudeAccounts[0].dir });
+  });
+});
+
+describe('demoBridge codex', () => {
+  it('keeps usage scoped to each Codex profile', async () => {
+    expect(await demoBridge.codex.accounts()).toEqual(codexAccounts);
+    const usages = await Promise.all(codexAccounts.map((account) => demoBridge.codex.usage(account)));
+    expect(usages.map((usage) => usage.account.dir)).toEqual(codexAccounts.map((account) => account.dir));
+    expect(usages[0].week.pct).not.toBe(usages[1].week.pct);
+    await expect(demoBridge.codex.usage({ dir: claudeAccounts[0].dir })).rejects.toThrow('Unknown Codex profile');
   });
 });
 

@@ -72,6 +72,7 @@ const MODEL_LABELS: Record<string, string> = {
 // Turn a raw model id into something readable, tolerating dated ids like
 // "claude-haiku-4-5-20251001" by matching the longest known prefix.
 export const modelLabel = (model: string): string => {
+  if (model === 'unknown') return 'Other';
   if (MODEL_LABELS[model]) return MODEL_LABELS[model];
 
   const [match] = Object.keys(MODEL_LABELS)

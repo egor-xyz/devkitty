@@ -3,8 +3,8 @@ import clsx from 'clsx';
 import { useEffect, useRef, useState } from 'react';
 import { NavLink, useLocation } from 'react-router';
 import Devkitty from 'renderer/assets/devkitty.svg?react';
+import { useAIUsage } from 'renderer/hooks/useAIUsage';
 import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
-import { useClaudeUsage } from 'renderer/hooks/useClaudeUsage';
 import { useCommandPalette } from 'renderer/hooks/useCommandPalette';
 import { useDarkMode } from 'renderer/hooks/useDarkMode';
 import { useFilter } from 'renderer/hooks/useFilter';
@@ -96,7 +96,8 @@ export const AppNavbar = () => {
   const { themeSource, toggleDarkMode } = useDarkMode();
   const { claudeEnabled, clipboardDownscale, set, showClaudeUsage, showLogo } = useAppSettings();
   const isSunset = useIsSunset();
-  const claudeInstalled = useClaudeUsage((s) => s.detection.installed);
+  const aiAvailable = useAIUsage((s) => s.accounts.length > 0 || s.detection.claude.installed || s.detection.codex.installed || Object.keys(s.discoveryErrors).length > 0);
+  const refreshAIUsage = useAIUsage((s) => s.init);
   const { addProject, projects } = useProjects();
   const { clear } = useFilter();
   const { clearFocus, focusedProjectId, focusedWorktreePath } = useFocus();
@@ -147,7 +148,7 @@ export const AppNavbar = () => {
             ),
             message: (
               <div className="flex flex-col gap-1 py-0.5">
-                <div className="text-sm font-semibold">Image optimized for Claude Code</div>
+                <div className="text-sm font-semibold">Image optimized</div>
 
                 <div className="flex items-center gap-2 text-xs tabular-nums opacity-90">
                   <span>
@@ -206,6 +207,7 @@ export const AppNavbar = () => {
     // Gentle re-fetch of every card's data, not a full app reload. Spin the
     // icon briefly so the click registers as an action, not a dead button.
     requestRefresh();
+    void refreshAIUsage();
     setRefreshing(true);
     setTimeout(() => setRefreshing(false), 800);
   };
@@ -271,19 +273,22 @@ export const AppNavbar = () => {
         <Navbar.Divider />
 
         <ButtonGroup minimal>
-          {claudeInstalled && claudeEnabled && (
+          {aiAvailable && (claudeEnabled ?? true) && (
             <Tooltip
               compact
-              content={showClaudeUsage ? 'Hide Claude Code usage' : 'Show Claude Code usage'}
+              content={showClaudeUsage ? 'Hide AI usage' : 'Show AI usage'}
               hoverOpenDelay={2000}
               placement="bottom"
             >
               <Button
-                icon={<ClaudeMark className={showClaudeUsage ? 'text-[#D97757]' : undefined}
+                aria-label={showClaudeUsage ? 'Hide AI usage' : 'Show AI usage'}
+                aria-pressed={showClaudeUsage}
+                icon={<ClaudeMark
                   size={16}
                       />}
                 minimal
                 onClick={() => set({ showClaudeUsage: !showClaudeUsage })}
+                style={showClaudeUsage ? { color: '#F5854A' } : undefined}
               />
             </Tooltip>
           )}
