@@ -1,4 +1,5 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
+import { type AIAccount, type AIDetection, type AIUsage } from 'types/aiUsage';
 import { type AppSettings } from 'types/appSettings';
 import { type ClaudeAccount, type ClaudeDetection, type ClaudeUsage } from 'types/claudeUsage';
 import { type DownscaleResult } from 'types/clipboard';
@@ -26,6 +27,11 @@ const bridge = {
       ipcRenderer.on('clipboard:downscaled', listener);
       return () => ipcRenderer.removeListener('clipboard:downscaled', listener);
     }
+  },
+  codex: {
+    accounts: (): Promise<AIAccount[]> => ipcRenderer.invoke('codex:accounts'),
+    detect: (): Promise<AIDetection> => ipcRenderer.invoke('codex:detect'),
+    usage: (account: AIAccount): Promise<AIUsage> => ipcRenderer.invoke('codex:usage', account)
   },
   darkMode: {
     on: (callback: (event: IpcRendererEvent, theme: ThemeSource) => void) => ipcRenderer.on('theme-changed', callback),
@@ -111,6 +117,26 @@ const demoEnabled = () => {
   }
 };
 
-contextBridge.exposeInMainWorld('bridge', demoEnabled() ? demoBridge : bridge);
+type BridgeMethods = Record<string, (...args: unknown[]) => unknown>;
+
+// The preload runs before the renderer document is ready, when localStorage can
+// still be unavailable. Resolve the selected bridge when each method is called
+// instead, after the page has loaded and the demo flag is readable.
+const dynamicBridge = Object.fromEntries(
+  Object.entries(bridge).map(([namespace, methods]) => [
+    namespace,
+    Object.fromEntries(
+      Object.keys(methods).map((method) => [
+        method,
+        (...args: unknown[]) => {
+          const selected = (demoEnabled() ? demoBridge : bridge) as unknown as Record<string, BridgeMethods>;
+          return selected[namespace][method](...args);
+        }
+      ])
+    )
+  ])
+) as typeof bridge;
+
+contextBridge.exposeInMainWorld('bridge', dynamicBridge);
 
 export type Bridge = typeof bridge;

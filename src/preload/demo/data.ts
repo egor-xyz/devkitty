@@ -653,7 +653,7 @@ export const conflictFilesByPR: Record<number, string[]> = {
   143: ['src/auth/session.ts', 'src/auth/redirect.ts', 'package.json']
 };
 
-// ---- Claude usage ----
+// ---- AI usage ----
 const model = (m: string, tokens: number) => ({ model: m, tokens });
 
 const usageWindow = (o: { models: any[]; pct: number; resetsInMs: number; tokens: number }) => ({
@@ -671,6 +671,25 @@ export const claudeAccounts = [
   { dir: '/Users/egor/.claude', email: 'evgeni.s@trustic.ai', label: 'claude', org: 'TegoAI', plan: 'Max 20×' },
   { dir: '/Users/egor/.claude-b', email: 'egor@personal.dev', label: 'claude-b', org: 'Personal', plan: 'Max 5×' }
 ];
+
+export const codexAccounts = [
+  { dir: '/Users/demo/.codex', email: 'developer@example.com', label: 'codex', plan: 'Pro', provider: 'codex' as const },
+  { dir: '/Users/demo/.codex-work', email: 'developer@work.example', label: 'codex-work', plan: 'Business', provider: 'codex' as const }
+];
+
+export const codexUsageByDir = Object.fromEntries(codexAccounts.map((account, index) => [account.dir, {
+  account,
+  computedAt: now,
+  fiveHour: {
+    ...usageWindow({ models: [model('gpt-5.4', 840_000 + index * 220_000)], pct: index ? 0.67 : 0.24, resetsInMs: 3 * hour + 18 * min, tokens: 840_000 + index * 220_000 }),
+    durationMs: 5 * hour
+  },
+  reportedAt: now - 3 * min,
+  week: {
+    ...usageWindow({ models: [model('gpt-5.4', 5_200_000 + index * 900_000)], pct: index ? 0.81 : 0.38, resetsInMs: 4 * day + 2 * hour, tokens: 5_200_000 + index * 900_000 }),
+    durationMs: 7 * day
+  }
+}]));
 
 export const usageByDir: Record<string, any> = {
   '/Users/egor/.claude': {

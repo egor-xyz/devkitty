@@ -1,11 +1,13 @@
 import { useMemo } from 'react';
 import { useNavigate } from 'react-router';
+import { useAIUsage } from 'renderer/hooks/useAIUsage';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useCommandPalette } from 'renderer/hooks/useCommandPalette';
 import { useDarkMode } from 'renderer/hooks/useDarkMode';
 import { useFocus } from 'renderer/hooks/useFocus';
 import { useProjects } from 'renderer/hooks/useProjects';
 import { useWorktrees } from 'renderer/hooks/useWorktrees';
+import { requestRefresh } from 'renderer/utils/refresh';
 import { type ThemeSource } from 'types/Modal';
 
 import { type CommandItem } from './types';
@@ -27,10 +29,18 @@ export const useCommands = (): CommandItem[] => {
     theme
   } = useAppSettings();
   const { setTheme, themeSource } = useDarkMode();
+  const refreshAIUsage = useAIUsage((state) => state.init);
   const { projects } = useProjects();
   const { setFocus, setWorktreeFocus } = useFocus();
   const { byProject } = useWorktrees();
   const navigate = useNavigate();
+  const demoMode = (() => {
+    try {
+      return localStorage.getItem('dk-demo') === '1';
+    } catch {
+      return false;
+    }
+  })();
 
   const appearanceThemeItems: CommandItem[] = [
     {
@@ -90,18 +100,20 @@ export const useCommands = (): CommandItem[] => {
       closeOnPerform: false,
       icon: 'code',
       id: 'integrations-toggle-claude-enabled',
+      keywords: 'AI analytics Claude Code Codex accounts',
       perform: () => set({ claudeEnabled: !claudeEnabled }),
       section: 'Integrations',
-      title: 'Toggle Claude integration'
+      title: 'Toggle AI usage integration'
     },
     {
       active: showClaudeUsage,
       closeOnPerform: false,
       icon: 'timeline-bar-chart',
       id: 'integrations-toggle-claude-usage',
+      keywords: 'AI analytics Claude Code Codex accounts',
       perform: () => set({ showClaudeUsage: !showClaudeUsage }),
       section: 'Integrations',
-      title: 'Toggle Claude usage footer'
+      title: 'Toggle AI usage footer'
     },
     {
       active: clipboardDownscale,
@@ -113,6 +125,25 @@ export const useCommands = (): CommandItem[] => {
       title: 'Toggle Clipboard downscale'
     }
   ];
+
+  const developerItems: CommandItem[] = import.meta.env.DEV
+    ? [{
+        active: demoMode,
+        icon: 'lab-test',
+        id: 'developer-toggle-demo-mode',
+        keywords: 'developer fake sample data',
+        perform: () => {
+          try {
+            localStorage.setItem('dk-demo', demoMode ? '0' : '1');
+          } catch {
+            return;
+          }
+          location.reload();
+        },
+        section: 'Integrations',
+        title: 'Toggle Demo mode'
+      }]
+    : [];
 
   const editorItems: CommandItem[] = editors.map((editor, index) => ({
     active: selectedEditor?.editor === editor.editor,
@@ -203,6 +234,17 @@ export const useCommands = (): CommandItem[] => {
 
   const navigationItems: CommandItem[] = [
     {
+      icon: 'refresh',
+      id: 'navigation-refresh',
+      keywords: 'reload update sync AI analytics Claude Codex GitHub',
+      perform: () => {
+        requestRefresh();
+        void refreshAIUsage();
+      },
+      section: 'Navigation',
+      title: 'Refresh'
+    },
+    {
       icon: 'cog',
       id: 'navigation-settings-appearance',
       perform: () => navigate('/settings/appearance'),
@@ -231,6 +273,7 @@ export const useCommands = (): CommandItem[] => {
         ...appearanceSourceItems,
         ...appearanceToggleItems,
         ...integrationToggleItems,
+        ...developerItems,
         ...editorItems,
         ...shellItems,
         ...gitHubToggleItems,
