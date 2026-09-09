@@ -31,6 +31,7 @@ export const useAppSettings = create<Actions & AppSettings>((set) => ({
   showClaudeUsage: false,
   showLogo: true,
   showWorktrees: true,
+  telemetry: true,
   theme: 'sunset'
 }));
 

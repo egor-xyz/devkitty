@@ -36,6 +36,7 @@ export const settings = new Store<Settings>({
       showClaudeUsage: false,
       showLogo: true,
       showWorktrees: true,
+      telemetry: true,
       theme: 'sunset'
     },
     collapsedGroups: [],

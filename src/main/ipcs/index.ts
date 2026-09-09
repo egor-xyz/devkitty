@@ -1,3 +1,4 @@
+import './ipcAnalytics';
 import './ipcDarkMode';
 import './ipcSettings';
 import './ipcProjects';
