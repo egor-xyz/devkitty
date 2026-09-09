@@ -7,7 +7,7 @@ import { type FoundEditor } from 'types/foundEditor';
 import { type FoundShell } from 'types/foundShell';
 
 export const SettingsIntegrations = () => {
-  const { claudeEnabled, editors, gitHubToken, selectedEditor, selectedShell, set, shells } = useAppSettings();
+  const { claudeEnabled, editors, gitHubToken, selectedEditor, selectedShell, set, shells, telemetry } = useAppSettings();
   const [token, setToken] = useState(gitHubToken ?? '');
 
   // Dev-only demo mode. The preload picks the fake bridge at startup from this
@@ -131,6 +131,13 @@ export const SettingsIntegrations = () => {
           </div>
         </>
       )}
+
+      <Switch
+        checked={telemetry !== false}
+        className="mt-4"
+        label="Google Analytics"
+        onChange={() => set({ telemetry: !(telemetry !== false) })}
+      />
     </div>
   );
 };

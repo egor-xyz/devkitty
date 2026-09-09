@@ -6,6 +6,7 @@ import { type Projects } from './project';
 
 export type Settings = {
   appSettings: AppSettings;
+  clientId?: string;
   collapsedGroups: Group['id'][];
   newGroups: Groups;
   projects: Projects;

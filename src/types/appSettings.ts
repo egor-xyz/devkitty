@@ -26,5 +26,6 @@ export type AppSettings = {
   showClaudeUsage: boolean; // whether the Claude Code usage footer is shown
   showLogo: boolean;
   showWorktrees: boolean;
+  telemetry: boolean;
   theme: 'default' | 'sunset'; // 'sunset' = new gradient/glass look, 'default' = previous solid look
 };

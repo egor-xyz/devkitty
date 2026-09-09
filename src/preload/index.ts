@@ -12,6 +12,9 @@ import { type Settings } from 'types/settings';
 import { demoBridge } from './demo/bridge';
 
 const bridge = {
+  analytics: {
+    trackEvent: (name: string, params?: Record<string, unknown>) => ipcRenderer.invoke('analytics:trackEvent', name, params)
+  },
   claude: {
     accounts: (): Promise<ClaudeAccount[]> => ipcRenderer.invoke('claude:accounts'),
     detect: (): Promise<ClaudeDetection> => ipcRenderer.invoke('claude:detect'),

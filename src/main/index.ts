@@ -8,6 +8,7 @@ import { fixPath } from './libs/fixPath';
 
 fixPath();
 
+import { track } from './analytics';
 import './ipcs';
 import { initClipboardDownscale, stopClipboardWatcher } from './libs/clipboardDownscale';
 import { updateEditorsAndShells } from './libs/integrations/integrations';
@@ -80,6 +81,7 @@ app.on('ready', async () => {
 
   createWindow();
   initClipboardDownscale();
+  void track('app_launch');
 });
 
 app.on('will-quit', () => stopClipboardWatcher());
