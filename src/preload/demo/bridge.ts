@@ -6,6 +6,7 @@
 // through IPC so the pin works while demoing.
 
 import { ipcRenderer } from 'electron';
+import { type WindowOpacity } from 'types/window';
 
 import {
   authoredPRNumbers,
@@ -133,8 +134,9 @@ export const demoBridge = {
     add: noop
   },
   window: {
-    getAlwaysOnTop: () => ipcRenderer.invoke('window:getAlwaysOnTop'),
-    setAlwaysOnTop: (flag: boolean) => ipcRenderer.invoke('window:setAlwaysOnTop', flag)
+    getPinnedAppearance: () => ipcRenderer.invoke('window:getPinnedAppearance'),
+    setPinnedAppearance: (alwaysOnTop: boolean, pinnedOpacity: WindowOpacity) =>
+      ipcRenderer.invoke('window:setPinnedAppearance', alwaysOnTop, pinnedOpacity)
   },
   worktree: {
     add: () => ok({ message: 'Worktree added' }),

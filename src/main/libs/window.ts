@@ -2,6 +2,8 @@ import { type BrowserWindow, type Rectangle, screen } from 'electron';
 
 import { settings } from '../../main/settings';
 
+export const WINDOW_MINIMUM_SIZE = { height: 300, width: 800 } as const;
+
 const getArea = (bounds: Rectangle) => screen.getDisplayMatching(bounds).workArea;
 
 const isSizeValid = (bounds: Rectangle) => {

@@ -12,7 +12,7 @@ import { track } from './analytics';
 import './ipcs';
 import { initClipboardDownscale, stopClipboardWatcher } from './libs/clipboardDownscale';
 import { updateEditorsAndShells } from './libs/integrations/integrations';
-import { loadWindowState, saveBounds } from './libs/window';
+import { loadWindowState, saveBounds, WINDOW_MINIMUM_SIZE } from './libs/window';
 
 log.initialize({ preload: true, spyRendererConsole: false });
 
@@ -39,8 +39,8 @@ const installReactDevTools = async () => {
 const createWindow = (): void => {
   const mainWindow = new BrowserWindow({
     backgroundColor: nativeTheme.shouldUseDarkColors ? '#141414' : '#ffffff',
-    minHeight: 600,
-    minWidth: 800,
+    minHeight: WINDOW_MINIMUM_SIZE.height,
+    minWidth: WINDOW_MINIMUM_SIZE.width,
     show: false,
     titleBarStyle: 'hidden',
     trafficLightPosition: { x: 15, y: 17 },
