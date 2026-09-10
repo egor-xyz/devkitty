@@ -19,7 +19,8 @@ import { type DownscaleResult } from 'types/clipboard';
 
 import { ClaudeMark } from '../ClaudeUsage';
 import { ShinyText } from '../ShinyText';
-import { PinIcon, SettingsGearIcon } from './NavIcons';
+import { AlwaysOnTopControl } from './AlwaysOnTopControl';
+import { SettingsGearIcon } from './NavIcons';
 import { SearchInput } from './SearchInput';
 
 const ClipboardDownscaleDetail = ({ enabled, last }: { enabled: boolean; last: DownscaleResult | null }) => (
@@ -113,21 +114,7 @@ export const AppNavbar = () => {
       : undefined;
   const searchRef = useRef<HTMLInputElement>(null);
   const onHome = useLocation().pathname === '/';
-  const [alwaysOnTop, setAlwaysOnTop] = useState(false);
   const [lastDownscale, setLastDownscale] = useState<DownscaleResult | null>(null);
-
-  // Reflect the window's real pinned state on mount (it survives across
-  // reloads within a session).
-  useEffect(() => {
-    window.bridge.window.getAlwaysOnTop().then(setAlwaysOnTop);
-  }, []);
-
-  const toggleAlwaysOnTop = async () => {
-    const target = !alwaysOnTop;
-    setAlwaysOnTop(target); // optimistic — instant feedback on the icon
-    const next = await window.bridge.window.setAlwaysOnTop(target);
-    setAlwaysOnTop(next);
-  };
 
   // Toast whenever the main process shrinks a clipboard image, wherever the
   // toggle was flipped from.
@@ -314,22 +301,7 @@ export const AppNavbar = () => {
             />
           </Popover>
 
-          <Tooltip
-            compact
-            content={alwaysOnTop ? 'Always on top: on' : 'Keep window always on top'}
-            hoverOpenDelay={500}
-            placement="bottom"
-          >
-            <Button
-              aria-label="Toggle always on top"
-              icon={<PinIcon
-                size={16}
-                style={alwaysOnTop ? { color: '#F5854A' } : undefined}
-                    />}
-              minimal
-              onClick={toggleAlwaysOnTop}
-            />
-          </Tooltip>
+          <AlwaysOnTopControl />
 
           {themeSource !== 'system' && (
             <Tooltip compact

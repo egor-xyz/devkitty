@@ -51,7 +51,9 @@ const Detail = ({ now, provider, reportedAt, title, window }: Omit<Props, 'label
   const known = window.reported || window.cap > 0;
   const pct = Math.round(window.pct * 100);
   const color = meterColor(window.pct);
-  const modelTotal = window.models.reduce((sum, m) => sum + m.tokens, 0);
+  const localModels = [...window.models].sort((a, b) => b.tokens - a.tokens || a.model.localeCompare(b.model));
+  const modelTotal = localModels.reduce((sum, m) => sum + m.tokens, 0);
+  const reportedCodex = provider === 'codex' && window.reported;
 
   return (
     <div className="w-[268px] p-4 text-bp-dark-gray-1 dark:text-bp-light-gray-5">
@@ -81,15 +83,20 @@ const Detail = ({ now, provider, reportedAt, title, window }: Omit<Props, 'label
           : 'Idle — no activity in this window'}
       </div>
 
-      {window.models.length > 0 && (
+      {localModels.length > 0 && (
         <div className="mt-3.5 border-t border-bp-light-gray-2 pt-3 dark:border-bp-dark-gray-3">
           <div className="mb-2 flex items-baseline justify-between">
-            <span className="text-[11px] font-semibold uppercase tracking-wide text-bp-gray-2">By model</span>
-            <span className="text-[11px] tabular-nums text-bp-gray-2">ran {formatTokens(window.tokens)}</span>
+            <span className="text-[11px] font-semibold uppercase tracking-wide text-bp-gray-2">
+              {reportedCodex ? 'Local by model' : 'By model'}
+            </span>
+
+            <span className="text-[11px] tabular-nums text-bp-gray-2">
+              ran {formatTokens(window.tokens)}{reportedCodex ? ' locally' : ''}
+            </span>
           </div>
 
           <div className="flex flex-col gap-1.5">
-            {window.models.map((m) => (
+            {localModels.map((m) => (
               <div
                 className="flex items-baseline justify-between gap-3 text-xs"
                 key={m.model}
@@ -106,6 +113,12 @@ const Detail = ({ now, provider, reportedAt, title, window }: Omit<Props, 'label
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {reportedCodex && (
+        <div className="mt-3 text-[11px] leading-snug text-bp-gray-2">
+          Quota can include use not recorded in local sessions.
         </div>
       )}
 

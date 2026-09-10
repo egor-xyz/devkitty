@@ -16,7 +16,7 @@ vi.mock('../../main/settings', () => ({
 import { screen } from 'electron';
 
 import { settings } from '../../main/settings';
-import { loadWindowState, saveBounds } from './window';
+import { loadWindowState, saveBounds, WINDOW_MINIMUM_SIZE } from './window';
 
 const mockScreen = vi.mocked(screen);
 const mockSettings = vi.mocked(settings);
@@ -24,6 +24,10 @@ const mockSettings = vi.mocked(settings);
 describe('window', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('should use a minimum window size of 800 by 300 pixels', () => {
+    expect(WINDOW_MINIMUM_SIZE).toEqual({ height: 300, width: 800 });
   });
 
   describe('loadWindowState', () => {
