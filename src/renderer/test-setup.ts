@@ -82,8 +82,8 @@ const mockBridge = {
     add: vi.fn()
   },
   window: {
-    getAlwaysOnTop: vi.fn().mockResolvedValue(false),
-    setAlwaysOnTop: vi.fn().mockResolvedValue(false)
+    getPinnedAppearance: vi.fn().mockResolvedValue({ alwaysOnTop: false, opacity: 1 }),
+    setPinnedAppearance: vi.fn().mockImplementation((alwaysOnTop, opacity) => Promise.resolve({ alwaysOnTop, opacity }))
   },
   worktree: {
     add: vi.fn(),

@@ -1,13 +1,17 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-const handlers: Record<string, (...args: any[]) => any> = {};
+type IpcHandler = (...args: unknown[]) => unknown;
 
-const win = {
+const handlers: Record<string, IpcHandler> = {};
+
+const makeWindow = () => ({
   isAlwaysOnTop: vi.fn(() => false),
   setAlwaysOnTop: vi.fn(),
+  setOpacity: vi.fn(),
   setVisibleOnAllWorkspaces: vi.fn()
-};
+});
 
+let win = makeWindow();
 let fromWebContentsResult: null | typeof win = win;
 
 vi.mock('electron', () => ({
@@ -15,13 +19,12 @@ vi.mock('electron', () => ({
     fromWebContents: vi.fn(() => fromWebContentsResult)
   },
   ipcMain: {
-    handle: vi.fn((channel: string, handler: any) => {
+    handle: vi.fn((channel: string, handler: IpcHandler) => {
       handlers[channel] = handler;
     })
   }
 }));
 
-// Import after mocks so the module registers its handlers against them.
 await import('./ipcWindow');
 
 const event = { sender: {} };
@@ -29,54 +32,73 @@ const event = { sender: {} };
 describe('ipcWindow', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    win = makeWindow();
     fromWebContentsResult = win;
-    win.isAlwaysOnTop.mockReturnValue(false);
   });
 
-  describe('window:setAlwaysOnTop', () => {
-    it('pins the window at the screen-saver level so it floats over full-screen apps', () => {
-      handlers['window:setAlwaysOnTop'](event, true);
+  describe('window:getPinnedAppearance', () => {
+    it.each([true, false])('uses the native pin state %s and full opacity for a new window', (alwaysOnTop) => {
+      win.isAlwaysOnTop.mockReturnValue(alwaysOnTop);
 
-      expect(win.setAlwaysOnTop).toHaveBeenCalledWith(true, 'screen-saver');
+      expect(handlers['window:getPinnedAppearance'](event)).toEqual({ alwaysOnTop, opacity: 1 });
     });
 
-    it('skips the process-type transform so macOS keeps the Dock icon', () => {
-      handlers['window:setAlwaysOnTop'](event, true);
+    it('returns the stored logical opacity after the window is unpinned', () => {
+      handlers['window:setPinnedAppearance'](event, true, 0.62);
+      handlers['window:setPinnedAppearance'](event, false, 0.62);
 
+      expect(handlers['window:getPinnedAppearance'](event)).toEqual({ alwaysOnTop: false, opacity: 0.62 });
+    });
+
+    it('returns the safe state when there is no window', () => {
+      fromWebContentsResult = null;
+
+      expect(handlers['window:getPinnedAppearance'](event)).toEqual({ alwaysOnTop: false, opacity: 1 });
+    });
+  });
+
+  describe('window:setPinnedAppearance', () => {
+    it.each([0.4, 0.73, 1])('pins with allowed opacity %s', (opacity) => {
+      expect(handlers['window:setPinnedAppearance'](event, true, opacity)).toEqual({
+        alwaysOnTop: true,
+        opacity
+      });
+      expect(win.setAlwaysOnTop).toHaveBeenCalledWith(true, 'screen-saver');
       expect(win.setVisibleOnAllWorkspaces).toHaveBeenCalledWith(true, {
         skipTransformProcessType: true,
         visibleOnFullScreen: true
       });
+      expect(win.setOpacity).toHaveBeenCalledWith(opacity);
     });
 
-    it('reports back the flag it applied, not isAlwaysOnTop() which can read stale', () => {
-      // The window lies and says it is not on top right after the call; the
-      // handler must still report the flag it was asked to apply.
-      win.isAlwaysOnTop.mockReturnValue(false);
-
-      expect(handlers['window:setAlwaysOnTop'](event, true)).toBe(true);
-      expect(handlers['window:setAlwaysOnTop'](event, false)).toBe(false);
+    it('keeps the saved opacity but disables glass when it unpins', () => {
+      expect(handlers['window:setPinnedAppearance'](event, false, 0.47)).toEqual({
+        alwaysOnTop: false,
+        opacity: 0.47
+      });
+      expect(win.setAlwaysOnTop).toHaveBeenCalledWith(false, 'screen-saver');
+      expect(win.setOpacity).toHaveBeenCalledWith(1);
     });
 
-    it('returns false and touches nothing when there is no window', () => {
-      fromWebContentsResult = null;
-
-      expect(handlers['window:setAlwaysOnTop'](event, true)).toBe(false);
+    it.each(['true', 0, 1, null, undefined])('rejects invalid pin flag %s', (flag) => {
+      expect(() => handlers['window:setPinnedAppearance'](event, flag, 0.5)).toThrow('Invalid always-on-top flag');
       expect(win.setAlwaysOnTop).not.toHaveBeenCalled();
     });
-  });
 
-  describe('window:getAlwaysOnTop', () => {
-    it('reflects the real pinned state of the window', () => {
-      win.isAlwaysOnTop.mockReturnValue(true);
+    it.each([0, 0.39, 1.01, 2, NaN, Infinity, -Infinity, '0.5', null, undefined])(
+      'rejects invalid opacity %s',
+      (opacity) => {
+        expect(() => handlers['window:setPinnedAppearance'](event, true, opacity)).toThrow('Invalid window opacity');
+        expect(win.setAlwaysOnTop).not.toHaveBeenCalled();
+      }
+    );
 
-      expect(handlers['window:getAlwaysOnTop'](event)).toBe(true);
-    });
-
-    it('returns false when there is no window', () => {
+    it('returns the safe state and touches nothing when there is no window', () => {
       fromWebContentsResult = null;
 
-      expect(handlers['window:getAlwaysOnTop'](event)).toBe(false);
+      expect(handlers['window:setPinnedAppearance'](event, true, 0.5)).toEqual({ alwaysOnTop: false, opacity: 1 });
+      expect(win.setAlwaysOnTop).not.toHaveBeenCalled();
+      expect(win.setOpacity).not.toHaveBeenCalled();
     });
   });
 });

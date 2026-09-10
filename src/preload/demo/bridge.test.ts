@@ -56,12 +56,12 @@ describe('demoBridge window', () => {
     vi.clearAllMocks();
   });
 
-  it('routes always-on-top through the real window IPC so the pin works in demo', () => {
-    demoBridge.window.setAlwaysOnTop(true);
-    expect(invoke).toHaveBeenCalledWith('window:setAlwaysOnTop', true);
+  it('routes pinned appearance through the real window IPC so it works in demo', () => {
+    demoBridge.window.setPinnedAppearance(true, 0.73);
+    expect(invoke).toHaveBeenCalledWith('window:setPinnedAppearance', true, 0.73);
 
-    demoBridge.window.getAlwaysOnTop();
-    expect(invoke).toHaveBeenCalledWith('window:getAlwaysOnTop');
+    demoBridge.window.getPinnedAppearance();
+    expect(invoke).toHaveBeenCalledWith('window:getPinnedAppearance');
   });
 });
 

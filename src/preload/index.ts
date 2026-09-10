@@ -9,6 +9,7 @@ import { type pullTypes } from 'types/gitHub';
 import { type ThemeSource } from 'types/Modal';
 import { type GitStatus, type Project } from 'types/project';
 import { type Settings } from 'types/settings';
+import { type WindowAppearance, type WindowOpacity } from 'types/window';
 
 import { demoBridge } from './demo/bridge';
 
@@ -91,8 +92,9 @@ const bridge = {
     add: (text: string) => ipcRenderer.invoke('sticker:add', text)
   },
   window: {
-    getAlwaysOnTop: (): Promise<boolean> => ipcRenderer.invoke('window:getAlwaysOnTop'),
-    setAlwaysOnTop: (flag: boolean): Promise<boolean> => ipcRenderer.invoke('window:setAlwaysOnTop', flag)
+    getPinnedAppearance: (): Promise<WindowAppearance> => ipcRenderer.invoke('window:getPinnedAppearance'),
+    setPinnedAppearance: (alwaysOnTop: boolean, pinnedOpacity: WindowOpacity): Promise<WindowAppearance> =>
+      ipcRenderer.invoke('window:setPinnedAppearance', alwaysOnTop, pinnedOpacity)
   },
   worktree: {
     add: (id: string, repoName: string, branch: string, newBranch?: string, copyEnvLocal?: boolean) =>

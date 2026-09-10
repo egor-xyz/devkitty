@@ -1,27 +1,66 @@
 import { BrowserWindow, ipcMain } from 'electron';
+import {
+  WINDOW_OPACITY_DEFAULT,
+  WINDOW_OPACITY_MAX,
+  WINDOW_OPACITY_MIN,
+  type WindowAppearance,
+  type WindowOpacity
+} from 'types/window';
 
-// Keep the app window pinned above every other window (all spaces / full-screen
-// too), toggled from the navbar. `screen-saver` level floats over full-screen
-// apps, which the default `floating` level does not.
-ipcMain.handle('window:setAlwaysOnTop', (event, flag: boolean) => {
-  const win = BrowserWindow.fromWebContents(event.sender);
-  if (!win) return false;
+const isWindowOpacity = (opacity: unknown): opacity is WindowOpacity =>
+  typeof opacity === 'number'
+  && Number.isFinite(opacity)
+  && opacity >= WINDOW_OPACITY_MIN
+  && opacity <= WINDOW_OPACITY_MAX;
 
-  win.setAlwaysOnTop(flag, 'screen-saver');
-  // skipTransformProcessType: setVisibleOnAllWorkspaces otherwise flips the app
-  // between UIElement/Foreground process types on macOS, which drops the Dock
-  // icon (electron/electron#26350). Skipping the transform keeps the icon put.
-  win.setVisibleOnAllWorkspaces(flag, {
-    skipTransformProcessType: true,
-    visibleOnFullScreen: true,
-  });
-  // Report back the flag we applied, not isAlwaysOnTop() — on macOS the latter
-  // can momentarily read false right after setVisibleOnAllWorkspaces, which
-  // would leave the navbar toggle stuck looking off.
-  return flag;
+const fallbackAppearance = (): WindowAppearance => ({
+  alwaysOnTop: false,
+  opacity: WINDOW_OPACITY_DEFAULT
 });
 
-ipcMain.handle('window:getAlwaysOnTop', (event) => {
+const appearanceByWindow = new WeakMap<BrowserWindow, WindowAppearance>();
+
+const getStoredAppearance = (win: BrowserWindow): WindowAppearance => {
+  const storedAppearance = appearanceByWindow.get(win);
+  if (storedAppearance) return storedAppearance;
+
+  const initialAppearance = {
+    alwaysOnTop: win.isAlwaysOnTop(),
+    opacity: WINDOW_OPACITY_DEFAULT
+  };
+  appearanceByWindow.set(win, initialAppearance);
+  return initialAppearance;
+};
+
+ipcMain.handle('window:getPinnedAppearance', (event): WindowAppearance => {
   const win = BrowserWindow.fromWebContents(event.sender);
-  return win ? win.isAlwaysOnTop() : false;
+  if (!win) return fallbackAppearance();
+
+  return getStoredAppearance(win);
+});
+
+ipcMain.handle('window:setPinnedAppearance', (
+  event,
+  alwaysOnTop: unknown,
+  pinnedOpacity: unknown
+): WindowAppearance => {
+  if (typeof alwaysOnTop !== 'boolean') throw new TypeError('Invalid always-on-top flag');
+  if (!isWindowOpacity(pinnedOpacity)) throw new TypeError('Invalid window opacity');
+
+  const win = BrowserWindow.fromWebContents(event.sender);
+  if (!win) return fallbackAppearance();
+
+  win.setAlwaysOnTop(alwaysOnTop, 'screen-saver');
+  win.setVisibleOnAllWorkspaces(alwaysOnTop, {
+    skipTransformProcessType: true,
+    visibleOnFullScreen: true
+  });
+  win.setOpacity(alwaysOnTop ? pinnedOpacity : WINDOW_OPACITY_DEFAULT);
+
+  const appearance = {
+    alwaysOnTop,
+    opacity: pinnedOpacity
+  };
+  appearanceByWindow.set(win, appearance);
+  return appearance;
 });

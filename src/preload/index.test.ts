@@ -19,7 +19,8 @@ vi.mock('electron', () => ({
 await import('./index');
 
 // Capture the bridge object that was passed to exposeInMainWorld
-const bridge: Record<string, any> = mockContextBridge.exposeInMainWorld.mock.calls[0][1];
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const [[, bridge]] = mockContextBridge.exposeInMainWorld.mock.calls as [[string, Record<string, any>]];
 
 describe('preload bridge', () => {
   beforeEach(() => {
@@ -178,6 +179,18 @@ describe('preload bridge', () => {
     it('should invoke sticker:add with text', () => {
       bridge.sticker.add('Hello World');
       expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('sticker:add', 'Hello World');
+    });
+  });
+
+  describe('window', () => {
+    it('should invoke window:getPinnedAppearance', () => {
+      bridge.window.getPinnedAppearance();
+      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('window:getPinnedAppearance');
+    });
+
+    it('should invoke window:setPinnedAppearance with the pin and opacity', () => {
+      bridge.window.setPinnedAppearance(true, 0.73);
+      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('window:setPinnedAppearance', true, 0.73);
     });
   });
 
