@@ -202,13 +202,17 @@ export const AppNavbar = () => {
   return (
     <Navbar
       className={cn(
-        'app-region-drag select-none !shadow-none overflow-hidden',
+        'app-region-drag flex flex-nowrap items-center select-none !shadow-none overflow-hidden',
         isSunset
           ? 'devkitty-header-grad'
           : '!bg-bp-light-gray-4 dark:!bg-bp-dark-gray-1 dark:border-b dark:border-bp-dark-gray-2'
       )}
+      data-testid="app-navbar"
     >
-      <Navbar.Group className="app-region-no-drag ml-[70px] overflow-hidden">
+      <Navbar.Group
+        className="app-region-no-drag ml-[70px] shrink-0 overflow-hidden"
+        data-testid="app-navbar-left"
+      >
         <Button
           icon="plus"
           minimal
@@ -233,11 +237,15 @@ export const AppNavbar = () => {
 
       <Navbar.Group
         align="right"
-        className="app-region-no-drag ml-[70px] [&>button+button]:ml-2 [&>button+a]:ml-2"
+        className="app-region-no-drag ml-auto min-w-0 shrink flex-nowrap [&>button+button]:ml-2 [&>button+a]:ml-2"
+        data-testid="app-navbar-right"
       >
         {/* Nothing to filter anywhere but the project list. */}
         {onHome && (
-          <div className="flex items-center self-center mr-2">
+          <div
+            className="flex min-w-0 shrink items-center self-center mr-2"
+            data-testid="app-navbar-search"
+          >
             <SearchInput
               inputRef={searchRef}
               label={focusedName}
@@ -250,6 +258,7 @@ export const AppNavbar = () => {
         )}
 
         <Button
+          className="shrink-0"
           icon={<Icon className={refreshing ? 'animate-spin' : undefined}
             icon="refresh"
                 />}
@@ -257,9 +266,13 @@ export const AppNavbar = () => {
           onClick={refresh}
         />
 
-        <Navbar.Divider />
+        <Navbar.Divider className="shrink-0" />
 
-        <ButtonGroup minimal>
+        <ButtonGroup
+          className="shrink-0"
+          data-testid="app-navbar-icon-controls"
+          minimal
+        >
           {aiAvailable && (claudeEnabled ?? true) && (
             <Tooltip
               compact
@@ -332,8 +345,8 @@ export const AppNavbar = () => {
 
         {showLogo && (
           <>
-            <Navbar.Divider />
-            <Devkitty className="h-7 devkitty-logo" />
+            <Navbar.Divider className="shrink-0" />
+            <Devkitty className="h-7 shrink-0 devkitty-logo" />
           </>
         )}
       </Navbar.Group>
