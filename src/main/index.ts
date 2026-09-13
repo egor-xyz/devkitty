@@ -16,7 +16,7 @@ import { loadWindowState, saveBounds, WINDOW_MINIMUM_SIZE } from './libs/window'
 
 log.initialize({ preload: true, spyRendererConsole: false });
 
-app.name = 'Devkitty';
+if (app.name !== 'Devkitty Update Test') app.name = 'Devkitty';
 
 const isDev = is.dev;
 
