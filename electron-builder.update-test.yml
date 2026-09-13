@@ -4,6 +4,7 @@ copyright: Copyright © 2024 Devkitty
 
 extraMetadata:
   name: devkitty-update-test
+  productName: Devkitty Update Test
 
 mac:
   category: public.app-category.developer-tools

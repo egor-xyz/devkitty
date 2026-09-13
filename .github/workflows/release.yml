@@ -163,7 +163,9 @@ jobs:
             codesign --verify --deep --strict --verbose=2 "$app"
             spctl --assess --type execute --verbose "$app"
             test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Contents/Info.plist")" = 'app.devkitty.update-test'
+            test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleName' "$app/Contents/Info.plist")" = 'Devkitty Update Test'
             test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$app/Contents/Info.plist")" = "$version"
+            node -e 'const asar = require("@electron/asar"); const metadata = JSON.parse(asar.extractFile(process.argv[1], "package.json")); if (metadata.name !== "devkitty-update-test" || metadata.productName !== "Devkitty Update Test" || metadata.version !== process.argv[2]) { console.error("Wrong packaged app identity", metadata.name, metadata.productName, metadata.version); process.exit(1); }' "$app/Contents/Resources/app.asar" "$version"
             ruby -ryaml -e 'feed = YAML.load_file(ARGV.fetch(0)); abort "Wrong update feed" unless feed["provider"] == "generic" && feed["url"] == "http://127.0.0.1:8765/" && feed["updaterCacheDirName"] == "devkitty-update-test-updater"' "$app/Contents/Resources/app-update.yml"
             test "$(find "$output" -maxdepth 1 -name '*.zip' -type f | wc -l | tr -d ' ')" = 1
           done
