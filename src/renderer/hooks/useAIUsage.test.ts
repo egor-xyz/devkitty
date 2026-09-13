@@ -8,13 +8,14 @@ const mocks = vi.hoisted(() => {
   const provider = () => ({ accounts: vi.fn().mockResolvedValue([]), detect: vi.fn().mockResolvedValue({ installed: false }), usage: vi.fn() });
   const claude = provider();
   const codex = provider();
+  const cursor = provider();
   const settings = vi.fn().mockResolvedValue({});
   const save = vi.fn();
   const unsubscribe = vi.fn();
   const subscribe = vi.fn<(spec: PollSpec<AIUsage>, onData: (data: AIUsage) => void) => () => void>(() => unsubscribe);
   const refresh = vi.fn<(key?: string) => void>();
-  Object.assign(window.bridge, { claude, codex, settings: { ...window.bridge.settings, get: settings } });
-  return { claude, codex, refresh, save, settings, subscribe, unsubscribe };
+  Object.assign(window.bridge, { claude, codex, cursor, settings: { ...window.bridge.settings, get: settings } });
+  return { claude, codex, cursor, refresh, save, settings, subscribe, unsubscribe };
 });
 vi.mock('./useAppSettings', () => ({ useAppSettings: { getState: () => ({ set: mocks.save }) } }));
 vi.mock('renderer/services/poller', () => ({ refresh: mocks.refresh, subscribe: mocks.subscribe }));
@@ -25,10 +26,10 @@ const claude: AIAccount = { dir: '/profiles/shared', label: 'Claude', provider: 
 const claude2: AIAccount = { ...claude, dir: '/profiles/claude-2' };
 const codex: AIAccount = { dir: '/profiles/shared', label: 'Codex', provider: 'codex' };
 const codex2: AIAccount = { ...codex, dir: '/profiles/codex-2' };
-const usage = (account: AIAccount): AIUsage => {
-  const window: AIUsage['fiveHour'] = { active: true, cap: 100, models: [], pct: 0.2, reported: true, resetsAt: 2000, startsAt: 1000, tokens: 20 };
-  return { account, computedAt: 1000, fiveHour: window, week: window };
-};
+const cursor: AIAccount = { dir: '/profiles/cursor', label: 'Cursor', provider: 'cursor', surfaces: ['ide'] };
+const usage = (account: AIAccount): AIUsage => ({
+  account, computedAt: 1000, metrics: [{ id: 'seven-day', label: '7D', percent: 0.2, resetsAt: 2000, scope: 'account', source: 'provider', title: '7D', tokens: 20 }]
+});
 const deferred = <T>() => {
   let resolve!: (value: T) => void;
   let reject!: (error: Error) => void;
@@ -44,13 +45,14 @@ describe('AI usage provider and account isolation', () => {
     mocks.refresh.mockImplementation(() => {});
     useAIUsage.setState({
       accounts: [], activeDirs: {}, activeProvider: 'claude',
-      detection: { claude: { installed: false }, codex: { installed: false } },
+      detection: { claude: { installed: false }, codex: { installed: false }, cursor: { installed: false } },
       discoveryErrors: {}, errorByAccount: {}, loadingByAccount: {}, ready: false, usageByAccount: {}
     });
     mocks.settings.mockResolvedValue({});
     mocks.claude.accounts.mockResolvedValue([claude, claude2]);
     mocks.codex.accounts.mockResolvedValue([codex, codex2]);
-    for (const provider of [mocks.claude, mocks.codex]) {
+    mocks.cursor.accounts.mockResolvedValue([]);
+    for (const provider of [mocks.claude, mocks.codex, mocks.cursor]) {
       provider.detect.mockResolvedValue({ installed: true });
       provider.usage.mockImplementation(async (account: AIAccount) => usage(account));
     }
@@ -81,13 +83,25 @@ describe('AI usage provider and account isolation', () => {
   it('restores provider and separate legacy Claude / Codex preferences', async () => {
     mocks.settings.mockResolvedValue({ aiProvider: 'codex', claudeAccountDir: claude2.dir, codexAccountDir: codex2.dir });
     await useAIUsage.getState().init();
-    expect(useAIUsage.getState().activeDirs).toEqual({ claude: claude2.dir, codex: codex2.dir });
+    expect(useAIUsage.getState().activeDirs).toEqual({ claude: claude2.dir, codex: codex2.dir, cursor: undefined });
     expect(mocks.claude.usage).toHaveBeenCalledWith(claude2);
     expect(mocks.codex.usage).toHaveBeenCalledWith(codex2);
     useAIUsage.getState().setProvider('claude');
     await useAIUsage.getState().refresh();
     expect(mocks.claude.usage).toHaveBeenCalledWith(claude2);
     expect(mocks.save).toHaveBeenCalledWith({ aiProvider: 'claude' });
+  });
+
+  it('adds Cursor once and merges CLI and app-only Grok detection into its surfaces', async () => {
+    mocks.cursor.accounts.mockResolvedValue([cursor]);
+    mocks.cursor.detect.mockResolvedValue({ installed: true, surfaces: ['cli', 'grok-bot'] });
+    await useAIUsage.getState().init();
+    const cursorAccounts = useAIUsage.getState().accounts.filter(({ provider }) => provider === 'cursor');
+    expect(cursorAccounts).toHaveLength(1);
+    expect(cursorAccounts[0].surfaces).toEqual(['ide', 'cli', 'grok-bot']);
+    expect(mocks.cursor.usage).toHaveBeenCalledExactlyOnceWith(cursorAccounts[0]);
+    useAIUsage.getState().setProvider('cursor');
+    expect(mocks.save).toHaveBeenCalledWith({ aiProvider: 'cursor' });
   });
 
   it('remembers independent account choices across provider switches', async () => {
@@ -100,7 +114,7 @@ describe('AI usage provider and account isolation', () => {
     await useAIUsage.getState().refresh();
     useAIUsage.getState().setProvider('claude');
     await useAIUsage.getState().refresh();
-    expect(useAIUsage.getState().activeDirs).toEqual({ claude: claude2.dir, codex: codex2.dir });
+    expect(useAIUsage.getState().activeDirs).toEqual({ claude: claude2.dir, codex: codex2.dir, cursor: undefined });
     expect(mocks.save).toHaveBeenCalledWith({ claudeAccountDir: claude2.dir });
     expect(mocks.save).toHaveBeenCalledWith({ codexAccountDir: codex2.dir });
   });

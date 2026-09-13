@@ -187,28 +187,32 @@ export const CheckoutCard: FC<Props> = ({
     >
       {pull && (
         <PullRequest
+          isRoot={isMain}
           onHide={onHidePull}
-          projectId={project.id}
+          onRefresh={onRefresh}
+          project={project}
           pull={pull.pull}
+          stickyTop={isMain ? 55 : solo ? 45 : 100}
           tags={pull.tags}
         />
       )}
 
-      {/* Main carries the whole repo's traffic, so it gets the configured cap;
-          a worktree only ever shows its own branch and keeps the default. */}
-      <GroupRuns
-        footer={footer}
-        isRoot={isMain}
-        limit={isMain ? count : undefined}
-        loadingOlder={loadingOlder}
-        moreHistory={moreHistory}
-        onLoadOlder={onLoadOlder}
-        onRefresh={onRefresh}
-        paged={!pull}
-        project={project}
-        runs={runs}
-        stickyTop={isMain ? 55 : 100}
-      />
+      {!pull && (
+        /* Main carries the whole repo's traffic, so it gets the configured cap;
+            a worktree only ever shows its own branch and keeps the default. */
+        <GroupRuns
+          footer={footer}
+          isRoot={isMain}
+          limit={isMain ? count : undefined}
+          loadingOlder={loadingOlder}
+          moreHistory={moreHistory}
+          onLoadOlder={onLoadOlder}
+          onRefresh={onRefresh}
+          project={project}
+          runs={runs}
+          stickyTop={isMain ? 55 : 100}
+        />
+      )}
     </div>
   );
 

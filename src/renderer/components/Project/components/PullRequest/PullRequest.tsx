@@ -1,53 +1,31 @@
 import { Button, ButtonGroup, Icon, Menu, MenuDivider, MenuItem, Popover, Tooltip } from '@blueprintjs/core';
-import { type FC, useCallback, useEffect, useState } from 'react';
+import { type FC, useEffect, useMemo, useRef, useState } from 'react';
 import { FaCopy, FaRegCopy } from 'react-icons/fa';
-import { useIsSunset } from 'renderer/hooks/useAppSettings';
+import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
 import { mutate, refresh, usePoll } from 'renderer/services/poller';
 import { appToaster } from 'renderer/utils/appToaster';
 import { cn } from 'renderer/utils/cn';
+import { isWorkflowHidden, parseIgnored } from 'renderer/utils/ignoredWorkflows';
 import { timeAgo } from 'renderer/utils/timeAgo';
-import { type Pull } from 'types/gitHub';
+import { type MergeMethod, type PRCheck, type PRReviewer, type PRStatus, type Pull } from 'types/gitHub';
+import { type Project } from 'types/project';
 
+import { GroupRuns } from '../CheckoutCard/GroupRuns';
 import { LabelStrip } from './LabelStrip';
-
-type Check = {
-  conclusion: null | string;
-  id: number;
-  name: string;
-  status: string;
-};
-
-type ChecksResult = Awaited<ReturnType<typeof window.bridge.gitAPI.getPRChecks>>;
-type MergeMethod = 'merge' | 'rebase' | 'squash';
+import { getPullRequestActionState } from './pullRequestActionState';
 
 type MutationResult = { message?: string; success: boolean };
-
+type PendingAction = 'auto-merge' | 'merge' | 'update';
 type Props = {
+  // This may be the root checkout. Keep that scope for a workflow's hide menu,
+  // even though PR checks always show their own Passing checks fold.
+  isRoot: boolean;
   onHide?: (pullId: number, label: string) => void;
-  projectId: string;
+  onRefresh: () => void;
+  project: Project;
   pull: Pull;
+  stickyTop: number;
   tags?: string[];
-};
-
-type Review = {
-  approvedBy: string[];
-  changesRequestedBy: string[];
-  reviewers: Reviewer[];
-  state: 'approved' | 'changes_requested' | null;
-};
-
-type Reviewer = {
-  avatarUrl: string;
-  login: string;
-  reReviewRequested: boolean;
-  state: 'approved' | 'changes_requested' | 'commented' | 'pending';
-};
-
-type UnresolvedThread = {
-  avatarUrl: string;
-  count: number;
-  login: string;
-  path: null | string;
 };
 
 const mergeMenuLabel: Record<MergeMethod, string> = {
@@ -62,7 +40,7 @@ const autoMergeMenuLabel: Record<MergeMethod, string> = {
   squash: 'Enable auto-merge (squash)'
 };
 
-const reviewerStatus = (r: Reviewer): { color: string; icon: 'chat' | 'cross' | 'dot' | 'tick'; label: string } => {
+const reviewerStatus = (r: PRReviewer): { color: string; icon: 'chat' | 'cross' | 'dot' | 'tick'; label: string } => {
   // Icons mirror GitHub's Reviewers panel 1:1: bare green check for approved,
   // red cross for changes requested, a comment bubble for a commented review,
   // and a faint dot for an awaiting/requested reviewer.
@@ -80,7 +58,7 @@ const cleanApiError = (message?: string, fallback = 'Something went wrong') => {
   return clean.length > 0 ? clean.charAt(0).toUpperCase() + clean.slice(1) : fallback;
 };
 
-const getChecksSummary = (checks: Check[]) => {
+const getChecksSummary = (checks: PRCheck[]) => {
   if (checks.length === 0) return null;
 
   const success = checks.filter((c) => c.conclusion === 'success').length;
@@ -90,21 +68,13 @@ const getChecksSummary = (checks: Check[]) => {
   return { failed, pending, success, total: checks.length };
 };
 
-export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) => {
+export const PullRequest: FC<Props> = ({ isRoot, onHide, onRefresh, project, pull, stickyTop, tags = [] }) => {
   const { created_at, draft, html_url, labels, merged_at, number, state, title, user } = pull;
   const isSunset = useIsSunset();
-  const [checks, setChecks] = useState<Check[]>([]);
-  const [review, setReview] = useState<null | Review>(null);
-  const [behind, setBehind] = useState(false);
-  const [updating, setUpdating] = useState(false);
-  const [mergeableState, setMergeableState] = useState<string>('unknown');
-  const [merging, setMerging] = useState(false);
+  const ignoredWorkflows = useAppSettings((settings) => settings.gitHubActions.ignoredWorkflows);
+  const [pendingAction, setPendingAction] = useState<null | PendingAction>(null);
+  const pendingActionRef = useRef(false);
   const [conflictFiles, setConflictFiles] = useState<null | string[]>(null);
-  const [unresolvedComments, setUnresolvedComments] = useState(0);
-  const [unresolvedThreads, setUnresolvedThreads] = useState<UnresolvedThread[]>([]);
-  const [autoMergeAllowed, setAutoMergeAllowed] = useState(false);
-  const [autoMergeEnabled, setAutoMergeEnabled] = useState(false);
-  const [allowedMergeMethods, setAllowedMergeMethods] = useState<MergeMethod[]>([]);
   // Set the instant a merge succeeds so the action buttons clear immediately,
   // without waiting for the parent list to re-poll and hand down a merged pull.
   const [justMerged, setJustMerged] = useState(false);
@@ -112,57 +82,49 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
 
   const isMerged = Boolean(merged_at) || justMerged;
   const isClosed = !isMerged && state === 'closed';
-  const totalUnresolvedComments = unresolvedThreads.reduce((sum, t) => sum + t.count, 0);
-
-  const applyChecks = useCallback((res: ChecksResult) => {
-    if (!res.success) return;
-    if (res.checks) setChecks(res.checks);
-    if (res.review) setReview(res.review);
-    setBehind(Boolean(res.behind));
-    setMergeableState(res.mergeableState ?? 'unknown');
-    setUnresolvedComments(res.unresolvedComments ?? 0);
-    setUnresolvedThreads(res.unresolvedThreads ?? []);
-    setAutoMergeAllowed(Boolean(res.autoMergeAllowed));
-    setAutoMergeEnabled(Boolean(res.autoMergeEnabled));
-    setAllowedMergeMethods(res.allowedMergeMethods ?? []);
-  }, []);
 
   // One shared-coordinator poll per PR, keyed so every subscriber (this card,
   // any other view of the same PR) shares one cache entry and one fetch. The
   // coordinator owns the timer, pause-when-hidden/offline, refetch-on-focus,
   // in-flight dedupe and error backoff — no local setInterval / refresh-event
   // listener needed here.
-  const pollKey = `prChecks:${projectId}:${number}`;
+  const pollKey = `prChecks:${project.id}:${number}:${pull.head?.sha ?? 'unknown'}`;
 
-  const { data: checksData } = usePoll<ChecksResult>({
-    fetch: () => window.bridge.gitAPI.getPRChecks(projectId, number),
+  const { data: checksData } = usePoll<PRStatus>({
+    fetch: async () => {
+      const result = await window.bridge.gitAPI.getPRChecks(project.id, number);
+      // The bridge reports API errors as resolved `{ success: false }` values.
+      // Turn them into poll errors so the coordinator keeps its last good data.
+      if (!result.success) throw new Error(result.message);
+      return result;
+    },
     // Poll hot (every 8s) while anything is still in flux — a check not done,
     // GitHub still computing mergeable state, or the branch behind base — and
     // back off to once a minute once everything has settled.
     interval: (data) => {
-      if (!data || !data.success) return 8000;
-      const checksInFlux = (data.checks ?? []).some((c: Check) => c.status !== 'completed');
-      const inFlux = checksInFlux || data.mergeableState === 'unknown' || data.behind === true;
+      if (!data) return 8000;
+      const checksInFlux = data.checks.some((c) => c.status !== 'completed');
+      const inFlux = checksInFlux || data.mergeableState === 'unknown' || data.behind;
       return inFlux ? 8000 : 60000;
     },
     key: pollKey
   });
 
   useEffect(() => {
-    if (!checksData) return;
-    applyChecks(checksData);
-    // Clear the "Update branch" spinner only on a real read that reports the
-    // branch caught up — never on a stale one, and never by giving up.
-    if (checksData.success && !checksData.behind) setUpdating(false);
-  }, [applyChecks, checksData]);
+    // Clear the Update spinner only on a real read that reports the branch
+    // caught up. This keeps operation state separate from server state.
+    if (checksData?.success && !checksData.behind && pendingAction === 'update') {
+      pendingActionRef.current = false;
+      setPendingAction(null);
+    }
+  }, [checksData, pendingAction]);
 
-  // A new head commit or updated_at means GitHub has fresh PR data even though
-  // the poll key itself hasn't changed — re-heat this key now instead of
-  // waiting out the adaptive interval.
+  // A new head SHA gets a new cache key. A metadata-only update keeps the same
+  // key, so re-heat it instead of waiting out the adaptive interval.
   useEffect(() => {
     refresh(pollKey);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [pull.head?.sha, pull.updated_at]);
+  }, [pull.updated_at]);
 
   const openInBrowser = () => {
     window.open(html_url, '_blank');
@@ -176,26 +138,38 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
     navigator.clipboard.writeText(html_url);
   };
 
+  const startAction = (action: PendingAction) => {
+    if (pendingActionRef.current) return false;
+    pendingActionRef.current = true;
+    setPendingAction(action);
+    return true;
+  };
+
+  const finishAction = () => {
+    pendingActionRef.current = false;
+    setPendingAction(null);
+  };
+
   const updateBranch = async (method: 'merge' | 'rebase' = 'merge') => {
-    setUpdating(true);
+    if (!startAction('update')) return;
     // mutate() runs the bridge call, then hot re-polls prChecks (now, +800ms,
     // +1500ms); the adaptive interval above keeps polling every 8s for as long
     // as GitHub still reports "behind" (its recompute is asynchronous), so this
     // settles on its own without a hand-rolled retry loop. The spinner clears
     // in the poll-apply effect above, only on a real "not behind" read.
-    const res = await mutate<MutationResult>(pollKey, () => window.bridge.gitAPI.updateBranch(projectId, number, method));
+    const res = await mutate<MutationResult>(pollKey, () => window.bridge.gitAPI.updateBranch(project.id, number, method));
     const toaster = await appToaster;
     if (!res.success) {
       toaster.show({ icon: 'warning-sign', intent: 'warning', message: cleanApiError(res.message, 'Failed to update branch'), timeout: 0 });
-      setUpdating(false);
+      finishAction();
       return;
     }
     toaster.show({ icon: 'git-merge', intent: 'success', message: `Updated #${number} with the base branch` });
   };
 
-  const mergePR = async (method: 'merge' | 'rebase' | 'squash') => {
-    setMerging(true);
-    const res = await mutate<MutationResult>(pollKey, () => window.bridge.gitAPI.mergePR(projectId, number, method));
+  const mergePR = async (method: MergeMethod) => {
+    if (!startAction('merge')) return;
+    const res = await mutate<MutationResult>(pollKey, () => window.bridge.gitAPI.mergePR(project.id, number, method));
     const toaster = await appToaster;
     if (res.success) {
       toaster.show({ icon: 'git-merge', intent: 'success', message: `Merged #${number}` });
@@ -203,48 +177,53 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
     } else {
       toaster.show({ icon: 'warning-sign', intent: 'warning', message: cleanApiError(res.message, 'Failed to merge'), timeout: 0 });
     }
-    setMerging(false);
+    finishAction();
   };
 
-  const enableAutoMerge = async (method: 'merge' | 'rebase' | 'squash') => {
-    setMerging(true);
-    const res = await mutate<MutationResult>(pollKey, () => window.bridge.gitAPI.enableAutoMerge(projectId, number, method));
+  const enableAutoMerge = async (method: MergeMethod) => {
+    if (!startAction('auto-merge')) return;
+    const res = await mutate<MutationResult>(pollKey, () => window.bridge.gitAPI.enableAutoMerge(project.id, number, method));
     const toaster = await appToaster;
     if (res.success) {
       toaster.show({ icon: 'automatic-updates', intent: 'success', message: `Auto-merge enabled for #${number}` });
-      setAutoMergeEnabled(true);
     } else {
       toaster.show({ icon: 'warning-sign', intent: 'warning', message: cleanApiError(res.message, 'Failed to enable auto-merge'), timeout: 0 });
     }
-    setMerging(false);
+    finishAction();
   };
 
   const disableAutoMerge = async () => {
-    setMerging(true);
-    const res = await mutate<MutationResult>(pollKey, () => window.bridge.gitAPI.disableAutoMerge(projectId, number));
+    if (!startAction('auto-merge')) return;
+    const res = await mutate<MutationResult>(pollKey, () => window.bridge.gitAPI.disableAutoMerge(project.id, number));
     const toaster = await appToaster;
     if (res.success) {
       toaster.show({ icon: 'automatic-updates', intent: 'success', message: `Auto-merge disabled for #${number}` });
-      setAutoMergeEnabled(false);
     } else {
       toaster.show({ icon: 'warning-sign', intent: 'warning', message: cleanApiError(res.message, 'Failed to disable auto-merge'), timeout: 0 });
     }
-    setMerging(false);
+    finishAction();
   };
 
-  // Only surface Merge when GitHub itself would allow it — an allow-list, not a
-  // block-list, so ambiguous states never show a button that can't work:
-  //   clean       — mergeable, all requirements met
-  //   unstable    — mergeable, but non-required checks are failing/pending
-  //   has_hooks   — mergeable, with pre-receive hooks
-  // Everything else hides it: 'blocked' (review/checks required), 'dirty'
-  // (conflicts), 'behind' (up-to-date IS required here), 'draft', and 'unknown'
-  // (GitHub still computing — show nothing rather than a button that would fail).
-  // Note: a branch can be behind base yet still 'clean' (up-to-date not
-  // required) — that PR is mergeable, so Merge shows alongside Update branch.
   const isOpen = !isMerged && !isClosed && !draft;
-  const canMerge = isOpen && ['clean', 'has_hooks', 'unstable'].includes(mergeableState);
-  const hasConflicts = isOpen && mergeableState === 'dirty';
+  const status = checksData;
+  const checks = status?.checks ?? [];
+  const review = status?.review ?? null;
+  const behind = status?.behind ?? false;
+  const unresolvedComments = status?.unresolvedComments ?? 0;
+  const unresolvedThreads = status?.unresolvedThreads ?? [];
+  const totalUnresolvedComments = unresolvedThreads.reduce((sum, t) => sum + t.count, 0);
+  const autoMergeAllowed = status?.autoMergeAllowed ?? false;
+  const autoMergeEnabled = status?.autoMergeEnabled ?? false;
+  const allowedMergeMethods = status?.allowedMergeMethods ?? [];
+  const actionState = getPullRequestActionState({
+    autoMergeEnabled,
+    behind,
+    isOpen,
+    mergeableState: status?.mergeableState ?? 'unknown'
+  });
+  const isMerging = pendingAction === 'merge';
+  const isUpdating = pendingAction === 'update';
+  const isActionPending = pendingAction !== null;
 
   // Only the merge methods this repo enables (GitHub's own order). Fall back to
   // all three if the repo settings could not be read, so the buttons still work.
@@ -256,11 +235,17 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
   const loadConflicts = async () => {
     if (conflictFiles !== null) return;
     setConflictFiles([]);
-    const res = await window.bridge.gitAPI.getConflictFiles(projectId, number);
+    const res = await window.bridge.gitAPI.getConflictFiles(project.id, number);
     if (res.success && res.files) setConflictFiles(res.files);
   };
 
   const summary = getChecksSummary(checks);
+  const visibleWorkflowRuns = useMemo(() => {
+    const ignored = parseIgnored(ignoredWorkflows);
+    return (status?.workflowRuns ?? []).filter(
+      (run) => !isWorkflowHidden(ignored, { isPr: true, isRoot, path: run.path })
+    );
+  }, [ignoredWorkflows, isRoot, status?.workflowRuns]);
 
   // GitHub-style Reviewers panel: every reviewer with their avatar and current
   // status icon (approved / requested changes / commented / awaiting).
@@ -572,41 +557,43 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
             green/red status pills, while blue keeps it read as "sync the base in"
             rather than competing with the primary green merge. Primary merges the
             base in; the caret offers merge vs rebase. Shown only when behind. */}
-          {behind && isOpen && !hasConflicts && (
-            <div className={cn('flex shrink-0 rounded-md overflow-hidden border border-[#0969da]/35 dark:border-[#4493f8]/35', updating && 'opacity-60')}>
+          {actionState.update && (
+            <div className={cn('flex shrink-0 rounded-md overflow-hidden border border-[#0969da]/35 dark:border-[#4493f8]/35', isActionPending && 'opacity-60')}>
               <button
                 className="flex items-center gap-1.5 h-[30px] pl-2.5 pr-3 text-[12px] font-medium text-[#0969da] dark:text-[#4493f8] bg-[#0969da]/10 hover:bg-[#0969da]/[0.18] active:bg-[#0969da]/25 transition-colors disabled:cursor-not-allowed"
-                disabled={updating}
+                disabled={isActionPending}
                 onClick={() => updateBranch('merge')}
                 type="button"
               >
-                <Icon icon={updating ? 'refresh' : 'git-merge'}
+                <Icon icon={isUpdating ? 'refresh' : 'git-merge'}
                   size={13}
                 />
 
-                {updating ? 'Updating…' : 'Update branch'}
+                {isUpdating ? 'Updating…' : 'Update branch'}
               </button>
 
               <Popover
                 content={
                   <Menu>
-                    <MenuItem icon="git-merge"
+                    <MenuItem disabled={isActionPending}
+                      icon="git-merge"
                       onClick={() => updateBranch('merge')}
                       text="Update with merge commit"
                     />
 
-                    <MenuItem icon="git-branch"
+                    <MenuItem disabled={isActionPending}
+                      icon="git-branch"
                       onClick={() => updateBranch('rebase')}
                       text="Update with rebase"
                     />
                   </Menu>
               }
-                disabled={updating}
+                disabled={isActionPending}
                 placement="bottom-end"
               >
                 <button aria-label="Update branch options"
                   className="flex items-center h-[30px] px-1.5 text-[#0969da] dark:text-[#4493f8] bg-[#0969da]/10 hover:bg-[#0969da]/[0.18] active:bg-[#0969da]/25 transition-colors border-l border-[#0969da]/35 dark:border-[#4493f8]/35 disabled:cursor-not-allowed"
-                  disabled={updating}
+                  disabled={isActionPending}
                   type="button"
                 >
                   <Icon icon="caret-down"
@@ -620,19 +607,19 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
           {/* GitHub-style green "Merge" split button: primary squash-merges; the
             caret offers merge commit / squash / rebase. Shown only when the PR
             is actually mergeable — no greyed-out placeholder. */}
-          {canMerge && (
-            <div className={cn('flex shrink-0 rounded-md overflow-hidden', merging && 'opacity-60')}>
+          {actionState.merge && (
+            <div className={cn('flex shrink-0 rounded-md overflow-hidden', isActionPending && 'opacity-60')}>
               <button
                 className="flex items-center gap-1.5 h-[30px] pl-2.5 pr-3 text-[12px] font-semibold text-white bg-[#1f883d] hover:bg-[#2ea043] active:bg-[#1a7f37] transition-colors disabled:cursor-not-allowed"
-                disabled={merging}
+                disabled={isActionPending}
                 onClick={() => mergePR(primaryMethod)}
                 type="button"
               >
-                <Icon icon={merging ? 'refresh' : 'git-merge'}
+                <Icon icon={isMerging ? 'refresh' : 'git-merge'}
                   size={13}
                 />
 
-                {merging ? 'Merging…' : mergeMenuLabel[primaryMethod]}
+                {isMerging ? 'Merging…' : mergeMenuLabel[primaryMethod]}
               </button>
 
               {(mergeMethods.length > 1 || (autoMergeAllowed && !autoMergeEnabled)) && (
@@ -640,7 +627,8 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
                   content={
                     <Menu>
                       {mergeMethods.map((m) => (
-                        <MenuItem icon="git-merge"
+                        <MenuItem disabled={isActionPending}
+                          icon="git-merge"
                           key={m}
                           onClick={() => mergePR(m)}
                           text={mergeMenuLabel[m]}
@@ -652,7 +640,8 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
                           <MenuDivider />
 
                           {mergeMethods.map((m) => (
-                            <MenuItem icon="automatic-updates"
+                            <MenuItem disabled={isActionPending}
+                              icon="automatic-updates"
                               key={`auto-${m}`}
                               onClick={() => enableAutoMerge(m)}
                               text={autoMergeMenuLabel[m]}
@@ -662,11 +651,11 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
                     )}
                     </Menu>
                 }
-                  disabled={merging}
+                  disabled={isActionPending}
                   placement="bottom-end"
                 >
                   <button className="flex items-center h-[30px] px-1.5 text-white bg-[#1f883d] hover:bg-[#2ea043] active:bg-[#1a7f37] transition-colors border-l border-black/20 disabled:cursor-not-allowed"
-                    disabled={merging}
+                    disabled={isActionPending}
                     type="button"
                   >
                     <Icon icon="caret-down"
@@ -679,16 +668,18 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
         )}
 
           {/* Auto-merge is armed: show its state with a one-click disable. */}
-          {isOpen && autoMergeEnabled && (
+          {actionState.autoMerge && (
             <Popover
               content={
                 <Menu>
-                  <MenuItem icon="disable"
+                  <MenuItem disabled={isActionPending}
+                    icon="disable"
                     onClick={disableAutoMerge}
                     text="Disable auto-merge"
                   />
                 </Menu>
             }
+              disabled={isActionPending}
               placement="bottom-end"
             >
               <div className="flex items-center gap-1.5 h-[30px] px-3 rounded-md text-[12px] font-medium text-[#3fb950] bg-[#3fb950]/10 border border-[#3fb950]/35 cursor-pointer shrink-0">
@@ -703,7 +694,7 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
           {/* Conflicts: GitHub shows an unclickable "Resolve conflicts" button —
             conflicts can only be fixed on the command line. Hovering lists the
             conflicting files (computed locally on demand). */}
-          {hasConflicts && (
+          {actionState.conflicts && (
             <Popover
               content={
                 <div className="min-w-[240px] px-3.5 py-3">
@@ -752,6 +743,16 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
             </Popover>
         )}
 
+          {(actionState.recomputing || actionState.blocked) && (
+            <div className="flex items-center gap-1.5 h-[30px] px-3 rounded-md text-[12px] font-medium text-bp-gray-1 dark:text-bp-gray-4 bg-bp-light-gray-3 dark:bg-bp-dark-gray-3 border border-bp-gray-3 dark:border-bp-gray-2 shrink-0">
+              <Icon icon={actionState.recomputing ? 'refresh' : 'lock'}
+                size={13}
+              />
+
+              {actionState.recomputing ? 'Checking merge…' : 'Merge blocked'}
+            </div>
+          )}
+
           <ButtonGroup>
             <Tooltip compact
               content="Copy pull request link"
@@ -782,10 +783,11 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
                 <Menu>
                   {/* Auto-merge lives here rather than as an always-on button —
                     it is a "set and forget" action, not a primary one. */}
-                  {isOpen && !hasConflicts && autoMergeAllowed && !autoMergeEnabled && (
+                  {isOpen && !actionState.conflicts && autoMergeAllowed && !autoMergeEnabled && (
                     <>
                       {mergeMethods.map((m) => (
-                        <MenuItem icon="automatic-updates"
+                        <MenuItem disabled={isActionPending}
+                          icon="automatic-updates"
                           key={`auto-${m}`}
                           onClick={() => enableAutoMerge(m)}
                           text={autoMergeMenuLabel[m]}
@@ -798,7 +800,8 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
 
                   {isOpen && autoMergeEnabled && (
                     <>
-                      <MenuItem icon="disable"
+                      <MenuItem disabled={isActionPending}
+                        icon="disable"
                         onClick={disableAutoMerge}
                         text="Disable auto-merge"
                       />
@@ -825,6 +828,16 @@ export const PullRequest: FC<Props> = ({ onHide, projectId, pull, tags = [] }) =
           </ButtonGroup>
         </div>
       </div>
+
+      <GroupRuns
+        isRoot={isRoot}
+        onRefresh={onRefresh}
+        paged={false}
+        project={project}
+        runs={visibleWorkflowRuns}
+        showDoneFold
+        stickyTop={stickyTop}
+      />
     </div>
   );
 };

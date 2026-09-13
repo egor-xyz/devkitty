@@ -1,4 +1,5 @@
 import './ipcAnalytics';
+import './ipcAIUsageCredentials';
 import './ipcDarkMode';
 import './ipcSettings';
 import './ipcProjects';
@@ -10,4 +11,5 @@ import './ipcSticker';
 import './ipcWorktree';
 import './ipcClaude';
 import './ipcCodex';
+import './ipcCursor';
 import './ipcWindow';

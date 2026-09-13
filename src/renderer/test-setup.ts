@@ -2,12 +2,33 @@
 // This file runs before any test module is imported, so it can set up
 // globals that are accessed at module evaluation time (top-level IIFEs in stores)
 
+import { type PRStatus } from 'types/gitHub';
 import { vi } from 'vitest';
+
+const emptyPRStatus: PRStatus = {
+  allowedMergeMethods: [],
+  autoMergeAllowed: false,
+  autoMergeEnabled: false,
+  behind: false,
+  checks: [],
+  mergeable: false,
+  mergeableState: 'unknown',
+  review: { approvedBy: [], changesRequestedBy: [], reviewers: [], state: null },
+  success: true,
+  unresolvedComments: 0,
+  unresolvedThreads: [],
+  workflowRuns: []
+};
 
 // Provide a comprehensive window.bridge mock for all renderer tests
 // The stores (useProjects, useGroups, useAppSettings, useDarkMode) have
 // top-level IIFEs that call window.bridge.* at import time
 const mockBridge = {
+  aiUsageCredentials: {
+    clear: vi.fn(),
+    set: vi.fn(),
+    status: vi.fn().mockResolvedValue({ anthropic: false, openai: false })
+  },
   claude: {
     accounts: vi.fn().mockResolvedValue([]),
     detect: vi.fn().mockResolvedValue({ installed: false }),
@@ -17,6 +38,11 @@ const mockBridge = {
     onDownscaled: vi.fn(() => () => {})
   },
   codex: {
+    accounts: vi.fn().mockResolvedValue([]),
+    detect: vi.fn().mockResolvedValue({ installed: false }),
+    usage: vi.fn()
+  },
+  cursor: {
     accounts: vi.fn().mockResolvedValue([]),
     detect: vi.fn().mockResolvedValue({ installed: false }),
     usage: vi.fn()
@@ -41,18 +67,7 @@ const mockBridge = {
     getJobs: vi.fn(),
     getOpenPulls: vi.fn(),
     getPinnedRuns: vi.fn(),
-    getPRChecks: vi.fn().mockResolvedValue({
-      allowedMergeMethods: [],
-      autoMergeAllowed: false,
-      autoMergeEnabled: false,
-      behind: false,
-      checks: [],
-      mergeableState: 'unknown',
-      review: null,
-      success: true,
-      unresolvedComments: 0,
-      unresolvedThreads: []
-    }),
+    getPRChecks: vi.fn().mockResolvedValue(emptyPRStatus),
     getPulls: vi.fn(),
     getRuns: vi.fn(),
     getRunsPage: vi.fn(),

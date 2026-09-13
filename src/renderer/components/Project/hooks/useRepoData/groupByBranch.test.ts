@@ -326,7 +326,7 @@ describe('orphanRuns', () => {
 });
 
 describe('buildDetailGroups', () => {
-  it('should pair each pull request with the runs on its head branch', () => {
+  it('should leave pull request runs to the exact-head PR status request', () => {
     const pulls = tagPulls([pull(1, 42, 'feature')], [42], []);
     const runsByBranch = groupRunsByBranch([run(1, 'feature', '2026-08-16T10:00:00Z')], 5);
 
@@ -334,7 +334,7 @@ describe('buildDetailGroups', () => {
 
     expect(result).toHaveLength(1);
     expect(result[0].pull?.pull.number).toBe(42);
-    expect(result[0].runs.map((item) => item.id)).toEqual([1]);
+    expect(result[0].runs).toEqual([]);
   });
 
   it('should append runs that belong to no pull request as a trailing group', () => {
@@ -366,7 +366,7 @@ describe('buildDetailGroups', () => {
     const result = buildDetailGroups(pulls, runsByBranch, 'main');
 
     expect(result.map((group) => group.pull?.pull.number)).toEqual([42, undefined]);
-    expect(result[0].runs.map((item) => item.id)).toEqual([1]);
+    expect(result[0].runs).toEqual([]);
     expect(result[1].runs.map((item) => item.id)).toEqual([2]);
   });
 

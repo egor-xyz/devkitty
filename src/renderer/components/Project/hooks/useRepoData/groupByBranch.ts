@@ -67,7 +67,7 @@ export const splitDoneRuns = (
 };
 
 // What a checkout shows when opened: each pull request followed by its own
-// runs, then any runs that belong to no pull request.
+// checks, then any runs that belong to no pull request.
 export type DetailGroup = {
   // True when the branch is not checked out in any worktree — shown under the
   // main checkout because it has nowhere else to go.
@@ -81,20 +81,9 @@ export const buildDetailGroups = (
   runsByBranch: Record<string, Run[]>,
   branch: string
 ): DetailGroup[] => {
-  // GitHub's PR UI shows checks for the PR's HEAD commit only — runs from
-  // earlier commits on the same branch (a since-superseded failing build, say)
-  // are not the PR's current state and must not surface under it. Scope each
-  // pull's runs to its head SHA; runs from older commits fall through to the
-  // branch's loose bucket (or vanish once the branch view no longer needs them).
-  const groups: DetailGroup[] = pulls.map((pull) => {
-    const ref = pull.pull.head?.ref;
-    const sha = pull.pull.head?.sha;
-    const branchRuns = ref ? (runsByBranch[ref] ?? []) : [];
-    return {
-      pull,
-      runs: sha ? branchRuns.filter((run) => run.head_sha === sha) : branchRuns
-    };
-  });
+  // PR rows fetch their exact-head workflow runs with the PR status. The repo
+  // run cache only keeps recent history, so it cannot be the source here.
+  const groups = pulls.map((pull): DetailGroup => ({ pull, runs: [] }));
 
   const claimed = new Set(pulls.map(({ pull }) => pull.head?.ref));
   const loose = claimed.has(branch) ? [] : (runsByBranch[branch] ?? []);
