@@ -2,7 +2,7 @@ import { execFile } from 'child_process';
 import { ipcMain, safeStorage } from 'electron';
 import log from 'electron-log';
 import { Octokit } from 'octokit';
-import { type PullType, type Run } from 'types/gitHub';
+import { type MergeableState, type MergeMethod, type PRStatusResult, type PullType, type Run } from 'types/gitHub';
 import { promisify } from 'util';
 
 import { getProjectPath, getRepoInfo } from '../libs/git';
@@ -84,6 +84,22 @@ ipcMain.handle('git:api:reset', async (_, id: string, origin: string, target: st
 // out anyway; polls stay on one page and merge into what the renderer already
 // holds.
 const maxPages = 5;
+
+const mergeableStates = [
+  'behind',
+  'blocked',
+  'clean',
+  'dirty',
+  'draft',
+  'has_hooks',
+  'unknown',
+  'unstable'
+] as const satisfies readonly MergeableState[];
+
+const toMergeableState = (state: null | string | undefined): MergeableState => {
+  const normalized = state?.toLowerCase();
+  return mergeableStates.find((value) => value === normalized) ?? 'unknown';
+};
 
 ipcMain.handle('git:api:getRuns', async (_, id: string, deep = false) => {
   try {
@@ -275,33 +291,43 @@ ipcMain.handle('git:api:rerunFailedJobs', async (_, id: string, runId: number) =
   }
 });
 
-ipcMain.handle('git:api:getPRChecks', async (_, id: string, prNumber: number) => {
+ipcMain.handle('git:api:getPRChecks', async (_, id: string, prNumber: number): Promise<PRStatusResult> => {
   try {
     const { owner, repo } = await getRepoInfo(id);
     if (!owner || !repo) throw new Error('Project not found');
 
-    let { data: pr } = await octokit().rest.pulls.get({
+    const { data: pr } = await octokit().rest.pulls.get({
       owner,
       pull_number: prNumber,
       repo
     });
 
-    // GitHub computes mergeable/mergeable_state asynchronously; the first read
-    // after any change returns mergeable: null (state 'unknown'). Poll briefly
-    // so the Merge affordance reflects the real state instead of staying hidden
-    // behind a stale "unknown".
-    for (let attempt = 0; attempt < 3 && pr.mergeable === null; attempt += 1) {
-      await new Promise((resolve) => setTimeout(resolve, 700));
-      ({ data: pr } = await octokit().rest.pulls.get({ owner, pull_number: prNumber, repo }));
-    }
-
-    const {sha} = pr.head;
+    const { sha } = pr.head;
 
     const { data } = await octokit().rest.checks.listForRef({
       owner,
       ref: sha,
       repo
     });
+
+    // The normal Actions poll only keeps recent runs. PR checks need a separate
+    // request because a PR can still point at an older commit. GitHub filters
+    // this endpoint by the exact commit SHA, so rows and check totals describe
+    // the same revision in normal and filtered views.
+    const github = octokit();
+    let workflowRuns: Run[] = [];
+    try {
+      workflowRuns = await github.paginate(github.rest.actions.listWorkflowRunsForRepo, {
+        head_sha: sha,
+        owner,
+        per_page: 100,
+        repo
+      });
+    } catch (error) {
+      // Workflow rows are extra detail. Keep checks, review, and merge actions
+      // usable when the Actions history endpoint has a temporary failure.
+      log.warn('Failed to fetch workflow runs for PR head', error);
+    }
 
     // GitHub returns every check run for the head SHA, including stale ones a
     // re-run (or a superseding push) replaced — an old "cancelled"/"failure" run
@@ -407,11 +433,13 @@ ipcMain.handle('git:api:getPRChecks', async (_, id: string, prNumber: number) =>
     // One GraphQL round-trip for the things REST can't give us: unresolved
     // review conversations (GitHub blocks merge on these), and whether auto-merge
     // is available / already armed for this PR.
+    let mergeable = pr.mergeable ?? null;
+    let mergeableState = toMergeableState(pr.mergeable_state);
     let unresolvedComments = 0;
     let unresolvedThreads: { avatarUrl: string; count: number; login: string; path: null | string }[] = [];
     let autoMergeAllowed = false;
     let autoMergeEnabled = false;
-    let allowedMergeMethods: ('merge' | 'rebase' | 'squash')[] = [];
+    let allowedMergeMethods: MergeMethod[] = [];
     try {
       const gql = await octokit().graphql<{
         repository: {
@@ -419,6 +447,8 @@ ipcMain.handle('git:api:getPRChecks', async (_, id: string, prNumber: number) =>
           mergeCommitAllowed: boolean;
           pullRequest: {
             autoMergeRequest: null | { enabledAt: string };
+            mergeable: 'CONFLICTING' | 'MERGEABLE' | 'UNKNOWN';
+            mergeStateStatus: string;
             reviewThreads: {
               nodes: {
                 comments: { nodes: { author: null | { avatarUrl: string; login: string } }[]; totalCount: number };
@@ -439,6 +469,8 @@ ipcMain.handle('git:api:getPRChecks', async (_, id: string, prNumber: number) =>
             mergeCommitAllowed
             rebaseMergeAllowed
             pullRequest(number: $num) {
+              mergeable
+              mergeStateStatus
               reviewThreads(first: 100) {
                 nodes {
                   isResolved
@@ -457,6 +489,8 @@ ipcMain.handle('git:api:getPRChecks', async (_, id: string, prNumber: number) =>
         { num: prNumber, owner, repo }
       );
       const gqlPr = gql.repository.pullRequest;
+      mergeable = gqlPr.mergeable === 'MERGEABLE' ? true : gqlPr.mergeable === 'CONFLICTING' ? false : null;
+      mergeableState = toMergeableState(gqlPr.mergeStateStatus);
       const unresolved = gqlPr.reviewThreads.nodes.filter((t) => !t.isResolved);
       unresolvedComments = unresolved.length;
       unresolvedThreads = unresolved.map((t) => ({
@@ -503,12 +537,13 @@ ipcMain.handle('git:api:getPRChecks', async (_, id: string, prNumber: number) =>
       autoMergeEnabled,
       behind,
       checks,
-      mergeable: pr.mergeable ?? null,
-      mergeableState: pr.mergeable_state ?? 'unknown',
+      mergeable,
+      mergeableState,
       review,
       success: true,
       unresolvedComments,
-      unresolvedThreads
+      unresolvedThreads,
+      workflowRuns
     };
   } catch (e) {
     log.error(e);

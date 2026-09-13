@@ -5,10 +5,12 @@ import { type IgnoredWorkflow } from './ignoredWorkflow';
 
 export type AppSettings = {
   aiProvider?: AIProviderFilter;
+  anthropicUsageWorkspaceId?: string;
   claudeAccountDir?: string; // config dir of the account shown in the usage footer
   claudeEnabled: boolean; // legacy storage key: master switch for AI analytics
   clipboardDownscale: boolean; // header toggle: auto-shrink clipboard images > 1200px for Claude Code
   codexAccountDir?: string; // Codex profile shown in AI analytics
+  cursorAccountDir?: string; // Cursor account shown in AI analytics
   editors: FoundEditor[];
   fetchInterval: number;
   gitHubActions: {
@@ -23,6 +25,7 @@ export type AppSettings = {
     pollInterval: number;
   };
   gitHubToken?: string;
+  openAIUsageProjectId?: string;
   selectedEditor?: FoundEditor;
   selectedShell?: FoundShell<string>;
   shells: FoundShell<string>[];

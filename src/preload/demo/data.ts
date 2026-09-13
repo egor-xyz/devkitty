@@ -3,6 +3,8 @@
 // Every object here is a plain literal shaped to match exactly the fields the
 // renderer reads (see the demo bridge). No network, no git, no GitHub.
 
+import { type PRReview, type PRReviewer, type PRStatus, type PRThread } from 'types/gitHub';
+
 import { avatars } from './avatars';
 
 const now = Date.now();
@@ -523,33 +525,35 @@ export const checksByPR: Record<number, any[]> = {
 // comment threads, and auto-merge availability. Shaped so the demo cards show
 // off every PR action added today — approve badge, green Merge split button,
 // Update branch, Resolve conflicts, unresolved-comment pill, Auto-merge on.
-const reviewer = (u: any, state: string, reReviewRequested = false) => ({
+type PRChecksOptions = {
+  allowedMergeMethods?: PRStatus['allowedMergeMethods'];
+  approvedBy?: string[];
+  autoMergeAllowed?: boolean;
+  autoMergeEnabled?: boolean;
+  behind?: boolean;
+  changesRequestedBy?: string[];
+  mergeableState?: PRStatus['mergeableState'];
+  number: number;
+  reviewers?: PRReviewer[];
+  reviewState?: PRReview['state'];
+  unresolvedThreads?: PRThread[];
+};
+
+const reviewer = (u: { avatar_url: string; login: string }, state: PRReviewer['state'], reReviewRequested = false): PRReviewer => ({
   avatarUrl: u.avatar_url,
   login: u.login,
   reReviewRequested,
   state
 });
 
-const thread = (u: any, count: number, path: null | string) => ({
+const thread = (u: { avatar_url: string; login: string }, count: number, path: null | string): PRThread => ({
   avatarUrl: u.avatar_url,
   count,
   login: u.login,
   path
 });
 
-const prChecks = (o: {
-  allowedMergeMethods?: string[];
-  approvedBy?: string[];
-  autoMergeAllowed?: boolean;
-  autoMergeEnabled?: boolean;
-  behind?: boolean;
-  changesRequestedBy?: string[];
-  mergeableState?: string;
-  number: number;
-  reviewers?: any[];
-  reviewState?: 'approved' | 'changes_requested' | null;
-  unresolvedThreads?: any[];
-}) => {
+const prChecks = (o: PRChecksOptions): PRStatus => {
   const threads = o.unresolvedThreads ?? [];
   const ms = o.mergeableState ?? 'clean';
   return {
@@ -570,12 +574,13 @@ const prChecks = (o: {
           }
         : null,
     success: true,
-    unresolvedComments: threads.reduce((n: number, t: any) => n + t.count, 0),
-    unresolvedThreads: threads
+    unresolvedComments: threads.reduce((count, current) => count + current.count, 0),
+    unresolvedThreads: threads,
+    workflowRuns: []
   };
 };
 
-export const prChecksByPR: Record<number, any> = {
+export const prChecksByPR: Record<number, PRStatus> = {
   // The "everything" card for UI testing: approved badge + green Merge split
   // button + 10 labels (→ +7 overflow pill) + unresolved-comment pill, all at
   // once. unstable state (a check pending) still counts as mergeable.
@@ -656,20 +661,9 @@ export const conflictFilesByPR: Record<number, string[]> = {
 // ---- AI usage ----
 const model = (m: string, tokens: number) => ({ model: m, tokens });
 
-const usageWindow = (o: { models: any[]; pct: number; resetsInMs: number; tokens: number }) => ({
-  active: true,
-  cap: Math.round(o.tokens / Math.max(o.pct, 0.01)),
-  models: o.models,
-  pct: o.pct,
-  reported: true,
-  resetsAt: now + o.resetsInMs,
-  startsAt: now - (7 * day - o.resetsInMs),
-  tokens: o.tokens
-});
-
 export const claudeAccounts = [
-  { dir: '/Users/egor/.claude', email: 'evgeni.s@trustic.ai', label: 'claude', org: 'TegoAI', plan: 'Max 20×' },
-  { dir: '/Users/egor/.claude-b', email: 'egor@personal.dev', label: 'claude-b', org: 'Personal', plan: 'Max 5×' }
+  { dir: '/Users/egor/.claude', email: 'evgeni.s@trustic.ai', label: 'claude', org: 'TegoAI', plan: 'Max 20×', provider: 'claude' as const },
+  { dir: '/Users/egor/.claude-b', email: 'egor@personal.dev', label: 'claude-b', org: 'Personal', plan: 'Max 5×', provider: 'claude' as const }
 ];
 
 export const codexAccounts = [
@@ -677,53 +671,51 @@ export const codexAccounts = [
   { dir: '/Users/demo/.codex-work', email: 'developer@work.example', label: 'codex-work', plan: 'Business', provider: 'codex' as const }
 ];
 
+export const cursorAccounts = [
+  { dir: '/Users/demo/Library/Application Support/Cursor/User/globalStorage', email: 'developer@example.com', label: 'Cursor', plan: 'Pro', provider: 'cursor' as const, surfaces: ['ide', 'cli', 'grok-bot'] as const }
+];
+
 export const codexUsageByDir = Object.fromEntries(codexAccounts.map((account, index) => [account.dir, {
   account,
   computedAt: now,
-  fiveHour: {
-    ...usageWindow({ models: [model('gpt-5.4', 840_000 + index * 220_000)], pct: index ? 0.67 : 0.24, resetsInMs: 3 * hour + 18 * min, tokens: 840_000 + index * 220_000 }),
-    durationMs: 5 * hour
-  },
+  metrics: [
+    { id: 'seven-day' as const, label: '7D', models: [model('gpt-5.4', 5_200_000 + index * 900_000)], scope: 'account' as const, source: 'local' as const, title: '7D', tokens: 5_200_000 + index * 900_000, tokensPeriod: 'trailing-window' as const },
+    { id: 'month' as const, label: 'Org API', scope: 'organization' as const, source: 'admin' as const, title: 'Current month API tokens', tokens: 12_800_000 }
+  ],
   reportedAt: now - 3 * min,
-  week: {
-    ...usageWindow({ models: [model('gpt-5.4', 5_200_000 + index * 900_000)], pct: index ? 0.81 : 0.38, resetsInMs: 4 * day + 2 * hour, tokens: 5_200_000 + index * 900_000 }),
-    durationMs: 7 * day
-  }
+  spend: { amountUsdMicros: 18_420_000, label: 'Org API spend' as const, period: 'calendar-month' as const, scope: 'organization' as const, source: 'admin' as const }
 }]));
 
-export const usageByDir: Record<string, any> = {
+export const usageByDir = {
   '/Users/egor/.claude': {
     account: claudeAccounts[0],
     computedAt: now,
-    fiveHour: usageWindow({
-      models: [model('claude-opus-4-8', 1_840_000), model('claude-sonnet-5', 620_000)],
-      pct: 0.41,
-      resetsInMs: 2 * hour + 12 * min,
-      tokens: 2_460_000
-    }),
+    metrics: [
+      { id: 'five-hour' as const, label: '5H', models: [model('claude-opus-4-8', 1_840_000), model('claude-sonnet-5', 620_000)], percent: 0.41, resetsAt: now + 2 * hour + 12 * min, scope: 'account' as const, source: 'provider' as const, title: '5H', tokens: 2_460_000, tokensPeriod: 'provider-period' as const },
+      { id: 'seven-day' as const, label: '7D', models: [model('claude-opus-4-8', 18_400_000), model('claude-sonnet-5', 9_100_000)], percent: 0.63, resetsAt: now + 3 * day + 6 * hour, scope: 'account' as const, source: 'provider' as const, title: '7D', tokens: 27_500_000, tokensPeriod: 'provider-period' as const }
+    ],
     reportedAt: now - 4 * min,
-    week: usageWindow({
-      models: [model('claude-opus-4-8', 18_400_000), model('claude-sonnet-5', 9_100_000), model('claude-haiku-4-5', 2_300_000)],
-      pct: 0.63,
-      resetsInMs: 3 * day + 6 * hour,
-      tokens: 29_800_000
-    })
   },
   '/Users/egor/.claude-b': {
     account: claudeAccounts[1],
     computedAt: now,
-    fiveHour: usageWindow({
-      models: [model('claude-sonnet-5', 340_000)],
-      pct: 0.18,
-      resetsInMs: 1 * hour + 5 * min,
-      tokens: 340_000
-    }),
+    metrics: [
+      { id: 'five-hour' as const, label: '5H', models: [model('claude-sonnet-5', 340_000)], percent: 0.18, resetsAt: now + 1 * hour + 5 * min, scope: 'account' as const, source: 'provider' as const, title: '5H', tokens: 340_000, tokensPeriod: 'provider-period' as const },
+      { id: 'seven-day' as const, label: '7D', models: [model('claude-opus-4-8', 6_200_000), model('claude-sonnet-5', 4_400_000)], percent: 0.82, resetsAt: now + 2 * day + hour, scope: 'account' as const, source: 'provider' as const, title: '7D', tokens: 10_600_000, tokensPeriod: 'provider-period' as const }
+    ],
     reportedAt: now - 9 * min,
-    week: usageWindow({
-      models: [model('claude-opus-4-8', 6_200_000), model('claude-sonnet-5', 4_400_000)],
-      pct: 0.82,
-      resetsInMs: 2 * day + 1 * hour,
-      tokens: 10_600_000
-    })
+  }
+};
+
+export const cursorUsageByDir = {
+  [cursorAccounts[0].dir]: {
+    account: cursorAccounts[0],
+    computedAt: now,
+    metrics: [
+      { id: 'cursor-models' as const, label: 'Cursor', percent: 0.46, resetsAt: now + 12 * day, scope: 'account' as const, source: 'provider' as const, title: 'Cursor Models' },
+      { id: 'other-models' as const, label: 'Other', percent: 0.21, resetsAt: now + 12 * day, scope: 'account' as const, source: 'provider' as const, title: 'Other Models' }
+    ],
+    reportedAt: now - min,
+    spend: { amountUsdMicros: 7_300_000, label: 'On-demand' as const, limitUsdMicros: 50_000_000, period: 'billing-cycle' as const, qualifier: 'Shared by Cursor and Grok Bot.', scope: 'account' as const, source: 'provider' as const }
   }
 };

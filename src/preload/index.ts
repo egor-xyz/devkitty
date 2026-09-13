@@ -1,11 +1,10 @@
 import { contextBridge, ipcRenderer, type IpcRendererEvent } from 'electron';
 import { type AIAccount, type AIDetection, type AIUsage } from 'types/aiUsage';
 import { type AppSettings } from 'types/appSettings';
-import { type ClaudeAccount, type ClaudeDetection, type ClaudeUsage } from 'types/claudeUsage';
 import { type DownscaleResult } from 'types/clipboard';
 import { type FoundEditor } from 'types/foundEditor';
 import { type FoundShell } from 'types/foundShell';
-import { type pullTypes } from 'types/gitHub';
+import { type PRStatusResult, type pullTypes } from 'types/gitHub';
 import { type ThemeSource } from 'types/Modal';
 import { type GitStatus, type Project } from 'types/project';
 import { type Settings } from 'types/settings';
@@ -14,13 +13,18 @@ import { type WindowAppearance, type WindowOpacity } from 'types/window';
 import { demoBridge } from './demo/bridge';
 
 const bridge = {
+  aiUsageCredentials: {
+    clear: (provider: 'anthropic' | 'openai'): Promise<void> => ipcRenderer.invoke('aiUsageCredentials:clear', provider),
+    set: (provider: 'anthropic' | 'openai', value: string): Promise<void> => ipcRenderer.invoke('aiUsageCredentials:set', provider, value),
+    status: (): Promise<{ anthropic: boolean; openai: boolean }> => ipcRenderer.invoke('aiUsageCredentials:status')
+  },
   analytics: {
     trackEvent: (name: string, params?: Record<string, unknown>) => ipcRenderer.invoke('analytics:trackEvent', name, params)
   },
   claude: {
-    accounts: (): Promise<ClaudeAccount[]> => ipcRenderer.invoke('claude:accounts'),
-    detect: (): Promise<ClaudeDetection> => ipcRenderer.invoke('claude:detect'),
-    usage: (account: ClaudeAccount): Promise<ClaudeUsage> => ipcRenderer.invoke('claude:usage', account)
+    accounts: (): Promise<AIAccount[]> => ipcRenderer.invoke('claude:accounts'),
+    detect: (): Promise<AIDetection> => ipcRenderer.invoke('claude:detect'),
+    usage: (account: AIAccount): Promise<AIUsage> => ipcRenderer.invoke('claude:usage', account)
   },
   clipboard: {
     onDownscaled: (callback: (result: DownscaleResult) => void) => {
@@ -33,6 +37,11 @@ const bridge = {
     accounts: (): Promise<AIAccount[]> => ipcRenderer.invoke('codex:accounts'),
     detect: (): Promise<AIDetection> => ipcRenderer.invoke('codex:detect'),
     usage: (account: AIAccount): Promise<AIUsage> => ipcRenderer.invoke('codex:usage', account)
+  },
+  cursor: {
+    accounts: (): Promise<AIAccount[]> => ipcRenderer.invoke('cursor:accounts'),
+    detect: (): Promise<AIDetection> => ipcRenderer.invoke('cursor:detect'),
+    usage: (account: AIAccount): Promise<AIUsage> => ipcRenderer.invoke('cursor:usage', account)
   },
   darkMode: {
     on: (callback: (event: IpcRendererEvent, theme: ThemeSource) => void) => ipcRenderer.on('theme-changed', callback),
@@ -55,7 +64,7 @@ const bridge = {
     getJobs: (id: string, runId: number) => ipcRenderer.invoke('git:api:getJobs', id, runId),
     getOpenPulls: (id: string) => ipcRenderer.invoke('git:api:getOpenPulls', id),
     getPinnedRuns: (id: string) => ipcRenderer.invoke('git:api:getPinnedRuns', id),
-    getPRChecks: (id: string, prNumber: number) => ipcRenderer.invoke('git:api:getPRChecks', id, prNumber),
+    getPRChecks: (id: string, prNumber: number): Promise<PRStatusResult> => ipcRenderer.invoke('git:api:getPRChecks', id, prNumber),
     getPulls: (id: string, type: (typeof pullTypes)[number]) => ipcRenderer.invoke('git:api:getPulls', id, type),
     getRuns: (id: string, deep = false) => ipcRenderer.invoke('git:api:getRuns', id, deep),
     getRunsPage: (id: string, page: number, branch?: string) => ipcRenderer.invoke('git:api:getRunsPage', id, page, branch),

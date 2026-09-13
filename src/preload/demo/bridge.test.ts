@@ -7,7 +7,7 @@ vi.mock('electron', () => ({
 }));
 
 import { demoBridge } from './bridge';
-import { claudeAccounts, codexAccounts, runsById } from './data';
+import { claudeAccounts, codexAccounts, cursorAccounts, runsById } from './data';
 
 describe('demoBridge gitAPI', () => {
   beforeEach(() => {
@@ -81,8 +81,8 @@ describe('demoBridge claude', () => {
     const usage = await demoBridge.claude.usage({ dir: claudeAccounts[0].dir });
 
     expect(usage.account).toMatchObject({ dir: claudeAccounts[0].dir });
-    expect(usage.fiveHour.active).toBe(true);
-    expect(usage.week.tokens).toBeGreaterThan(0);
+    expect(usage.metrics).toHaveLength(2);
+    expect(usage.metrics[1].tokens).toBeGreaterThan(0);
   });
 
   it('falls back to the first account usage for an unknown account dir', async () => {
@@ -97,8 +97,27 @@ describe('demoBridge codex', () => {
     expect(await demoBridge.codex.accounts()).toEqual(codexAccounts);
     const usages = await Promise.all(codexAccounts.map((account) => demoBridge.codex.usage(account)));
     expect(usages.map((usage) => usage.account.dir)).toEqual(codexAccounts.map((account) => account.dir));
-    expect(usages[0].week.pct).not.toBe(usages[1].week.pct);
+    expect(usages[0].account.dir).not.toBe(usages[1].account.dir);
     await expect(demoBridge.codex.usage({ dir: claudeAccounts[0].dir })).rejects.toThrow('Unknown Codex profile');
+  });
+});
+
+describe('demoBridge cursor', () => {
+  it('shows IDE, CLI, and Grok as one Cursor account', async () => {
+    expect(await demoBridge.cursor.accounts()).toEqual(cursorAccounts);
+    const usage = await demoBridge.cursor.usage(cursorAccounts[0]);
+    expect(usage.metrics.map(({ id }) => id)).toEqual(['cursor-models', 'other-models']);
+    expect(usage.spend?.label).toBe('On-demand');
+    expect(usage.account.surfaces).toEqual(['ide', 'cli', 'grok-bot']);
+  });
+});
+
+describe('demoBridge AI usage credentials', () => {
+  it('returns saved status without returning a key', async () => {
+    await demoBridge.aiUsageCredentials.set('openai', 'sk-admin-demo');
+    expect(await demoBridge.aiUsageCredentials.status()).toEqual({ anthropic: false, openai: true });
+    await demoBridge.aiUsageCredentials.clear('openai');
+    expect(await demoBridge.aiUsageCredentials.status()).toEqual({ anthropic: false, openai: false });
   });
 });
 
