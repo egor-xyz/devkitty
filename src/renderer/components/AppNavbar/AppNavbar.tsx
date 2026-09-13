@@ -16,12 +16,21 @@ import { cn } from 'renderer/utils/cn';
 import { formatBytes } from 'renderer/utils/formatBytes';
 import { requestRefresh } from 'renderer/utils/refresh';
 import { type DownscaleResult } from 'types/clipboard';
+import { type UpdateState } from 'types/update';
 
 import { ClaudeMark } from '../ClaudeUsage';
 import { ShinyText } from '../ShinyText';
 import { AlwaysOnTopControl } from './AlwaysOnTopControl';
 import { SettingsGearIcon } from './NavIcons';
 import { SearchInput } from './SearchInput';
+
+const updateButton = {
+  available: { ariaLabel: 'Update', icon: 'download', label: 'Update' },
+  downloading: { ariaLabel: 'Downloading update', icon: 'download', label: 'Downloading…' },
+  error: { ariaLabel: 'Retry update', icon: 'warning-sign', label: 'Retry update' },
+  idle: { ariaLabel: '', icon: 'download', label: '' },
+  ready: { ariaLabel: 'Restart to update', icon: 'refresh', label: 'Restart to update' }
+} as const;
 
 const ClipboardDownscaleDetail = ({ enabled, last }: { enabled: boolean; last: DownscaleResult | null }) => (
   <div className="w-[268px] p-4 text-bp-dark-gray-1 dark:text-bp-light-gray-5">
@@ -115,6 +124,43 @@ export const AppNavbar = () => {
   const searchRef = useRef<HTMLInputElement>(null);
   const onHome = useLocation().pathname === '/';
   const [lastDownscale, setLastDownscale] = useState<DownscaleResult | null>(null);
+  const [updateState, setUpdateState] = useState<UpdateState>({ status: 'idle' });
+
+  useEffect(() => {
+    let active = true;
+    let receivedState = false;
+    const unsubscribe = window.bridge.updater.onState((state: UpdateState) => {
+      receivedState = true;
+      if (active) setUpdateState(state);
+    });
+
+    void window.bridge.updater.getState().then((state: UpdateState) => {
+      if (active && !receivedState) setUpdateState(state);
+    }).catch((error: unknown) => {
+      if (active && !receivedState) {
+        setUpdateState({ error: String(error), status: 'error' });
+      }
+    });
+
+    return () => {
+      active = false;
+      unsubscribe();
+    };
+  }, []);
+
+  const runUpdate = () => {
+    if (updateState.status === 'ready') {
+      void window.bridge.updater.install().catch((error: unknown) => {
+        setUpdateState((state) => ({ ...state, error: String(error), status: 'error' }));
+      });
+      return;
+    }
+
+    setUpdateState((state) => ({ ...state, error: undefined, status: 'downloading' }));
+    void window.bridge.updater.download().catch((error: unknown) => {
+      setUpdateState((state) => ({ ...state, error: String(error), status: 'error' }));
+    });
+  };
 
   // Toast whenever the main process shrinks a clipboard image, wherever the
   // toggle was flipped from.
@@ -265,6 +311,25 @@ export const AppNavbar = () => {
           minimal
           onClick={refresh}
         />
+
+        {updateState.status !== 'idle' && (updateState.status !== 'error' || Boolean(updateState.version)) && (
+          <Button
+            aria-label={updateButton[updateState.status].ariaLabel}
+            className={cn(
+              'shrink-0 !text-xs',
+              isSunset
+                ? '!text-[#F5854A] hover:!bg-white/10'
+                : 'text-bp-blue-2 dark:text-bp-blue-4'
+            )}
+            disabled={updateState.status === 'downloading'}
+            icon={updateButton[updateState.status].icon}
+            minimal
+            onClick={runUpdate}
+            title={updateState.status === 'error' ? updateState.error || 'Update failed. Try again.' : undefined}
+          >
+            {updateButton[updateState.status].label}
+          </Button>
+        )}
 
         <Navbar.Divider className="shrink-0" />
 

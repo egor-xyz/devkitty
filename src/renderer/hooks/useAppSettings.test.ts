@@ -7,6 +7,7 @@ describe('useAppSettings', () => {
     vi.clearAllMocks();
 
     useAppSettings.setState({
+      autoUpdate: true,
       editors: [],
       fetchInterval: 10000,
       gitHubActions: {
@@ -26,6 +27,10 @@ describe('useAppSettings', () => {
   describe('initial state', () => {
     it('should have default fetchInterval of 10000', () => {
       expect(useAppSettings.getState().fetchInterval).toBe(10000);
+    });
+
+    it('should download updates automatically by default', () => {
+      expect(useAppSettings.getInitialState().autoUpdate).toBe(true);
     });
 
     it('should have empty editors array', () => {
@@ -76,8 +81,15 @@ describe('useAppSettings', () => {
       expect(window.bridge.settings.set).toHaveBeenCalledWith('appSettings', { clipboardDownscale: true }, undefined);
     });
 
+    it('should persist the auto update choice via bridge', () => {
+      useAppSettings.getState().set({ autoUpdate: false });
+
+      expect(useAppSettings.getState().autoUpdate).toBe(false);
+      expect(window.bridge.settings.set).toHaveBeenCalledWith('appSettings', { autoUpdate: false }, undefined);
+    });
+
     it('should pass safe flag when encrypting', () => {
-      useAppSettings.getState().set({ gitHubToken: 'my-token' } as any, true);
+      useAppSettings.getState().set({ gitHubToken: 'my-token' }, true);
 
       expect(window.bridge.settings.set).toHaveBeenCalledWith('appSettings', { gitHubToken: 'my-token' }, true);
     });

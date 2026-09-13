@@ -7,6 +7,7 @@
 
 import { ipcRenderer } from 'electron';
 import { type PRStatus } from 'types/gitHub';
+import { type UpdateState } from 'types/update';
 import { type WindowOpacity } from 'types/window';
 
 import {
@@ -169,6 +170,12 @@ export const demoBridge = {
   },
   sticker: {
     add: noop
+  },
+  updater: {
+    download: noop,
+    getState: () => Promise.resolve({ status: 'idle' as const }),
+    install: noop,
+    onState: (_callback: (state: UpdateState) => void) => () => {}
   },
   window: {
     getPinnedAppearance: () => ipcRenderer.invoke('window:getPinnedAppearance'),

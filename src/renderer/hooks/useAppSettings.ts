@@ -6,6 +6,7 @@ type Actions = {
 };
 
 export const useAppSettings = create<Actions & AppSettings>((set) => ({
+  autoUpdate: true,
   claudeEnabled: true,
   clipboardDownscale: false,
   editors: [],
@@ -39,11 +40,11 @@ export const useIsSunset = () => useAppSettings((s) => (s.theme ?? 'sunset') ===
 
 (async () => {
   const state = await window.bridge.settings.get('appSettings');
-  useAppSettings.setState(state);
+  useAppSettings.setState({ autoUpdate: true, ...state });
 })();
 
 (async () => {
-  window.bridge.settings.onAppSettings((_, value) => {
-    useAppSettings.setState(value);
+  window.bridge.settings.onAppSettings((_: unknown, value: AppSettings) => {
+    useAppSettings.setState({ autoUpdate: true, ...value });
   });
 })();

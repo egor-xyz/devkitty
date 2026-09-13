@@ -1,0 +1,31 @@
+appId: app.devkitty.update-test
+productName: Devkitty Update Test
+copyright: Copyright © 2024 Devkitty
+
+extraMetadata:
+  name: devkitty-update-test
+
+mac:
+  category: public.app-category.developer-tools
+  icon: icons/icon.icon
+  hardenedRuntime: true
+  target:
+    - target: zip
+      arch: [arm64]
+  entitlements: entitlements.mas.plist
+  entitlementsInherit: entitlements.mas.plist
+  notarize: true
+
+publish:
+  provider: generic
+  url: http://127.0.0.1:8765/
+
+directories:
+  output: dist/update-test
+  buildResources: icons
+
+asar: true
+
+files:
+  - out/**/*
+  - package.json

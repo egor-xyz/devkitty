@@ -3,6 +3,11 @@ name: Release
 on:
   workflow_dispatch:
     inputs:
+      signed_update_test:
+        type: boolean
+        description: 'Build isolated signed update test artifacts only'
+        required: true
+        default: false
       bump:
         type: choice
         description: 'Bump version'
@@ -24,11 +29,12 @@ on:
         default: false
 
 concurrency:
-  group: ${{ github.event.repository.name }}-release
+  group: ${{ github.event.repository.name }}-${{ github.event.inputs.signed_update_test == 'true' && 'signed-update-test' || 'release' }}
   cancel-in-progress: true
 
 jobs:
   release:
+    if: github.event.inputs.signed_update_test != 'true' && github.ref != 'refs/heads/test/signed-updater'
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v5
@@ -97,5 +103,90 @@ jobs:
           tag: v${{ steps.version.outputs.new_tag }}
           name: Release v${{ steps.version.outputs.new_tag }}
           body: ${{ steps.changelog.outputs.changelog }}
-          artifacts: 'dist/*.zip'
+          artifacts: 'dist/*.zip,dist/latest-mac.yml'
           draft: ${{ github.event.inputs.draft }}
+
+  signed_update_test:
+    if: github.event.inputs.signed_update_test == 'true' && github.ref == 'refs/heads/test/signed-updater'
+    runs-on: macos-26
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+
+      - name: Enable pnpm
+        run: corepack enable pnpm
+
+      - uses: actions/setup-node@v6
+        with:
+          cache: pnpm
+          check-latest: true
+          node-version-file: .nvmrc
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Import signing certificate
+        run: |
+          chmod +x add-osx-cert.sh
+          ./add-osx-cert.sh
+        env:
+          CERTIFICATE_OSX_APPLICATION: ${{ secrets.CERTIFICATE_OSX_APPLICATION }}
+          CERTIFICATE_PASSWORD: ${{ secrets.CERTIFICATE_PASSWORD }}
+
+      - name: Build app code
+        run: pnpm build
+
+      - name: Build signed baseline and candidate
+        shell: bash
+        run: |
+          set -euo pipefail
+          for version in 99.0.0 99.0.1; do
+            pnpm exec electron-builder --mac --arm64 --publish never \
+              --config electron-builder.update-test.yml \
+              --config.extraMetadata.version="$version" \
+              --config.directories.output="dist/update-test-$version"
+          done
+        env:
+          APPLE_ID: ${{ secrets.APPLE_ID }}
+          APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_ID_PASSWORD }}
+          APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - name: Verify signed apps and update feed
+        shell: bash
+        run: |
+          set -euo pipefail
+          for version in 99.0.0 99.0.1; do
+            output="dist/update-test-$version"
+            app="$output/mac-arm64/Devkitty Update Test.app"
+            test -d "$app"
+            codesign --verify --deep --strict --verbose=2 "$app"
+            spctl --assess --type execute --verbose "$app"
+            test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Contents/Info.plist")" = 'app.devkitty.update-test'
+            test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleShortVersionString' "$app/Contents/Info.plist")" = "$version"
+            ruby -ryaml -e 'feed = YAML.load_file(ARGV.fetch(0)); abort "Wrong update feed" unless feed["provider"] == "generic" && feed["url"] == "http://127.0.0.1:8765/" && feed["updaterCacheDirName"] == "devkitty-update-test-updater"' "$app/Contents/Resources/app-update.yml"
+            test "$(find "$output" -maxdepth 1 -name '*.zip' -type f | wc -l | tr -d ' ')" = 1
+          done
+          ruby -ryaml -rdigest <<'RUBY'
+          dir = 'dist/update-test-99.0.1'
+          info = YAML.load_file(File.join(dir, 'latest-mac.yml'))
+          abort 'Wrong candidate feed' unless info['version'] == '99.0.1' && info['files'].is_a?(Array) && info['files'].length == 1
+          zip = info['files'][0]['url']
+          abort 'Wrong candidate ZIP' unless zip.is_a?(String) && zip.end_with?('.zip') && zip.include?('99.0.1') && info['path'] == zip
+          checksum = Digest::SHA512.file(File.join(dir, zip)).base64digest
+          abort 'Wrong candidate checksum' unless info['files'][0]['sha512'] == checksum && info['sha512'] == checksum
+          RUBY
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: devkitty-update-test-baseline
+          path: dist/update-test-99.0.0/*.zip
+          if-no-files-found: error
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: devkitty-update-test-candidate
+          path: |
+            dist/update-test-99.0.1/*.zip
+            dist/update-test-99.0.1/latest-mac.yml
+          if-no-files-found: error

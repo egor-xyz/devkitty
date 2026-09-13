@@ -2,7 +2,6 @@ import { is } from '@electron-toolkit/utils';
 import { app, BrowserWindow, nativeTheme, session, shell } from 'electron';
 import log from 'electron-log';
 import path from 'path';
-import { updateElectronApp } from 'update-electron-app';
 
 import { fixPath } from './libs/fixPath';
 
@@ -10,16 +9,12 @@ fixPath();
 
 import { track } from './analytics';
 import './ipcs';
+import { startUpdater } from './ipcs/ipcUpdater';
 import { initClipboardDownscale, stopClipboardWatcher } from './libs/clipboardDownscale';
 import { updateEditorsAndShells } from './libs/integrations/integrations';
 import { loadWindowState, saveBounds, WINDOW_MINIMUM_SIZE } from './libs/window';
 
 log.initialize({ preload: true, spyRendererConsole: false });
-
-updateElectronApp({
-  logger: log,
-  updateInterval: '5 minutes'
-});
 
 app.name = 'Devkitty';
 
@@ -80,6 +75,7 @@ app.on('ready', async () => {
   if (isDev) await installReactDevTools();
 
   createWindow();
+  startUpdater();
   initClipboardDownscale();
   void track('app_launch');
 });

@@ -5,7 +5,7 @@ import { StyleSelector } from '../StyleSelector';
 import { ThemeSelector } from '../ThemeSelector';
 
 export const SettingsAppearance = () => {
-  const { set, showLogo, showWorktrees } = useAppSettings();
+  const { autoUpdate, set, showLogo, showWorktrees } = useAppSettings();
 
   return (
     <div className="select-none p-4">
@@ -16,6 +16,20 @@ export const SettingsAppearance = () => {
       <Divider className="my-6!" />
       <h3 className="text-sm font-semibold mt-4 mb-2.5">Style</h3>
       <StyleSelector />
+      <Divider className="my-6!" />
+      <h3 className="text-sm font-semibold mt-4 mb-2.5">Updates</h3>
+
+      <Switch
+        checked={autoUpdate ?? true}
+        className="mt-4 mb-1"
+        label="Auto update"
+        onChange={() => set({ autoUpdate: !(autoUpdate ?? true) })}
+      />
+
+      <p className="text-xs text-bp-gray-1 dark:text-bp-gray-4">
+        Download updates in the background. You choose when to restart. Turn this off to download with Update in the top bar.
+      </p>
+
       <Divider className="my-6!" />
       <h3 className="text-sm font-semibold mt-4 mb-2.5">Git</h3>
 

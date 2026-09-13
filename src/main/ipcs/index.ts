@@ -13,3 +13,4 @@ import './ipcClaude';
 import './ipcCodex';
 import './ipcCursor';
 import './ipcWindow';
+import './ipcUpdater';
