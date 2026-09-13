@@ -83,6 +83,18 @@ jobs:
         env:
           CSC_IDENTITY_AUTO_DISCOVERY: false
 
+      - name: Verify packaged runtime dependencies
+        if: github.event.inputs.dry_run != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          archives=()
+          while IFS= read -r -d '' archive; do
+            archives+=("$archive")
+          done < <(find dist -type f -path '*/Contents/Resources/app.asar' -print0)
+          test "${#archives[@]}" -gt 0
+          node scripts/check-packaged-deps.cjs "${archives[@]}"
+
       - name: Generate changelog
         id: changelog
         uses: mathieudutour/github-tag-action@v6.2
@@ -160,6 +172,7 @@ jobs:
             output="dist/update-test-$version"
             app="$output/mac-arm64/Devkitty Update Test.app"
             test -d "$app"
+            node scripts/check-packaged-deps.cjs "$app/Contents/Resources/app.asar"
             codesign --verify --deep --strict --verbose=2 "$app"
             spctl --assess --type execute --verbose "$app"
             test "$(/usr/libexec/PlistBuddy -c 'Print CFBundleIdentifier' "$app/Contents/Info.plist")" = 'app.devkitty.update-test'
