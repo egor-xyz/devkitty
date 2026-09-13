@@ -26,6 +26,9 @@ type Props = {
   paged?: boolean;
   project: Project;
   runs: Run[];
+  // PR checks need this fold even when the PR is shown on the root checkout.
+  // Root branch history does not: its finished runs stay reachable in History.
+  showDoneFold?: boolean;
   stickyTop?: number;
 };
 
@@ -42,6 +45,7 @@ export const GroupRuns: FC<Props> = ({
   paged = true,
   project,
   runs,
+  showDoneFold,
   stickyTop
 }) => {
   const [showDone, setShowDone] = useState(false);
@@ -49,6 +53,7 @@ export const GroupRuns: FC<Props> = ({
   const { gitHubActions } = useAppSettings();
   const { query } = useFilter();
   const { active, done, pinned } = splitDoneRuns(runs, gitHubActions.pinnedWorkflows);
+  const canShowDoneFold = showDoneFold ?? !isRoot;
 
   // How many runs a page of the active list holds. Loading more grows it a page
   // at a time, with no ceiling; hiding drops back to exactly one page.
@@ -102,7 +107,7 @@ export const GroupRuns: FC<Props> = ({
 
       {/* The root card omits the "Passing checks" fold — its finished runs are
           already reachable through History. Per-branch groups keep it. */}
-      {done.length > 0 && !isRoot && (
+      {done.length > 0 && canShowDoneFold && (
         <FoldChip
           icon="tick-circle"
           label="Passing checks"
@@ -139,7 +144,7 @@ export const GroupRuns: FC<Props> = ({
   const hasChips = Boolean(
     remainingActive > 0 ||
       shownActive.length > step ||
-      done.length > 0 ||
+      (done.length > 0 && canShowDoneFold) ||
       (paged && moreHistory && onLoadOlder) ||
       footer
   );

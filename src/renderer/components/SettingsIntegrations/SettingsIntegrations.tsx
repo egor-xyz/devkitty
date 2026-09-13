@@ -1,14 +1,38 @@
 import { Button, Divider, InputGroup, MenuItem, Switch } from '@blueprintjs/core';
 import { Select } from '@blueprintjs/select';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { appToaster } from 'renderer/utils/appToaster';
 import { type FoundEditor } from 'types/foundEditor';
 import { type FoundShell } from 'types/foundShell';
 
 export const SettingsIntegrations = () => {
-  const { claudeEnabled, editors, gitHubToken, selectedEditor, selectedShell, set, shells, telemetry } = useAppSettings();
+  const { anthropicUsageWorkspaceId, claudeEnabled, editors, gitHubToken, openAIUsageProjectId, selectedEditor, selectedShell, set, shells, telemetry } = useAppSettings();
   const [token, setToken] = useState(gitHubToken ?? '');
+  const [adminKeys, setAdminKeys] = useState({ anthropic: '', openai: '' });
+  const [savedKeys, setSavedKeys] = useState({ anthropic: false, openai: false });
+
+  useEffect(() => {
+    void window.bridge.aiUsageCredentials.status().then(setSavedKeys);
+  }, []);
+
+  const saveAdminKey = async (provider: 'anthropic' | 'openai') => {
+    const value = adminKeys[provider].trim();
+    if (!value) return;
+    try {
+      await window.bridge.aiUsageCredentials.set(provider, value);
+      setAdminKeys((current) => ({ ...current, [provider]: '' }));
+      setSavedKeys((current) => ({ ...current, [provider]: true }));
+      (await appToaster).show({ icon: 'tick', intent: 'success', message: 'Admin key saved' });
+    } catch (error) {
+      (await appToaster).show({ icon: 'error', intent: 'danger', message: error instanceof Error ? error.message : 'Could not save admin key' });
+    }
+  };
+
+  const clearAdminKey = async (provider: 'anthropic' | 'openai') => {
+    await window.bridge.aiUsageCredentials.clear(provider);
+    setSavedKeys((current) => ({ ...current, [provider]: false }));
+  };
 
   // Dev-only demo mode. The preload picks the fake bridge at startup from this
   // flag, so flipping it has to reload the window to take effect.
@@ -133,7 +157,84 @@ export const SettingsIntegrations = () => {
           onChange={() => set({ claudeEnabled: !(claudeEnabled ?? true) })}
         />
 
-        <p className="text-xs text-bp-gray-1 dark:text-bp-gray-4">Scan Claude Code and Codex profiles. View either provider with separate account selections.</p>
+        <p className="text-xs text-bp-gray-1 dark:text-bp-gray-4">Scan Claude Code, Codex, and Cursor. Cursor IDE and CLI use one account meter.</p>
+
+        <div className="mt-4 max-w-lg rounded border border-bp-light-gray-1 p-3 dark:border-bp-dark-gray-3">
+          <h4 className="text-sm font-semibold">Optional API cost reports</h4>
+          <p className="mt-1 text-xs text-bp-gray-1 dark:text-bp-gray-4">These admin keys have high access to your group. Devkitty encrypts them. The app never sends them to the screen.</p>
+
+          <div className="mt-3 grid gap-4">
+            <div>
+              <label className="mb-1 block text-xs font-semibold"
+                htmlFor="anthropic-admin-key"
+              >Anthropic Admin API key</label>
+
+              <div className="flex gap-2">
+                <InputGroup autoComplete="off"
+                  id="anthropic-admin-key"
+                  onChange={({ target: { value } }) => setAdminKeys((current) => ({ ...current, anthropic: value }))}
+                  placeholder={savedKeys.anthropic ? 'Saved' : 'sk-ant-admin…'}
+                  type="password"
+                  value={adminKeys.anthropic}
+                />
+
+                <Button disabled={!adminKeys.anthropic.trim()}
+                  onClick={() => void saveAdminKey('anthropic')}
+                  text="Save"
+                />
+
+                {savedKeys.anthropic && <Button onClick={() => void clearAdminKey('anthropic')}
+                  text="Clear"
+                                        />}
+              </div>
+
+              <label className="mb-1 mt-2 block text-xs"
+                htmlFor="anthropic-workspace-id"
+              >Workspace ID (optional)</label>
+
+              <InputGroup id="anthropic-workspace-id"
+                onChange={({ target: { value } }) => set({ anthropicUsageWorkspaceId: value || undefined })}
+                placeholder="All org workspaces"
+                value={anthropicUsageWorkspaceId ?? ''}
+              />
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs font-semibold"
+                htmlFor="openai-admin-key"
+              >OpenAI Admin API key</label>
+
+              <div className="flex gap-2">
+                <InputGroup autoComplete="off"
+                  id="openai-admin-key"
+                  onChange={({ target: { value } }) => setAdminKeys((current) => ({ ...current, openai: value }))}
+                  placeholder={savedKeys.openai ? 'Saved' : 'sk-admin…'}
+                  type="password"
+                  value={adminKeys.openai}
+                />
+
+                <Button disabled={!adminKeys.openai.trim()}
+                  onClick={() => void saveAdminKey('openai')}
+                  text="Save"
+                />
+
+                {savedKeys.openai && <Button onClick={() => void clearAdminKey('openai')}
+                  text="Clear"
+                                     />}
+              </div>
+
+              <label className="mb-1 mt-2 block text-xs"
+                htmlFor="openai-project-id"
+              >Project ID (optional)</label>
+
+              <InputGroup id="openai-project-id"
+                onChange={({ target: { value } }) => set({ openAIUsageProjectId: value || undefined })}
+                placeholder="All org projects"
+                value={openAIUsageProjectId ?? ''}
+              />
+            </div>
+          </div>
+        </div>
       </section>
 
       <section className="mt-4">

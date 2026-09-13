@@ -1,6 +1,7 @@
 import { Alert, Classes } from '@blueprintjs/core';
 import { type IconName } from '@blueprintjs/icons';
 import { type FC, useState } from 'react';
+import { refresh } from 'renderer/services/poller';
 import { type ModalProps } from 'types/Modal';
 
 export type WorkflowAction = 'cancel' | 'rerun' | 'rerun-failed';
@@ -51,9 +52,11 @@ export const WorkflowActionAlert: FC<ModalProps & WorkflowActionAlertProps> = ({
       if (action === 'cancel') {
         await window.bridge.gitAPI.cancelRun(projectId, runId);
       } else if (action === 'rerun') {
-        await window.bridge.gitAPI.rerunWorkflow(projectId, runId);
+        const result = await window.bridge.gitAPI.rerunWorkflow(projectId, runId);
+        if (result.success) refresh(`prChecks:${projectId}:`);
       } else if (action === 'rerun-failed') {
-        await window.bridge.gitAPI.rerunFailedJobs(projectId, runId);
+        const result = await window.bridge.gitAPI.rerunFailedJobs(projectId, runId);
+        if (result.success) refresh(`prChecks:${projectId}:`);
       }
     } finally {
       setLoading(false);

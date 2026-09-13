@@ -2,6 +2,8 @@ import { Tooltip } from '@blueprintjs/core';
 import { cn } from 'renderer/utils/cn';
 import { type AIAccount } from 'types/aiUsage';
 
+const providerName = (provider: AIAccount['provider']) => ({ claude: 'Claude', codex: 'Codex', cursor: 'Cursor' })[provider];
+
 type Props = {
   accounts: AIAccount[];
   activeDir?: string;
@@ -20,7 +22,7 @@ export const AccountPills = ({ accounts, activeDir, onSelect }: Props) => {
           placement="top"
         >
           <button
-            aria-label={`${account.provider === 'claude' ? 'Claude' : 'Codex'} account ${i + 1}: ${account.email ?? account.label}`}
+            aria-label={`${providerName(account.provider)} account ${i + 1}: ${account.email ?? account.label}`}
             aria-pressed={account.dir === activeDir}
             className={cn(
               'app-region-no-drag flex h-6 w-6 shrink-0 items-center justify-center rounded-md text-[11px] font-semibold tabular-nums focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500',

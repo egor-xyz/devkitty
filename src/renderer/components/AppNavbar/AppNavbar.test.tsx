@@ -8,7 +8,7 @@ const longBranch = 'HERO-10251/this-is-a-very-long-focused-worktree-name-that-mu
 vi.mock('renderer/hooks/useAIUsage', () => ({
   useAIUsage: (selector: (state: object) => unknown) => selector({
     accounts: [{ dir: '/test', provider: 'claude' }],
-    detection: { claude: { installed: true }, codex: { installed: false } },
+    detection: { claude: { installed: true }, codex: { installed: false }, cursor: { installed: true, surfaces: ['ide', 'cli'] } },
     discoveryErrors: {},
     init: vi.fn()
   })

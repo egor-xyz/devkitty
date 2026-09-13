@@ -97,7 +97,7 @@ export const AppNavbar = () => {
   const { themeSource, toggleDarkMode } = useDarkMode();
   const { claudeEnabled, clipboardDownscale, set, showClaudeUsage, showLogo } = useAppSettings();
   const isSunset = useIsSunset();
-  const aiAvailable = useAIUsage((s) => s.accounts.length > 0 || s.detection.claude.installed || s.detection.codex.installed || Object.keys(s.discoveryErrors).length > 0);
+  const aiAvailable = useAIUsage((s) => s.accounts.length > 0 || Object.values(s.detection).some(({ installed }) => installed) || Object.keys(s.discoveryErrors).length > 0);
   const refreshAIUsage = useAIUsage((s) => s.init);
   const { addProject, projects } = useProjects();
   const { clear } = useFilter();

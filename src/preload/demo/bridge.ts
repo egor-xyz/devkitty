@@ -6,6 +6,7 @@
 // through IPC so the pin works while demoing.
 
 import { ipcRenderer } from 'electron';
+import { type PRStatus } from 'types/gitHub';
 import { type WindowOpacity } from 'types/window';
 
 import {
@@ -14,6 +15,8 @@ import {
   codexAccounts,
   codexUsageByDir,
   conflictFilesByPR,
+  cursorAccounts,
+  cursorUsageByDir,
   gitStatusById,
   groups,
   jobsForRun,
@@ -50,18 +53,45 @@ const store: Record<string, any> = {
   projects,
   themeSource: 'system'
 };
+const savedAdminKeys = { anthropic: false, openai: false };
 
-const ok = (extra: Record<string, any> = {}) => Promise.resolve({ success: true, ...extra });
+const ok = <T extends Record<string, unknown> = Record<never, never>>(extra: T = {} as T) => Promise.resolve({ success: true as const, ...extra });
 const noop = () => Promise.resolve();
+const emptyPRStatus: PRStatus = {
+  allowedMergeMethods: [],
+  autoMergeAllowed: false,
+  autoMergeEnabled: false,
+  behind: false,
+  checks: [],
+  mergeable: false,
+  mergeableState: 'unknown',
+  review: null,
+  success: true,
+  unresolvedComments: 0,
+  unresolvedThreads: [],
+  workflowRuns: []
+};
 
 export const demoBridge = {
+  aiUsageCredentials: {
+    clear: (provider: 'anthropic' | 'openai') => {
+      savedAdminKeys[provider] = false;
+      return Promise.resolve();
+    },
+    set: (provider: 'anthropic' | 'openai', value: string) => {
+      if (!value.trim()) return Promise.reject(new Error('Invalid admin key'));
+      savedAdminKeys[provider] = true;
+      return Promise.resolve();
+    },
+    status: () => Promise.resolve({ ...savedAdminKeys })
+  },
   analytics: {
     trackEvent: noop
   },
   claude: {
     accounts: () => Promise.resolve(claudeAccounts),
     detect: () => Promise.resolve({ installed: true, version: '2.0.14' }),
-    usage: (account: { dir: string }) => Promise.resolve(usageByDir[account.dir] ?? usageByDir[claudeAccounts[0].dir])
+    usage: (account: { dir: string }) => Promise.resolve(usageByDir[account.dir as keyof typeof usageByDir] ?? usageByDir[claudeAccounts[0].dir as keyof typeof usageByDir])
   },
   clipboard: {
     onDownscaled: () => () => {}
@@ -72,6 +102,14 @@ export const demoBridge = {
     usage: (account: { dir: string }) => {
       const usage = codexUsageByDir[account.dir];
       return usage ? Promise.resolve(usage) : Promise.reject(new Error('Unknown Codex profile'));
+    }
+  },
+  cursor: {
+    accounts: () => Promise.resolve(cursorAccounts),
+    detect: () => Promise.resolve({ installed: true, surfaces: ['ide', 'cli', 'grok-bot'], version: '1.7.0' }),
+    usage: (account: { dir: string }) => {
+      const usage = cursorUsageByDir[account.dir as keyof typeof cursorUsageByDir];
+      return usage ? Promise.resolve(usage) : Promise.reject(new Error('Unknown Cursor account'));
     }
   },
   darkMode: {
@@ -94,8 +132,7 @@ export const demoBridge = {
     getJobs: (_id: string, runId: number) => ok({ jobs: jobsForRun(runId) }),
     getOpenPulls: (id: string) => ok({ pulls: pullsById[id] ?? [] }),
     getPinnedRuns: () => ok({ runs: [] }),
-    getPRChecks: (_id: string, prNumber: number) =>
-      Promise.resolve(prChecksByPR[prNumber] ?? { allowedMergeMethods: [], autoMergeAllowed: false, autoMergeEnabled: false, behind: false, checks: [], mergeable: false, mergeableState: 'unknown', review: null, success: true, unresolvedComments: 0, unresolvedThreads: [] }),
+    getPRChecks: (_id: string, prNumber: number) => Promise.resolve(prChecksByPR[prNumber] ?? emptyPRStatus),
     getPulls: (id: string, type: string) => {
       const nums = type === 'author' ? authoredPRNumbers[id] : type === 'review-requested' ? reviewRequestedPRNumbers[id] : [];
       return ok({ pulls: (nums ?? []).map((number) => ({ number })) });

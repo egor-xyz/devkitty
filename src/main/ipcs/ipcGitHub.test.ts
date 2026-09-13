@@ -4,6 +4,7 @@ const handlers: Record<string, (...args: any[]) => any> = {};
 
 const mockOctokitInstance = {
   graphql: vi.fn(),
+  paginate: vi.fn(),
   rest: {
     actions: {
       cancelWorkflowRun: vi.fn(),
@@ -51,13 +52,15 @@ vi.mock('electron', () => ({
 vi.mock('electron-log', () => ({
   default: {
     error: vi.fn(),
-    info: vi.fn()
+    info: vi.fn(),
+    warn: vi.fn()
   }
 }));
 
 vi.mock('octokit', () => ({
   Octokit: class MockOctokit {
     graphql = mockOctokitInstance.graphql;
+    paginate = mockOctokitInstance.paginate;
     rest = mockOctokitInstance.rest;
   }
 }));
@@ -520,7 +523,7 @@ describe('ipcGitHub', () => {
       head: { sha: 'sha123' },
       mergeable: true,
       mergeable_state: 'clean',
-      requested_reviewers: [],
+      requested_reviewers: [] as { avatar_url: string; login: string }[],
       user: { login: 'author' }
     };
 
@@ -529,8 +532,16 @@ describe('ipcGitHub', () => {
         autoMergeAllowed: true,
         mergeCommitAllowed: true,
         pullRequest: {
-          autoMergeRequest: null,
-          reviewThreads: { nodes: [] },
+          autoMergeRequest: null as null | { enabledAt: string },
+          mergeable: 'MERGEABLE',
+          mergeStateStatus: 'CLEAN',
+          reviewThreads: {
+            nodes: [] as {
+              comments: { nodes: { author: null | { avatarUrl: string; login: string } }[]; totalCount: number };
+              isResolved: boolean;
+              path: null | string;
+            }[]
+          },
           viewerCanEnableAutoMerge: true
         },
         rebaseMergeAllowed: true,
@@ -542,6 +553,8 @@ describe('ipcGitHub', () => {
       mockOctokitInstance.rest.checks.listForRef.mockResolvedValue({
         data: { check_runs: [{ conclusion: 'success', id: 1, name: 'build', status: 'completed' }] }
       });
+      mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockResolvedValue({ data: { workflow_runs: [] } });
+      mockOctokitInstance.paginate.mockResolvedValue([]);
       mockOctokitInstance.rest.pulls.listReviews.mockResolvedValue({ data: [] });
       mockOctokitInstance.graphql.mockResolvedValue(cleanGraphql);
       mockOctokitInstance.rest.repos.compareCommits.mockResolvedValue({ data: { behind_by: 0 } });
@@ -572,6 +585,53 @@ describe('ipcGitHub', () => {
       expect(result.behind).toBe(false);
       expect(result.mergeable).toBe(true);
       expect(result.mergeableState).toBe('clean');
+    });
+
+    it('should return full workflow runs for the exact PR head SHA', async () => {
+      const workflowRuns = [
+        { conclusion: 'success', head_sha: 'sha123', id: 99, name: 'Build', status: 'completed' }
+      ];
+      mockOctokitInstance.rest.pulls.get.mockResolvedValue({ data: basePr });
+      mockOctokitInstance.paginate.mockResolvedValue(workflowRuns);
+
+      const result = await handlers['git:api:getPRChecks']({}, 'proj-1', 42);
+
+      expect(mockOctokitInstance.paginate).toHaveBeenCalledWith(
+        mockOctokitInstance.rest.actions.listWorkflowRunsForRepo,
+        {
+          head_sha: 'sha123',
+          owner: 'egor-xyz',
+          per_page: 100,
+          repo: 'devkitty'
+        }
+      );
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.workflowRuns).toEqual(workflowRuns);
+    });
+
+    it('should fetch every page of exact-head workflow runs', async () => {
+      const workflowRuns = Array.from({ length: 101 }, (_, id) => ({ head_sha: 'sha123', id }));
+      mockOctokitInstance.rest.pulls.get.mockResolvedValue({ data: basePr });
+      mockOctokitInstance.paginate.mockResolvedValue(workflowRuns);
+
+      const result = await handlers['git:api:getPRChecks']({}, 'proj-1', 42);
+
+      expect(result.success).toBe(true);
+      if (result.success) expect(result.workflowRuns).toHaveLength(101);
+    });
+
+    it('should keep PR status when exact-head workflow runs fail to load', async () => {
+      mockOctokitInstance.rest.pulls.get.mockResolvedValue({ data: basePr });
+      mockOctokitInstance.paginate.mockRejectedValue(new Error('Actions history unavailable'));
+
+      const result = await handlers['git:api:getPRChecks']({}, 'proj-1', 42);
+
+      expect(result.success).toBe(true);
+      if (result.success) {
+        expect(result.checks).toEqual([{ conclusion: 'success', id: 1, name: 'build', status: 'completed' }]);
+        expect(result.mergeableState).toBe('clean');
+        expect(result.workflowRuns).toEqual([]);
+      }
     });
 
     it('should report changes_requested as the overall state when any reviewer requests changes', async () => {
@@ -631,6 +691,21 @@ describe('ipcGitHub', () => {
       expect(result.unresolvedThreads).toEqual([]);
       expect(result.autoMergeAllowed).toBe(false);
       expect(result.allowedMergeMethods).toEqual([]);
+      expect(result.mergeable).toBe(true);
+      expect(result.mergeableState).toBe('clean');
+    });
+
+    it('should use the later GraphQL merge state instead of stale REST merge state', async () => {
+      mockOctokitInstance.rest.pulls.get.mockResolvedValue({
+        data: { ...basePr, mergeable: false, mergeable_state: 'blocked' }
+      });
+      mockOctokitInstance.graphql.mockResolvedValue(cleanGraphql);
+
+      const result = await handlers['git:api:getPRChecks']({}, 'proj-1', 42);
+
+      expect(result.success).toBe(true);
+      expect(result.mergeable).toBe(true);
+      expect(result.mergeableState).toBe('clean');
     });
 
     it('should surface unresolved review threads from GraphQL', async () => {

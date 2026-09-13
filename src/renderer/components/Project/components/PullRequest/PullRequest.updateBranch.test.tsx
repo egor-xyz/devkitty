@@ -1,7 +1,8 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen, waitFor } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { __reset } from 'renderer/services/poller/coordinator';
-import { type Pull } from 'types/gitHub';
+import { type PRStatus, type Pull } from 'types/gitHub';
+import { type Project } from 'types/project';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PullRequest } from './PullRequest';
@@ -21,17 +22,23 @@ const basePull = {
   user: { avatar_url: 'https://example.com/avatar.png', login: 'octocat', type: 'User' }
 } as unknown as Pull;
 
-const checksResponse = (behind: boolean) => ({
+const project = { id: 'project-1' } as Project;
+
+type ChecksResponseOptions = Partial<Pick<PRStatus, 'behind' | 'checks'>> & Pick<PRStatus, 'mergeableState'>;
+
+const checksResponse = ({ behind = false, checks = [], mergeableState }: ChecksResponseOptions): PRStatus => ({
   allowedMergeMethods: ['merge'],
   autoMergeAllowed: false,
   autoMergeEnabled: false,
   behind,
-  checks: [],
-  mergeableState: 'clean',
-  review: null,
+  checks,
+  mergeable: mergeableState === 'clean',
+  mergeableState,
+  review: { approvedBy: [], changesRequestedBy: [], reviewers: [], state: null },
   success: true,
   unresolvedComments: 0,
-  unresolvedThreads: []
+  unresolvedThreads: [],
+  workflowRuns: []
 });
 
 // The whole "Update branch" split button (including this caret) is gated on
@@ -51,53 +58,73 @@ describe('PullRequest "Update branch" button', () => {
     vi.clearAllMocks();
   });
 
-  it('clears the button once GitHub settles, polling past the stale post-update read that still reports behind', async () => {
-    // Mount sees behind: true. The update succeeds, but GitHub's first recompute
-    // still says behind (eventual consistency); the coordinator's hot re-poll
-    // burst (mutate) keeps reading until one reports it caught up.
+  it('moves from Update branch through blocked checks and restores Merge', async () => {
+    // The update succeeds. GitHub then reports completed branch sync but still
+    // has a pending check and a blocked merge state. A later read is clean.
     vi.mocked(window.bridge.gitAPI.getPRChecks)
-      .mockResolvedValueOnce(checksResponse(true)) // mount
-      .mockResolvedValueOnce(checksResponse(true)) // first re-poll: still stale
-      .mockResolvedValue(checksResponse(false)); // later polls: settled
+      .mockResolvedValueOnce(checksResponse({ behind: true, mergeableState: 'clean' })) // mount
+      .mockResolvedValueOnce(checksResponse({ checks: [{ conclusion: null, id: 1, name: 'CI', status: 'in_progress' }], mergeableState: 'blocked' }))
+      .mockResolvedValue(checksResponse({ mergeableState: 'clean' }));
     vi.mocked(window.bridge.gitAPI.updateBranch).mockResolvedValue({ success: true });
 
-    render(<PullRequest projectId="project-1"
+    render(<PullRequest isRoot={false}
+      onRefresh={vi.fn()}
+      project={project}
       pull={basePull}
+      stickyTop={55}
            />);
 
     expect(await screen.findByText('Update branch')).toBeTruthy();
 
     fireEvent.click(screen.getByText('Update branch'));
 
-    // Polls run behind the spinner; the affordance disappears only after a read
-    // actually reports the branch is no longer behind.
-    await waitFor(() => expect(caret()).toBeNull(), { timeout: 5000 });
-
-    // And it stays gone — no flicker back to "Update branch".
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    await screen.findByText('Merge blocked', {}, { timeout: 5000 });
     expect(caret()).toBeNull();
+    await screen.findByText('Create a merge commit', {}, { timeout: 5000 });
+    expect(screen.queryByText('Merge blocked')).toBeNull();
 
     expect(window.bridge.gitAPI.updateBranch).toHaveBeenCalledWith('project-1', 1, 'merge');
-    // mount + at least two re-polls (the stale one, then the settled one).
+    // Mount plus the blocked and clean reads.
     expect(vi.mocked(window.bridge.gitAPI.getPRChecks).mock.calls.length).toBeGreaterThanOrEqual(3);
   });
 
-  it('keeps the button while GitHub still reports the branch behind, instead of falsely hiding it', async () => {
-    // GitHub never catches up. The button must NOT lie and hide — it stays
-    // until a real "not behind" read (or the next refresh).
-    vi.mocked(window.bridge.gitAPI.getPRChecks).mockResolvedValue(checksResponse(true));
-    vi.mocked(window.bridge.gitAPI.updateBranch).mockResolvedValue({ success: true });
+  it('shows Merge blocked for a stable blocked PR', async () => {
+    vi.mocked(window.bridge.gitAPI.getPRChecks).mockResolvedValue(checksResponse({ mergeableState: 'blocked' }));
 
-    render(<PullRequest projectId="project-1"
+    render(<PullRequest isRoot={false}
+      onRefresh={vi.fn()}
+      project={project}
       pull={basePull}
+      stickyTop={55}
            />);
 
-    expect(await screen.findByText('Update branch')).toBeTruthy();
-    fireEvent.click(screen.getByText('Update branch'));
+    expect(await screen.findByText('Merge blocked')).toBeTruthy();
+    expect(screen.queryByText('Update branch')).toBeNull();
+    expect(screen.queryByText('Create a merge commit')).toBeNull();
+  });
 
-    // Past the first re-poll (which still reports behind) the affordance is
-    // still present — a spinner, not a vanished button.
-    await new Promise((resolve) => setTimeout(resolve, 1200));
-    expect(caret()).not.toBeNull();
+  it('starts only one mutation while a merge is pending', async () => {
+    let resolveMerge: (result: { success: true }) => void;
+    const mergePending = new Promise<{ success: true }>((resolve) => { resolveMerge = resolve; });
+    vi.mocked(window.bridge.gitAPI.getPRChecks).mockResolvedValue(checksResponse({ mergeableState: 'clean' }));
+    vi.mocked(window.bridge.gitAPI.mergePR).mockReturnValue(mergePending);
+
+    render(<PullRequest isRoot={false}
+      onRefresh={vi.fn()}
+      project={project}
+      pull={basePull}
+      stickyTop={55}
+           />);
+
+    const mergeButton = await screen.findByText('Create a merge commit');
+    fireEvent.click(mergeButton);
+    fireEvent.click(mergeButton);
+
+    expect(window.bridge.gitAPI.mergePR).toHaveBeenCalledTimes(1);
+    expect(mergeButton.getAttribute('disabled')).not.toBeNull();
+    await act(async () => {
+      resolveMerge!({ success: true });
+      await mergePending;
+    });
   });
 });

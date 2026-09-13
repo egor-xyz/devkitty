@@ -1,38 +1,24 @@
-import { type ClaudeAccount, type ClaudeUsage, type ClaudeUsageWindow } from 'types/claudeUsage';
+import { type AIUsage } from 'types/aiUsage';
+import { type ClaudeAccount } from 'types/claudeUsage';
 
-import { readReportedUsage, type ReportedWindow } from './lastUsage';
+import { buildLocalMetric } from '../aiUsage/localMetric';
+import { readReportedUsage } from './lastUsage';
 import { readEntries } from './transcripts';
-import { computeFiveHour, computeWeek, FIVE_HOURS_MS, modelBreakdown, SEVEN_DAYS_MS, tokensInWindow, type UsageEntry } from './usage';
+import { FIVE_HOURS_MS, SEVEN_DAYS_MS } from './usage';
 
-// Prefer the real server-reported %/reset; keep the local estimate's cap/start
-// as fallback. Tokens and models are always the local trailing-window figures —
-// they describe what you actually ran, alongside whichever % we trust.
-const mergeWindow = (
-  reported: ReportedWindow | undefined,
-  estimate: ClaudeUsageWindow,
-  entries: UsageEntry[],
-  now: number,
-  windowMs: number
-): ClaudeUsageWindow => ({
-  active: reported ? true : estimate.active,
-  cap: estimate.cap,
-  models: modelBreakdown(entries, now - windowMs, now),
-  pct: reported ? reported.pct : estimate.pct,
-  reported: Boolean(reported),
-  resetsAt: reported ? reported.resetsAt : estimate.resetsAt,
-  startsAt: estimate.startsAt,
-  tokens: tokensInWindow(entries, now, windowMs)
-});
-
-export const buildUsage = async (account: ClaudeAccount, now: number): Promise<ClaudeUsage> => {
+export const buildUsage = async (account: ClaudeAccount, now: number): Promise<AIUsage> => {
   const reported = readReportedUsage(account.dir);
   const entries = await readEntries(account.dir, now);
+  const fiveHour = reported?.fiveHour && reported.fiveHour.resetsAt > now ? reported.fiveHour : undefined;
+  const sevenDay = reported?.sevenDay && reported.sevenDay.resetsAt > now ? reported.sevenDay : undefined;
 
   return {
-    account,
+    account: { ...account, provider: 'claude' },
     computedAt: now,
-    fiveHour: mergeWindow(reported?.fiveHour, computeFiveHour(entries, now), entries, now, FIVE_HOURS_MS),
-    reportedAt: reported?.capturedAt,
-    week: mergeWindow(reported?.sevenDay, computeWeek(entries, now), entries, now, SEVEN_DAYS_MS)
+    metrics: [
+      buildLocalMetric({ entries, id: 'five-hour', now, reported: fiveHour, title: '5H', windowMs: FIVE_HOURS_MS }),
+      buildLocalMetric({ entries, id: 'seven-day', now, reported: sevenDay, title: '7D', windowMs: SEVEN_DAYS_MS })
+    ],
+    reportedAt: fiveHour || sevenDay ? reported?.capturedAt : undefined,
   };
 };
