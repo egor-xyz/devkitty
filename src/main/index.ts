@@ -8,6 +8,7 @@ import { fixPath } from './libs/fixPath';
 fixPath();
 
 import { track } from './analytics';
+import { installAppMenu } from './appMenu';
 import './ipcs';
 import { startUpdater } from './ipcs/ipcUpdater';
 import { initClipboardDownscale, stopClipboardWatcher } from './libs/clipboardDownscale';
@@ -76,6 +77,7 @@ app.on('ready', async () => {
 
   createWindow();
   startUpdater();
+  installAppMenu();
   initClipboardDownscale();
   void track('app_launch');
 });
