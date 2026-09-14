@@ -1,4 +1,6 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+
+const platformDescriptor = Object.getOwnPropertyDescriptor(process, 'platform')!;
 
 const mock = vi.hoisted(() => {
   const listeners: Record<string, (...args: unknown[]) => void> = {};
@@ -37,6 +39,7 @@ const setup = async (autoUpdate?: boolean): Promise<void> => {
 
 describe('ipcUpdater', () => {
   beforeEach(() => {
+    Object.defineProperty(process, 'platform', { ...platformDescriptor, value: 'darwin' });
     vi.resetModules();
     vi.clearAllMocks();
     for (const key of Object.keys(mock.handlers)) delete mock.handlers[key];
@@ -45,6 +48,11 @@ describe('ipcUpdater', () => {
     mock.updater.autoInstallOnAppQuit = true;
     mock.app.isPackaged = true;
     vi.spyOn(globalThis, 'setInterval').mockReturnValue(1 as unknown as ReturnType<typeof setInterval>);
+  });
+
+  afterEach(() => {
+    Object.defineProperty(process, 'platform', platformDescriptor);
+    vi.restoreAllMocks();
   });
 
   it('checks only after startup, with auto-download off and no native dialog', async () => {
@@ -68,6 +76,16 @@ describe('ipcUpdater', () => {
     await mock.handlers['updater:download']();
     expect(mock.updater.checkForUpdates).not.toHaveBeenCalled();
     expect(mock.updater.downloadUpdate).not.toHaveBeenCalled();
+  });
+
+  it('does not update outside macOS', async () => {
+    Object.defineProperty(process, 'platform', { ...platformDescriptor, value: 'linux' });
+    await setup(false);
+    await mock.handlers['updater:download']();
+    mock.handlers['updater:install']();
+    expect(mock.updater.checkForUpdates).not.toHaveBeenCalled();
+    expect(mock.updater.downloadUpdate).not.toHaveBeenCalled();
+    expect(mock.updater.quitAndInstall).not.toHaveBeenCalled();
   });
 
   it('downloads once on click, then installs only after the downloaded event', async () => {
