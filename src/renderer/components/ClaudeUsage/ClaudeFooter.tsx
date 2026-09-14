@@ -159,7 +159,7 @@ export const ClaudeFooter = ({ onHeightChange }: { onHeightChange?: (height: num
                     note={index === 0 ? cursorNote : undefined}
                     now={now}
                     provider={provider}
-                    reportedAt={metric.source === 'admin' ? usage.computedAt : usage.reportedAt}
+                    reportedAt={usage.reportedAt}
                   />
                 </div>
               ))}

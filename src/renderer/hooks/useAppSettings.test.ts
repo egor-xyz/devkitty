@@ -18,9 +18,7 @@ describe('useAppSettings', () => {
         notifications: true,
         pinnedWorkflows: []
       },
-      shells: [],
-      showLogo: true,
-      showWorktrees: true
+      shells: []
     });
   });
 
@@ -39,14 +37,6 @@ describe('useAppSettings', () => {
 
     it('should have empty shells array', () => {
       expect(useAppSettings.getState().shells).toEqual([]);
-    });
-
-    it('should have showLogo enabled by default', () => {
-      expect(useAppSettings.getState().showLogo).toBe(true);
-    });
-
-    it('should have showWorktrees enabled by default', () => {
-      expect(useAppSettings.getState().showWorktrees).toBe(true);
     });
 
     it('should have sunset theme by default', () => {
@@ -95,10 +85,10 @@ describe('useAppSettings', () => {
     });
 
     it('should allow partial updates', () => {
-      useAppSettings.getState().set({ showLogo: false });
+      useAppSettings.getState().set({ theme: 'default' });
 
       const state = useAppSettings.getState();
-      expect(state.showLogo).toBe(false);
+      expect(state.theme).toBe('default');
       expect(state.fetchInterval).toBe(10000);
     });
   });

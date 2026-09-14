@@ -24,11 +24,6 @@ const emptyPRStatus: PRStatus = {
 // The stores (useProjects, useGroups, useAppSettings, useDarkMode) have
 // top-level IIFEs that call window.bridge.* at import time
 const mockBridge = {
-  aiUsageCredentials: {
-    clear: vi.fn(),
-    set: vi.fn(),
-    status: vi.fn().mockResolvedValue({ anthropic: false, openai: false })
-  },
   claude: {
     accounts: vi.fn().mockResolvedValue([]),
     detect: vi.fn().mockResolvedValue({ installed: false }),

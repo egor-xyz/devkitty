@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
-import { cleanup, render, screen } from '@testing-library/react';
+import { cleanup, fireEvent, render, screen } from '@testing-library/react';
+import { type ReactNode } from 'react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useFilter } from 'renderer/hooks/useFilter';
 import { useFocus } from 'renderer/hooks/useFocus';
@@ -60,14 +61,21 @@ vi.mock('./hooks/useRepoData', () => ({
   }
 }));
 vi.mock('./components/CheckoutCard', () => ({
-  CheckoutCard: ({ worktree }: { worktree: Worktree }) => (
-    <div data-testid={`worktree-${worktree.branch}`}>{worktree.branch}</div>
+  CheckoutCard: ({ trailing, worktree }: { trailing?: ReactNode; worktree: Worktree }) => (
+    <div data-testid={`worktree-${worktree.branch}`}>
+      {worktree.branch}
+      {trailing}
+    </div>
   )
 }));
 vi.mock('./components/Error', () => ({ Error: () => null }));
 vi.mock('./components/FoldDivider', () => ({ FoldDivider: () => null }));
 vi.mock('./components/ProjectMenu', () => ({ ProjectMenu: () => null }));
-vi.mock('./components/QuickActions', () => ({ QuickActions: () => null }));
+vi.mock('./components/QuickActions', () => ({
+  QuickActions: ({ toggleWorktrees }: { toggleWorktrees: () => void }) => (
+    <button onClick={toggleWorktrees}>Toggle worktrees</button>
+  )
+}));
 
 import { Project } from './Project';
 
@@ -81,7 +89,8 @@ describe('Project focused merged worktree', () => {
       setItem: (key: string, value: string) => storage.set(key, value)
     });
     mocks.focusedMerged = true;
-    useAppSettings.setState({ gitHubToken: 'token', showWorktrees: false });
+    // Old stored values may still load, but they no longer control the view.
+    useAppSettings.setState({ gitHubToken: 'token', ...{ showWorktrees: false } });
     useFilter.setState({ query: '' });
     useFocus.setState({ focusedProjectId: 'project-1', focusedWorktreePath: '/repo-focus' });
   });
@@ -100,8 +109,6 @@ describe('Project focused merged worktree', () => {
   });
 
   it('shows only the focused merged worktree while the merged fold is closed', () => {
-    useAppSettings.setState({ showWorktrees: true });
-
     render(<Project project={{ filePath: '/repo', id: 'project-1', name: 'repo' }} />);
 
     expect(screen.getByTestId('worktree-merged-focus')).toBeTruthy();
@@ -119,7 +126,6 @@ describe('Project focused merged worktree', () => {
     rerender(<Project project={{ filePath: '/repo', id: 'project-1', name: 'repo' }} />);
 
     expect(useFocus.getState().focusedWorktreePath).toBe('/repo-focus');
-    expect(useAppSettings.getState().showWorktrees).toBe(false);
     expect(screen.getByTestId('worktree-merged-focus')).toBeTruthy();
     expect(screen.queryByTestId('worktree-merged-other')).toBeNull();
     expect(screen.queryByTestId('worktree-main')).toBeNull();
@@ -143,6 +149,19 @@ describe('Project focused merged worktree', () => {
     expect(screen.getByTestId('worktree-main')).toBeTruthy();
     expect(screen.queryByTestId('worktree-merged-focus')).toBeNull();
     expect(screen.queryByTestId('worktree-merged-other')).toBeNull();
+  });
+
+  it('shows worktrees despite an old hidden setting, and keeps the per-repo toggle', () => {
+    mocks.focusedMerged = false;
+    useFocus.setState({ focusedProjectId: null, focusedWorktreePath: null });
+
+    render(<Project project={{ filePath: '/repo', id: 'project-1', name: 'repo' }} />);
+
+    expect(screen.getByTestId('worktree-merged-focus')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle worktrees' }));
+    expect(screen.queryByTestId('worktree-merged-focus')).toBeNull();
+    fireEvent.click(screen.getByRole('button', { name: 'Toggle worktrees' }));
+    expect(screen.getByTestId('worktree-merged-focus')).toBeTruthy();
   });
 
   it('keeps an exact focused worktree visible when the text filter does not match it', () => {

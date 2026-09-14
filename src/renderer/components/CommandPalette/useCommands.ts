@@ -24,7 +24,6 @@ export const useCommands = (): CommandItem[] => {
     set,
     shells,
     showClaudeUsage,
-    showLogo,
     theme
   } = useAppSettings();
   const { setTheme, themeSource } = useDarkMode();
@@ -71,18 +70,6 @@ export const useCommands = (): CommandItem[] => {
     section: 'Appearance',
     title: `Appearance: ${source.charAt(0).toUpperCase()}${source.slice(1)}`
   }));
-
-  const appearanceToggleItems: CommandItem[] = [
-    {
-      active: showLogo,
-      closeOnPerform: false,
-      icon: 'media',
-      id: 'appearance-toggle-show-logo',
-      perform: () => set({ showLogo: !showLogo }),
-      section: 'Appearance',
-      title: 'Toggle Show logo'
-    }
-  ];
 
   const integrationToggleItems: CommandItem[] = [
     {
@@ -261,7 +248,6 @@ export const useCommands = (): CommandItem[] => {
     ? [
         ...appearanceThemeItems,
         ...appearanceSourceItems,
-        ...appearanceToggleItems,
         ...integrationToggleItems,
         ...developerItems,
         ...editorItems,

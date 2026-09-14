@@ -1,4 +1,4 @@
-import { Button, Classes, Divider, Label, NumericInput, Switch, Tag } from '@blueprintjs/core';
+import { Button, Classes, Label, NumericInput, Switch, Tag } from '@blueprintjs/core';
 import { useState } from 'react';
 import { useAppSettings } from 'renderer/hooks/useAppSettings';
 import { useProjects } from 'renderer/hooks/useProjects';
@@ -73,12 +73,12 @@ export const SettingsActions = () => {
 
   const projectName = (projectId: string) => projects.find(({ id }) => id === projectId)?.name ?? projectId;
 
-  // Fixed height with its own scrollbar: a long list would otherwise push the
-  // rest of the page — and the unhide-all button — out of reach.
+  // A long hidden list scrolls inside its box, while the rest of the settings
+  // page keeps one main scrollbar.
   const listBox = (title: string, items: ListRow[]) =>
     items.length > 0 && (
       <>
-        <h4 className="text-xs font-semibold mt-4 mb-1.5">
+        <h4 className="mt-4 mb-1.5 text-sm leading-5 font-semibold">
           {title} ({items.length})
         </h4>
 
@@ -96,7 +96,7 @@ export const SettingsActions = () => {
               )}
               key={item.rowKey}
             >
-              <span className="text-xs truncate flex-1 min-w-0">{item.label}</span>
+              <span className="min-w-0 flex-1 truncate text-[13px] leading-[19px]">{item.label}</span>
               {item.badge && <Tag minimal>{item.badge}</Tag>}
 
               {item.actions.map((action) => (
@@ -131,59 +131,77 @@ export const SettingsActions = () => {
   }));
 
   return (
-    <div className="select-none p-4">
-      <h2 className="text-xl font-semibold mb-1">GitHub</h2>
-      <Divider />
-      <h3 className="text-sm font-semibold mt-4 mb-2.5">Actions</h3>
+    <div className="select-none">
+      <h2 className="text-[18px] leading-6 font-semibold">GitHub</h2>
 
-      <Label>
-        Amount of actions to show on the main branch
-        <NumericInput
-          max={50}
-          min={1}
-          onValueChange={(value) => set({ gitHubActions: { ...gitHubActions, count: value } })}
-          value={count}
-        />
-      </Label>
+      <div className="mt-5">
+        <h3 className="mb-5 text-sm leading-5 font-semibold">Actions</h3>
 
-      <br />
+        <div className="space-y-6">
+          <div>
+            <Label className="!mb-0">
+              Amount of actions to show on the main branch
+              <NumericInput
+                max={50}
+                min={1}
+                onValueChange={(value) => set({ gitHubActions: { ...gitHubActions, count: value } })}
+                value={count}
+              />
+            </Label>
 
-      <Switch
-        checked={notifications}
-        label="Show macOS notifications when actions complete"
-        onChange={() => set({ gitHubActions: { ...gitHubActions, notifications: !notifications } })}
-      />
+            <p className="mt-1.5 text-[13px] leading-[19px] text-bp-gray-1 dark:text-bp-gray-4">Choose how many recent runs appear on each main branch.</p>
+          </div>
 
-      <Switch
-        checked={ignoreDependabot}
-        label="Ignore Dependabot"
-        onChange={() => set({ gitHubActions: { ...gitHubActions, ignoreDependabot: !ignoreDependabot } })}
-      />
+          <div>
+            <Switch
+              checked={notifications}
+              className="!mb-0"
+              label="Show macOS notifications when actions complete"
+              onChange={() => set({ gitHubActions: { ...gitHubActions, notifications: !notifications } })}
+            />
 
-      <Divider />
+            <p className="mt-1.5 text-[13px] leading-[19px] text-bp-gray-1 dark:text-bp-gray-4">Get a Mac alert when a GitHub action finishes.</p>
+          </div>
 
-      <div className="flex items-center justify-between gap-3 mt-4 mb-2.5">
-        <h3 className="text-sm font-semibold">Hidden</h3>
+          <div>
+            <Switch
+              checked={ignoreDependabot}
+              className="!mb-0"
+              label="Ignore Dependabot"
+              onChange={() => set({ gitHubActions: { ...gitHubActions, ignoreDependabot: !ignoreDependabot } })}
+            />
 
-        {hiddenCount > 0 && (
-          <Button
-            icon="eye-open"
-            onClick={unhideAll}
-            size="small"
-            text={`Unhide all (${hiddenCount})`}
-            variant="minimal"
-          />
-        )}
-      </div>
-
-      {hiddenCount === 0 && (
-        <div className={cn('text-xs', Classes.TEXT_MUTED)}>
-          Nothing is hidden. Hiding a workflow, or a single pull request, lists it here.
+            <p className="mt-1.5 text-[13px] leading-[19px] text-bp-gray-1 dark:text-bp-gray-4">Hide pull requests made by Dependabot.</p>
+          </div>
         </div>
-      )}
 
-      {listBox('Hidden workflows', workflowRows)}
-      {listBox('Hidden pull requests', pullRows)}
+        <div className="mt-6">
+          <div className="mb-1.5 flex items-center justify-between gap-3">
+            <h3 className="text-sm leading-5 font-semibold">Hidden</h3>
+
+            {hiddenCount > 0 && (
+              <Button
+                icon="eye-open"
+                onClick={unhideAll}
+                size="small"
+                text={`Unhide all (${hiddenCount})`}
+                variant="minimal"
+              />
+            )}
+          </div>
+
+          <p className="mb-3 text-[13px] leading-[19px] text-bp-gray-1 dark:text-bp-gray-4">Find hidden workflows and pull requests here. Unhide one or all of them.</p>
+
+          {hiddenCount === 0 && (
+            <div className={cn('text-[13px] leading-[19px]', Classes.TEXT_MUTED)}>
+              Nothing is hidden. Hiding a workflow, or a single pull request, lists it here.
+            </div>
+          )}
+
+          {listBox('Hidden workflows', workflowRows)}
+          {listBox('Hidden pull requests', pullRows)}
+        </div>
+      </div>
     </div>
   );
 };

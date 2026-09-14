@@ -679,11 +679,9 @@ export const codexUsageByDir = Object.fromEntries(codexAccounts.map((account, in
   account,
   computedAt: now,
   metrics: [
-    { id: 'seven-day' as const, label: '7D', models: [model('gpt-5.4', 5_200_000 + index * 900_000)], scope: 'account' as const, source: 'local' as const, title: '7D', tokens: 5_200_000 + index * 900_000, tokensPeriod: 'trailing-window' as const },
-    { id: 'month' as const, label: 'Org API', scope: 'organization' as const, source: 'admin' as const, title: 'Current month API tokens', tokens: 12_800_000 }
+    { id: 'seven-day' as const, label: '7D', models: [model('gpt-5.4', 5_200_000 + index * 900_000)], scope: 'account' as const, source: 'local' as const, title: '7D', tokens: 5_200_000 + index * 900_000, tokensPeriod: 'trailing-window' as const }
   ],
-  reportedAt: now - 3 * min,
-  spend: { amountUsdMicros: 18_420_000, label: 'Org API spend' as const, period: 'calendar-month' as const, scope: 'organization' as const, source: 'admin' as const }
+  reportedAt: now - 3 * min
 }]));
 
 export const usageByDir = {

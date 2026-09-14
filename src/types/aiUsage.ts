@@ -30,8 +30,8 @@ export type AIUsageMetric = {
   models?: { model: string; tokens: number }[];
   percent?: number;
   resetsAt?: number;
-  scope: 'account' | 'organization' | 'project' | 'workspace';
-  source: 'admin' | 'local' | 'provider';
+  scope: 'account';
+  source: 'local' | 'provider';
   title: string;
   tokens?: number;
   tokensPeriod?: 'provider-period' | 'trailing-window';
@@ -39,12 +39,12 @@ export type AIUsageMetric = {
 
 export type AIUsageSpend = {
   amountUsdMicros: number;
-  label: 'On-demand' | 'Org API spend' | 'Project API spend' | 'Workspace API spend';
+  label: 'On-demand';
   limitUsdMicros?: number;
-  period: 'billing-cycle' | 'calendar-month';
+  period: 'billing-cycle';
   qualifier?: string;
-  scope: 'account' | 'organization' | 'project' | 'workspace';
-  source: 'admin' | 'provider';
+  scope: 'account';
+  source: 'provider';
   startsAt?: number;
 };
 

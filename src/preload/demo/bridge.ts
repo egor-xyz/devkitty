@@ -45,8 +45,6 @@ const store: Record<string, any> = {
     selectedShell: { name: 'Terminal', shell: 'Terminal' },
     shells: [{ name: 'Terminal', shell: 'Terminal' }],
     showClaudeUsage: true,
-    showLogo: true,
-    showWorktrees: true,
     theme: 'sunset'
   },
   collapsedGroups: [],
@@ -54,7 +52,6 @@ const store: Record<string, any> = {
   projects,
   themeSource: 'system'
 };
-const savedAdminKeys = { anthropic: false, openai: false };
 
 const ok = <T extends Record<string, unknown> = Record<never, never>>(extra: T = {} as T) => Promise.resolve({ success: true as const, ...extra });
 const noop = () => Promise.resolve();
@@ -74,18 +71,6 @@ const emptyPRStatus: PRStatus = {
 };
 
 export const demoBridge = {
-  aiUsageCredentials: {
-    clear: (provider: 'anthropic' | 'openai') => {
-      savedAdminKeys[provider] = false;
-      return Promise.resolve();
-    },
-    set: (provider: 'anthropic' | 'openai', value: string) => {
-      if (!value.trim()) return Promise.reject(new Error('Invalid admin key'));
-      savedAdminKeys[provider] = true;
-      return Promise.resolve();
-    },
-    status: () => Promise.resolve({ ...savedAdminKeys })
-  },
   analytics: {
     trackEvent: noop
   },
@@ -162,6 +147,7 @@ export const demoBridge = {
   },
   settings: {
     get: (key: string) => Promise.resolve(store[key]),
+    getVersion: (): Promise<string> => ipcRenderer.invoke('settings:getVersion'),
     onAppSettings: noop,
     set: (key: string, value: any) => {
       store[key] = key === 'appSettings' ? { ...store[key], ...value } : value;

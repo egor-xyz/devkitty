@@ -14,11 +14,6 @@ import { type WindowAppearance, type WindowOpacity } from 'types/window';
 import { demoBridge } from './demo/bridge';
 
 const bridge = {
-  aiUsageCredentials: {
-    clear: (provider: 'anthropic' | 'openai'): Promise<void> => ipcRenderer.invoke('aiUsageCredentials:clear', provider),
-    set: (provider: 'anthropic' | 'openai', value: string): Promise<void> => ipcRenderer.invoke('aiUsageCredentials:set', provider, value),
-    status: (): Promise<{ anthropic: boolean; openai: boolean }> => ipcRenderer.invoke('aiUsageCredentials:status')
-  },
   analytics: {
     trackEvent: (name: string, params?: Record<string, unknown>) => ipcRenderer.invoke('analytics:trackEvent', name, params)
   },
@@ -93,6 +88,7 @@ const bridge = {
   },
   settings: {
     get: (key: keyof Settings) => ipcRenderer.invoke('settings:get', key),
+    getVersion: (): Promise<string> => ipcRenderer.invoke('settings:getVersion'),
     onAppSettings: (callback: (event: IpcRendererEvent, value: AppSettings) => void) =>
       ipcRenderer.on('settings:updated', callback),
     set: <K extends keyof Settings>(key: K, value: Partial<Settings[K]>, safe?: boolean) =>

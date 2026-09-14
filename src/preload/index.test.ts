@@ -163,6 +163,11 @@ describe('preload bridge', () => {
       expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('settings:get', 'appSettings');
     });
 
+    it('should invoke settings:getVersion without a key', () => {
+      bridge.settings.getVersion();
+      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('settings:getVersion');
+    });
+
     it('should invoke settings:set with key, value, and optional safe flag', () => {
       bridge.settings.set('appSettings', { fetchInterval: 5000 }, true);
       expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('settings:set', 'appSettings', { fetchInterval: 5000 }, true);

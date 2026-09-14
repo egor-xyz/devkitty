@@ -3,6 +3,9 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 const handlers: Record<string, (...args: any[]) => any> = {};
 
 vi.mock('electron', () => ({
+  app: {
+    getVersion: vi.fn()
+  },
   ipcMain: {
     handle: vi.fn((channel: string, handler: any) => {
       handlers[channel] = handler;
@@ -20,6 +23,8 @@ vi.mock('../settings', () => ({
   }
 }));
 
+import { app } from 'electron';
+
 import { settings } from '../settings';
 
 await import('./ipcSettings');
@@ -29,6 +34,13 @@ const mockSettings = vi.mocked(settings);
 describe('ipcSettings', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+  });
+
+  it('returns the installed app version', () => {
+    vi.mocked(app.getVersion).mockReturnValueOnce('4.5.0');
+
+    expect(handlers['settings:getVersion']({})).toBe('4.5.0');
+    expect(app.getVersion).toHaveBeenCalledOnce();
   });
 
   describe('settings:get', () => {
