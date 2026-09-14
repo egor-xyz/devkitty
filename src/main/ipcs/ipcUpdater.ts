@@ -9,7 +9,7 @@ const { autoUpdater } = electronUpdater;
 const CHECK_INTERVAL_MS = 5 * 60 * 1000;
 const canUpdate = (): boolean => app.isPackaged && process.platform === 'darwin';
 let state: UpdateState = { status: 'idle' };
-let checking = false;
+let checkPromise: Promise<void> | undefined;
 let downloading = false;
 let hasAvailableUpdate = false;
 let installing = false;
@@ -53,21 +53,30 @@ const download = async (): Promise<void> => {
   }
 };
 
-const check = async (): Promise<void> => {
-  if (checking || downloading || state.status === 'ready') return;
-  checking = true;
-  autoUpdater.autoDownload = autoDownloadEnabled();
-  try {
-    await autoUpdater.checkForUpdates();
-    // The setting can change while the check is in flight.
-    if (hasAvailableUpdate && autoDownloadEnabled() && !autoUpdater.autoDownload) {
-      await download();
+const check = (): Promise<void> => {
+  if (checkPromise) return checkPromise;
+  if (downloading || state.status === 'ready') return Promise.resolve();
+  checkPromise = Promise.resolve().then(async () => {
+    try {
+      autoUpdater.autoDownload = autoDownloadEnabled();
+      await autoUpdater.checkForUpdates();
+      // The setting can change while the check is in flight.
+      if (hasAvailableUpdate && autoDownloadEnabled() && !autoUpdater.autoDownload) {
+        await download();
+      }
+    } catch (error) {
+      reportError(error);
     }
-  } catch (error) {
-    reportError(error);
-  } finally {
-    checking = false;
-  }
+  }).finally(() => {
+    checkPromise = undefined;
+  });
+  return checkPromise;
+};
+
+export const checkForUpdatesManually = async (): Promise<'unsupported' | UpdateState> => {
+  if (!canUpdate()) return 'unsupported';
+  await check();
+  return state;
 };
 
 autoUpdater.logger = log;

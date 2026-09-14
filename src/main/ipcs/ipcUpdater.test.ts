@@ -88,6 +88,100 @@ describe('ipcUpdater', () => {
     expect(mock.updater.quitAndInstall).not.toHaveBeenCalled();
   });
 
+  it('checks from the menu and reports when no update is available', async () => {
+    await setup(false);
+    mock.updater.checkForUpdates.mockImplementationOnce(async () => {
+      mock.listeners['update-not-available']();
+    });
+
+    const { checkForUpdatesManually } = await import('./ipcUpdater');
+    expect(await checkForUpdatesManually()).toEqual({ status: 'idle' });
+    expect(mock.updater.checkForUpdates).toHaveBeenCalledTimes(2);
+    expect(mock.updater.downloadUpdate).not.toHaveBeenCalled();
+  });
+
+  it('reports an available update without downloading when auto update is off', async () => {
+    await setup(false);
+    mock.updater.checkForUpdates.mockImplementationOnce(async () => {
+      mock.listeners['update-available']({ version: '4.6.0' });
+    });
+
+    const { checkForUpdatesManually } = await import('./ipcUpdater');
+    expect(await checkForUpdatesManually()).toEqual({ status: 'available', version: '4.6.0' });
+    expect(mock.updater.autoDownload).toBe(false);
+    expect(mock.updater.downloadUpdate).not.toHaveBeenCalled();
+    expect(mock.updater.quitAndInstall).not.toHaveBeenCalled();
+  });
+
+  it('uses the existing automatic download behavior when auto update is on', async () => {
+    await setup(true);
+    mock.updater.checkForUpdates.mockImplementationOnce(async () => {
+      mock.listeners['update-available']({ version: '4.6.0' });
+      mock.listeners['update-downloaded']({ version: '4.6.0' });
+    });
+
+    const { checkForUpdatesManually } = await import('./ipcUpdater');
+    expect(await checkForUpdatesManually()).toEqual({ status: 'ready', version: '4.6.0' });
+    expect(mock.updater.autoDownload).toBe(true);
+    expect(mock.updater.downloadUpdate).not.toHaveBeenCalled();
+    expect(mock.updater.quitAndInstall).not.toHaveBeenCalled();
+  });
+
+  it('waits for a startup check already in flight', async () => {
+    let finishCheck!: () => void;
+    mock.updater.checkForUpdates.mockImplementationOnce(() => new Promise<void>((resolve) => {
+      finishCheck = () => {
+        mock.listeners['update-available']({ version: '4.6.0' });
+        resolve();
+      };
+    }));
+    mock.getSettings.mockReturnValue({ autoUpdate: false });
+    const { checkForUpdatesManually, startUpdater } = await import('./ipcUpdater');
+    startUpdater();
+
+    let settled = false;
+    const result = checkForUpdatesManually().then((value) => {
+      settled = true;
+      return value;
+    });
+    await flush();
+    expect(mock.updater.checkForUpdates).toHaveBeenCalledTimes(1);
+    expect(settled).toBe(false);
+
+    finishCheck();
+    expect(await result).toEqual({ status: 'available', version: '4.6.0' });
+    expect(mock.updater.downloadUpdate).not.toHaveBeenCalled();
+  });
+
+  it('reports unsupported builds and check errors to the menu', async () => {
+    mock.app.isPackaged = false;
+    const { checkForUpdatesManually } = await import('./ipcUpdater');
+    expect(await checkForUpdatesManually()).toBe('unsupported');
+    expect(mock.updater.checkForUpdates).not.toHaveBeenCalled();
+
+    mock.app.isPackaged = true;
+    mock.updater.checkForUpdates.mockRejectedValueOnce(new Error('network error'));
+    expect(await checkForUpdatesManually()).toEqual({ error: 'network error', status: 'error', version: undefined });
+    expect(mock.updater.downloadUpdate).not.toHaveBeenCalled();
+  });
+
+  it('retries after the update check throws before returning a promise', async () => {
+    await setup(false);
+    mock.updater.checkForUpdates.mockImplementationOnce(() => {
+      throw new Error('immediate error');
+    });
+    const { checkForUpdatesManually } = await import('./ipcUpdater');
+    expect(await checkForUpdatesManually()).toEqual({
+      error: 'immediate error', status: 'error', version: undefined
+    });
+
+    mock.updater.checkForUpdates.mockImplementationOnce(async () => {
+      mock.listeners['update-not-available']();
+    });
+    expect(await checkForUpdatesManually()).toEqual({ status: 'idle' });
+    expect(mock.updater.checkForUpdates).toHaveBeenCalledTimes(3);
+  });
+
   it('downloads once on click, then installs only after the downloaded event', async () => {
     mock.updater.checkForUpdates.mockImplementationOnce(async () => {
       mock.listeners['update-available']({ version: '4.5.0' });
