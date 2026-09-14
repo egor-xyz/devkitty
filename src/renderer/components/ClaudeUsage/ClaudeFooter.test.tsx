@@ -138,12 +138,16 @@ describe('AI Analytics footer', () => {
     expect(screen.getByText('Used by Cursor IDE and CLI. Grok Bot installed · usage unavailable')).toBeDefined();
   });
 
-  it('keeps the last good value visible with a read error', () => {
+  it('keeps the last good value and shows a short error with full details on hover and for screen readers', () => {
     mocks.state.activeProvider = 'codex';
-    mocks.state.errorByAccount = { 'codex:/codex': 'Temporary read error' };
+    const error = 'Error invoking remote method: Failed to read usage from the provider';
+    mocks.state.errorByAccount = { 'codex:/codex': error };
     render(<ClaudeFooter />);
     expect(screen.getByRole('button', { name: /7D: 25%/ })).toBeDefined();
-    expect(screen.getByRole('status').textContent).toContain('Temporary read error');
+    const status = screen.getByRole('status');
+    expect(status.textContent).toBe('Codex usage unavailable');
+    expect(status.getAttribute('title')).toBe(`Codex: ${error}`);
+    expect(status.getAttribute('aria-label')).toBe(`Codex: ${error}`);
   });
 
   it('hides controls on Settings', () => {

@@ -178,10 +178,11 @@ export const ClaudeFooter = ({ onHeightChange }: { onHeightChange?: (height: num
             <span className="min-w-0 flex-1 truncate text-xs text-bp-gray-1 dark:text-bp-gray-4">{key && state.loadingByAccount[key] ? 'Reading usage…' : account ? 'Usage unavailable.' : `No ${providerName} accounts found.`}</span>
           )}
 
-          {error && <span className="max-w-48 shrink truncate text-[11px] text-bp-gray-1 dark:text-bp-gray-4"
+          {error && <span aria-label={`${providerName}: ${error}`}
+            className="max-w-48 shrink truncate text-[11px] text-bp-gray-1 dark:text-bp-gray-4"
             role="status"
             title={`${providerName}: ${error}`}
-                    >{providerName}: {error}</span>}
+                    >{providerName} usage unavailable</span>}
         </div>
       )}
     </footer>
