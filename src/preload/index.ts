@@ -8,6 +8,7 @@ import { type PRStatusResult, type pullTypes } from 'types/gitHub';
 import { type ThemeSource } from 'types/Modal';
 import { type GitStatus, type Project } from 'types/project';
 import { type Settings } from 'types/settings';
+import { type UpdateState } from 'types/update';
 import { type WindowAppearance, type WindowOpacity } from 'types/window';
 
 import { demoBridge } from './demo/bridge';
@@ -99,6 +100,16 @@ const bridge = {
   },
   sticker: {
     add: (text: string) => ipcRenderer.invoke('sticker:add', text)
+  },
+  updater: {
+    download: (): Promise<void> => ipcRenderer.invoke('updater:download'),
+    getState: (): Promise<UpdateState> => ipcRenderer.invoke('updater:getState'),
+    install: (): Promise<void> => ipcRenderer.invoke('updater:install'),
+    onState: (callback: (state: UpdateState) => void): (() => void) => {
+      const listener = (_: IpcRendererEvent, state: UpdateState) => callback(state);
+      ipcRenderer.on('updater:state', listener);
+      return () => ipcRenderer.removeListener('updater:state', listener);
+    }
   },
   window: {
     getPinnedAppearance: (): Promise<WindowAppearance> => ipcRenderer.invoke('window:getPinnedAppearance'),

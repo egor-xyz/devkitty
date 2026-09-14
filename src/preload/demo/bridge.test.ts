@@ -65,6 +65,21 @@ describe('demoBridge window', () => {
   });
 });
 
+describe('demoBridge updater', () => {
+  it('stays idle and never calls the real update IPC', async () => {
+    vi.clearAllMocks();
+    const onState = vi.fn();
+    await expect(demoBridge.updater.getState()).resolves.toEqual({ status: 'idle' });
+    const unsubscribe = demoBridge.updater.onState(onState);
+    expect(typeof unsubscribe).toBe('function');
+    unsubscribe();
+    await expect(demoBridge.updater.download()).resolves.toBeUndefined();
+    await expect(demoBridge.updater.install()).resolves.toBeUndefined();
+    expect(onState).not.toHaveBeenCalled();
+    expect(invoke).not.toHaveBeenCalled();
+  });
+});
+
 describe('demoBridge claude', () => {
   it('resolves the canned Claude account list', async () => {
     const accounts = await demoBridge.claude.accounts();

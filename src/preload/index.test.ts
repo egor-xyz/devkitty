@@ -182,6 +182,32 @@ describe('preload bridge', () => {
     });
   });
 
+  describe('updater', () => {
+    it('should invoke the update state and action channels', () => {
+      bridge.updater.getState();
+      bridge.updater.download();
+      bridge.updater.install();
+
+      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('updater:getState');
+      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('updater:download');
+      expect(mockIpcRenderer.invoke).toHaveBeenCalledWith('updater:install');
+    });
+
+    it('should forward update state and remove its listener on unsubscribe', () => {
+      const callback = vi.fn();
+      const unsubscribe = bridge.updater.onState(callback);
+      expect(mockIpcRenderer.on).toHaveBeenCalledWith('updater:state', expect.any(Function));
+
+      const [[, listener]] = mockIpcRenderer.on.mock.calls;
+      const state = { status: 'ready', version: '4.5.0' };
+      listener({}, state);
+      expect(callback).toHaveBeenCalledWith(state);
+
+      unsubscribe();
+      expect(mockIpcRenderer.removeListener).toHaveBeenCalledWith('updater:state', listener);
+    });
+  });
+
   describe('window', () => {
     it('should invoke window:getPinnedAppearance', () => {
       bridge.window.getPinnedAppearance();

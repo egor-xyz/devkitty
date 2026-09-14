@@ -2,11 +2,20 @@
 import { fireEvent, render, screen } from '@testing-library/react';
 import { type ReactNode } from 'react';
 import { type AIAccount, type AIUsage } from 'types/aiUsage';
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
-const mocks = vi.hoisted(() => ({ pathname: '/', setActive: vi.fn(), setProvider: vi.fn(), state: {} as Record<string, unknown> }));
+const mocks = vi.hoisted(() => ({
+  claudeEnabled: true, pathname: '/', setActive: vi.fn(), setProvider: vi.fn(), showClaudeUsage: true,
+  state: {} as Record<string, unknown>, update: { run: vi.fn(), state: { status: 'idle' }, visible: false }
+}));
 vi.mock('react-router', () => ({ useLocation: () => ({ pathname: mocks.pathname }) }));
-vi.mock('renderer/hooks/useAppSettings', () => ({ useAppSettings: () => ({ claudeEnabled: true, showClaudeUsage: true }), useIsSunset: () => false }));
+vi.mock('renderer/hooks/useAppSettings', () => ({ useAppSettings: () => ({ claudeEnabled: mocks.claudeEnabled, showClaudeUsage: mocks.showClaudeUsage }), useIsSunset: () => false }));
+vi.mock('renderer/components/UpdateAction/UpdateAction', () => ({
+  UpdateAction: ({ run }: { run: () => void }) => <button onClick={run}
+    type="button"
+                                                  >Update</button>,
+  useUpdateAction: () => mocks.update
+}));
 vi.mock('renderer/hooks/useAIUsage', () => ({
   AI_PROVIDER_CONFIG: { claude: { name: 'Claude' }, codex: { name: 'Codex' }, cursor: { name: 'Cursor' } },
   AI_PROVIDERS: ['claude', 'codex', 'cursor'], aiAccountKey: (account: AIAccount) => `${account.provider}:${account.dir}`, useAIUsage: () => mocks.state
@@ -27,7 +36,11 @@ const usage = (account: AIAccount): AIUsage => ({ account, computedAt: Date.now(
 describe('AI Analytics footer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    vi.spyOn(HTMLElement.prototype, 'getBoundingClientRect').mockReturnValue({ height: 44 } as DOMRect);
+    mocks.claudeEnabled = true;
     mocks.pathname = '/';
+    mocks.showClaudeUsage = true;
+    mocks.update = { run: vi.fn(), state: { status: 'idle' }, visible: false };
     vi.stubGlobal('ResizeObserver', class { disconnect() {} observe() {} });
     mocks.state = {
       accounts: [claude, { ...claude, dir: '/claude-2', label: 'Claude work' }, codex, cursor],
@@ -37,6 +50,7 @@ describe('AI Analytics footer', () => {
       usageByAccount: { 'claude:/claude': usage(claude), 'codex:/codex': usage(codex), 'cursor:/cursor': usage(cursor) }
     };
   });
+  afterEach(() => vi.restoreAllMocks());
 
   it('switches among three providers and keeps the footer at 44 pixels', () => {
     const { rerender } = render(<ClaudeFooter />);
@@ -136,5 +150,56 @@ describe('AI Analytics footer', () => {
     mocks.pathname = '/settings/integrations';
     render(<ClaudeFooter />);
     expect(screen.getByRole('contentinfo', { hidden: true }).hasAttribute('inert')).toBe(true);
+  });
+
+  it('places Update before AI controls and reserves 44 pixels', () => {
+    mocks.update.visible = true;
+    mocks.update.state = { status: 'available' };
+    const onHeightChange = vi.fn();
+    render(<ClaudeFooter onHeightChange={onHeightChange} />);
+    const footer = screen.getByRole('contentinfo');
+    expect(footer.firstElementChild?.getAttribute('data-testid')).toBe('footer-update-slot');
+    expect(footer.children[1]?.getAttribute('data-testid')).toBe('footer-ai-controls');
+    expect(footer.firstElementChild?.className).toContain('shrink-0');
+    expect(onHeightChange).toHaveBeenCalledWith(44);
+    fireEvent.click(screen.getByRole('button', { name: 'Update' }));
+    expect(mocks.update.run).toHaveBeenCalledOnce();
+  });
+
+  it.each(['toggle off', 'integration disabled', 'providers unavailable'])('keeps Update in the footer when AI is %s', (reason) => {
+    mocks.update.visible = true;
+    mocks.update.state = { status: 'available' };
+    if (reason === 'toggle off') mocks.showClaudeUsage = false;
+    if (reason === 'integration disabled') mocks.claudeEnabled = false;
+    if (reason === 'providers unavailable') {
+      mocks.state.accounts = [];
+      mocks.state.detection = { claude: { installed: false }, codex: { installed: false }, cursor: { installed: false } };
+    }
+    const onHeightChange = vi.fn();
+    render(<ClaudeFooter onHeightChange={onHeightChange} />);
+    expect(screen.getByRole('contentinfo').className).toContain('translate-y-0');
+    expect(screen.getByRole('button', { name: 'Update' })).toBeDefined();
+    expect(screen.queryByRole('group', { name: 'Usage provider' })).toBeNull();
+    expect(onHeightChange).toHaveBeenCalledWith(44);
+  });
+
+  it('shows Update but hides AI controls on Settings', () => {
+    mocks.pathname = '/settings/appearance';
+    mocks.update.visible = true;
+    mocks.update.state = { status: 'available' };
+    const onHeightChange = vi.fn();
+    render(<ClaudeFooter onHeightChange={onHeightChange} />);
+    expect(screen.getByRole('button', { name: 'Update' })).toBeDefined();
+    expect(screen.queryByRole('group', { name: 'Usage provider' })).toBeNull();
+    expect(onHeightChange).toHaveBeenCalledWith(44);
+  });
+
+  it('reserves no space when both AI usage and Update are hidden', () => {
+    mocks.showClaudeUsage = false;
+    const onHeightChange = vi.fn();
+    render(<ClaudeFooter onHeightChange={onHeightChange} />);
+    expect(screen.getByRole('contentinfo', { hidden: true }).hasAttribute('inert')).toBe(true);
+    expect(screen.queryByRole('button', { name: 'Update' })).toBeNull();
+    expect(onHeightChange).toHaveBeenCalledWith(0);
   });
 });

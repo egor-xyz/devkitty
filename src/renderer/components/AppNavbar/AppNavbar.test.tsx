@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { render, screen } from '@testing-library/react';
+import { act, render, screen } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
 import { describe, expect, it, vi } from 'vitest';
 
@@ -63,17 +63,15 @@ vi.mock('./AlwaysOnTopControl', () => ({
 
 import { AppNavbar } from './AppNavbar';
 
+const renderNavbar = () => render(<MemoryRouter><AppNavbar /></MemoryRouter>);
+
 const expectClasses = (element: HTMLElement, ...classNames: string[]) => {
   classNames.forEach((className) => expect(element.classList.contains(className)).toBe(true));
 };
 
 describe('AppNavbar layout', () => {
-  it('keeps a long focused name and every icon control on one stable row', () => {
-    render(
-      <MemoryRouter>
-        <AppNavbar />
-      </MemoryRouter>
-    );
+  it('keeps a long focused name and every icon control on one stable row', async () => {
+    await act(async () => { renderNavbar(); });
 
     const navbar = screen.getByTestId('app-navbar');
     const left = screen.getByTestId('app-navbar-left');

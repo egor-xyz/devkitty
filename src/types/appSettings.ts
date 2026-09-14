@@ -6,6 +6,7 @@ import { type IgnoredWorkflow } from './ignoredWorkflow';
 export type AppSettings = {
   aiProvider?: AIProviderFilter;
   anthropicUsageWorkspaceId?: string;
+  autoUpdate: boolean; // download updates in the background; restarting always needs a click
   claudeAccountDir?: string; // config dir of the account shown in the usage footer
   claudeEnabled: boolean; // legacy storage key: master switch for AI analytics
   clipboardDownscale: boolean; // header toggle: auto-shrink clipboard images > 1200px for Claude Code

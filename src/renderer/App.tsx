@@ -1,6 +1,6 @@
 import { Classes, FocusStyleManager } from '@blueprintjs/core';
 import { type CSSProperties, useEffect, useState } from 'react';
-import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
+import { useIsSunset } from 'renderer/hooks/useAppSettings';
 import { useDarkMode } from 'renderer/hooks/useDarkMode';
 import { useModal } from 'renderer/hooks/useModal';
 import { cn } from 'renderer/utils/cn';
@@ -15,7 +15,6 @@ FocusStyleManager.onlyShowFocusOnTabs();
 export const App = () => {
   const { darkMode } = useDarkMode();
   const { Modal } = useModal();
-  const { claudeEnabled } = useAppSettings();
   const [footerHeight, setFooterHeight] = useState(0);
   const isSunset = useIsSunset();
 
@@ -42,9 +41,8 @@ export const App = () => {
       <Routing />
       <Modal />
       <CommandPalette />
-      {/* Kept mounted on the Settings route (it reads the route itself) so it
-          slides down instead of vanishing. */}
-      {(claudeEnabled ?? true) && <ClaudeFooter onHeightChange={setFooterHeight} />}
+      {/* The update action can remain visible when AI usage is off or on Settings. */}
+      <ClaudeFooter onHeightChange={setFooterHeight} />
 
       {isSunset && (
         <>

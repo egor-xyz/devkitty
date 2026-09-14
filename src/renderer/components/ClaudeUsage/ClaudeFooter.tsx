@@ -1,6 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { SiOpenai } from 'react-icons/si';
 import { useLocation } from 'react-router';
+import { UpdateAction, useUpdateAction } from 'renderer/components/UpdateAction/UpdateAction';
 import { AI_PROVIDER_CONFIG, AI_PROVIDERS, aiAccountKey, useAIUsage } from 'renderer/hooks/useAIUsage';
 import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
 import { cn } from 'renderer/utils/cn';
@@ -35,7 +36,7 @@ const ProviderIcon = ({ provider }: { provider: AIProvider }) => {
   return <CursorMark />;
 };
 
-const PROVIDER_SHORTCUTS = { Digit1: 'claude', Digit2: 'codex', Digit3: 'cursor' } satisfies Record<string, AIProvider>;
+const PROVIDER_SHORTCUTS: Record<string, AIProvider> = { Digit1: 'claude', Digit2: 'codex', Digit3: 'cursor' };
 const isEditableTarget = (target: EventTarget | null) => target instanceof Element
   && Boolean(target.closest('input, textarea, select, [role="textbox"], [contenteditable]:not([contenteditable="false"])'));
 
@@ -43,10 +44,12 @@ export const ClaudeFooter = ({ onHeightChange }: { onHeightChange?: (height: num
   const { claudeEnabled, showClaudeUsage } = useAppSettings();
   const isSunset = useIsSunset();
   const state = useAIUsage();
+  const update = useUpdateAction();
   const { setProvider } = state;
   const onSettings = useLocation().pathname.startsWith('/settings');
   const available = state.accounts.length > 0 || AI_PROVIDERS.some((provider) => state.detection[provider].installed) || Object.keys(state.discoveryErrors).length > 0;
-  const visible = (claudeEnabled ?? true) && showClaudeUsage && !onSettings && available;
+  const aiVisible = (claudeEnabled ?? true) && showClaudeUsage && !onSettings && available;
+  const visible = aiVisible || update.visible;
   const footer = useRef<HTMLElement>(null);
   useLayoutEffect(() => {
     if (!visible || !footer.current) {
@@ -67,7 +70,7 @@ export const ClaudeFooter = ({ onHeightChange }: { onHeightChange?: (height: num
     return () => window.clearInterval(timer);
   }, []);
   useEffect(() => {
-    if (!visible) return;
+    if (!aiVisible) return;
     const onKeyDown = (event: KeyboardEvent) => {
       if (!event.metaKey || event.ctrlKey || event.altKey || event.shiftKey || event.repeat || isEditableTarget(event.target)) return;
       const next = PROVIDER_SHORTCUTS[event.code];
@@ -77,8 +80,7 @@ export const ClaudeFooter = ({ onHeightChange }: { onHeightChange?: (height: num
     };
     document.addEventListener('keydown', onKeyDown);
     return () => document.removeEventListener('keydown', onKeyDown);
-  }, [setProvider, visible]);
-  if (!available) return null;
+  }, [setProvider, aiVisible]);
   const provider = state.activeProvider;
   const providerName = AI_PROVIDER_CONFIG[provider].name;
   const accounts = state.accounts.filter((account) => account.provider === provider);
@@ -93,9 +95,9 @@ export const ClaudeFooter = ({ onHeightChange }: { onHeightChange?: (height: num
 
   return (
     <footer aria-hidden={!visible}
-      aria-label="AI Analytics"
+      aria-label={aiVisible ? 'AI Analytics' : 'Updates'}
       className={cn(
-        'app-region-no-drag fixed bottom-0 left-0 right-0 z-10 flex h-11 select-none items-center gap-3 px-4',
+        'app-region-no-drag fixed bottom-0 left-0 right-0 z-10 flex h-11 select-none items-center gap-3 px-3',
         isSunset ? 'devkitty-footer-glass' : 'border-t border-bp-light-gray-1 bg-bp-light-gray-4 dark:border-bp-dark-gray-2 dark:bg-bp-dark-gray-1',
         'transition-transform duration-300 ease-out motion-reduce:transition-none',
         visible ? 'translate-y-0' : 'pointer-events-none translate-y-full'
@@ -103,69 +105,85 @@ export const ClaudeFooter = ({ onHeightChange }: { onHeightChange?: (height: num
       inert={!visible}
       ref={footer}
     >
-      <div aria-label="Usage provider"
-        className="flex shrink-0 items-center gap-1"
-        role="group"
-      >
-        {AI_PROVIDERS.map((candidate, index) => (
-          <button aria-keyshortcuts={`Meta+${index + 1}`}
-            aria-label={`Show ${AI_PROVIDER_CONFIG[candidate].name} usage`}
-            aria-pressed={provider === candidate}
-            className={cn(
-              'flex h-7 w-7 items-center justify-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500',
-              provider === candidate ? 'bg-black/10 text-bp-dark-gray-1 ring-1 ring-black/10 dark:bg-white/15 dark:text-white dark:ring-white/20' : 'text-bp-gray-1 hover:bg-black/5 dark:text-bp-gray-4 dark:hover:bg-white/10'
-            )}
-            key={candidate}
-            onClick={() => state.setProvider(candidate)}
-            title={`${AI_PROVIDER_CONFIG[candidate].name} · ⌘${index + 1}`}
-            type="button"
-          >
-            <ProviderIcon provider={candidate} />
-          </button>
-        ))}
-      </div>
-
-      <AccountPills accounts={accounts}
-        activeDir={state.activeDirs[provider]}
-        onSelect={(dir) => state.setActive(provider, dir)}
-      />
-
-      {usage ? (
-        <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden"
-          data-testid="usage-meter-row"
+      {update.visible && (
+        <div className="shrink-0"
+          data-testid="footer-update-slot"
         >
-          {usage.metrics.map((metric, index) => (
-            <div className="min-w-0 flex-1 basis-0"
-              data-testid="quota-meter-slot"
-              key={metric.id}
-            >
-              <UsageMeter metric={metric}
-                note={index === 0 ? cursorNote : undefined}
-                now={now}
-                provider={provider}
-                reportedAt={metric.source === 'admin' ? usage.computedAt : usage.reportedAt}
-              />
-            </div>
-          ))}
-
-          {usage.spend && (
-            <div className="shrink-0"
-              data-testid="spend-meter-slot"
-            >
-              <SpendMeter spend={usage.spend} />
-            </div>
-          )}
-
-          {usage.metrics.length === 0 && !usage.spend && <span className="min-w-0 flex-1 truncate text-xs text-bp-gray-1 dark:text-bp-gray-4">{grokUnavailable ? 'Grok Bot installed · usage unavailable' : 'Usage unavailable.'}</span>}
+          <UpdateAction run={update.run}
+            state={update.state}
+          />
         </div>
-      ) : (
-        <span className="min-w-0 flex-1 truncate text-xs text-bp-gray-1 dark:text-bp-gray-4">{key && state.loadingByAccount[key] ? 'Reading usage…' : account ? 'Usage unavailable.' : `No ${providerName} accounts found.`}</span>
       )}
 
-      {error && <span className="max-w-48 shrink truncate text-[11px] text-bp-gray-1 dark:text-bp-gray-4"
-        role="status"
-        title={`${providerName}: ${error}`}
-                >{providerName}: {error}</span>}
+      {aiVisible && (
+        <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden"
+          data-testid="footer-ai-controls"
+        >
+          <div aria-label="Usage provider"
+            className="flex shrink-0 items-center gap-1"
+            role="group"
+          >
+            {AI_PROVIDERS.map((candidate, index) => (
+              <button aria-keyshortcuts={`Meta+${index + 1}`}
+                aria-label={`Show ${AI_PROVIDER_CONFIG[candidate].name} usage`}
+                aria-pressed={provider === candidate}
+                className={cn(
+                  'flex h-7 w-7 items-center justify-center rounded-md focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500',
+                  provider === candidate ? 'bg-black/10 text-bp-dark-gray-1 ring-1 ring-black/10 dark:bg-white/15 dark:text-white dark:ring-white/20' : 'text-bp-gray-1 hover:bg-black/5 dark:text-bp-gray-4 dark:hover:bg-white/10'
+                )}
+                key={candidate}
+                onClick={() => state.setProvider(candidate)}
+                title={`${AI_PROVIDER_CONFIG[candidate].name} · ⌘${index + 1}`}
+                type="button"
+              >
+                <ProviderIcon provider={candidate} />
+              </button>
+            ))}
+          </div>
+
+          <AccountPills accounts={accounts}
+            activeDir={state.activeDirs[provider]}
+            onSelect={(dir) => state.setActive(provider, dir)}
+          />
+
+          {usage ? (
+            <div className="flex min-w-0 flex-1 items-center gap-3 overflow-hidden"
+              data-testid="usage-meter-row"
+            >
+              {usage.metrics.map((metric, index) => (
+                <div className="min-w-0 flex-1 basis-0"
+                  data-testid="quota-meter-slot"
+                  key={metric.id}
+                >
+                  <UsageMeter metric={metric}
+                    note={index === 0 ? cursorNote : undefined}
+                    now={now}
+                    provider={provider}
+                    reportedAt={metric.source === 'admin' ? usage.computedAt : usage.reportedAt}
+                  />
+                </div>
+              ))}
+
+              {usage.spend && (
+                <div className="shrink-0"
+                  data-testid="spend-meter-slot"
+                >
+                  <SpendMeter spend={usage.spend} />
+                </div>
+              )}
+
+              {usage.metrics.length === 0 && !usage.spend && <span className="min-w-0 flex-1 truncate text-xs text-bp-gray-1 dark:text-bp-gray-4">{grokUnavailable ? 'Grok Bot installed · usage unavailable' : 'Usage unavailable.'}</span>}
+            </div>
+          ) : (
+            <span className="min-w-0 flex-1 truncate text-xs text-bp-gray-1 dark:text-bp-gray-4">{key && state.loadingByAccount[key] ? 'Reading usage…' : account ? 'Usage unavailable.' : `No ${providerName} accounts found.`}</span>
+          )}
+
+          {error && <span className="max-w-48 shrink truncate text-[11px] text-bp-gray-1 dark:text-bp-gray-4"
+            role="status"
+            title={`${providerName}: ${error}`}
+                    >{providerName}: {error}</span>}
+        </div>
+      )}
     </footer>
   );
 };
