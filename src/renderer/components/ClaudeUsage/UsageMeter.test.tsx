@@ -47,11 +47,13 @@ describe('UsageMeter', () => {
     expect(screen.getByText('Local token history for the last 5 hours')).toBeDefined();
   });
 
-  it('shows spend once and draws a bar only with an exact limit', () => {
-    const { rerender } = render(<SpendMeter spend={{ amountUsdMicros: 5_000_000, label: 'Org API spend', period: 'calendar-month', scope: 'organization', source: 'admin' }} />);
-    expect(screen.getByRole('button', { name: 'Org API spend: $5.00' })).toBeDefined();
+  it('keeps Cursor On-demand spend and draws a bar only with an exact limit', () => {
+    const spend = { amountUsdMicros: 5_000_000, label: 'On-demand' as const, period: 'billing-cycle' as const, scope: 'account' as const, source: 'provider' as const };
+    const { rerender } = render(<SpendMeter spend={spend} />);
+    expect(screen.getByRole('button', { name: 'On-demand: $5.00' })).toBeDefined();
     expect(screen.queryByText('of $')).toBeNull();
-    rerender(<SpendMeter spend={{ amountUsdMicros: 5_000_000, label: 'On-demand', limitUsdMicros: 20_000_000, period: 'billing-cycle', qualifier: 'Shared by Cursor and Grok Bot.', scope: 'account', source: 'provider' }} />);
+    expect(screen.getByText('Account · Current billing cycle')).toBeDefined();
+    rerender(<SpendMeter spend={{ ...spend, limitUsdMicros: 20_000_000, qualifier: 'Shared by Cursor and Grok Bot.' }} />);
     expect(screen.getByRole('button', { name: 'On-demand: $5.00 of $20.00' })).toBeDefined();
     expect(screen.getByText('Shared by Cursor and Grok Bot.')).toBeDefined();
   });

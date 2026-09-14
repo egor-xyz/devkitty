@@ -19,7 +19,8 @@ vi.mock('renderer/hooks/useAppSettings', () => ({
     clipboardDownscale: false,
     set: vi.fn(),
     showClaudeUsage: true,
-    showLogo: true
+    // An old saved value must no longer hide the logo.
+    showLogo: false
   }),
   useIsSunset: () => false
 }));

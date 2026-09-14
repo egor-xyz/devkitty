@@ -3,15 +3,10 @@ import { beforeEach, describe, expect, it, vi } from 'vitest';
 type Handler = (...args: unknown[]) => unknown;
 const handlers: Record<string, Handler> = {};
 vi.mock('electron', () => ({ ipcMain: { handle: vi.fn((channel: string, handler: Handler) => { handlers[channel] = handler; }) } }));
-vi.mock('../libs/aiUsage/secrets', () => ({ aiUsageSecrets: { get: vi.fn() } }));
 vi.mock('../libs/codex/accounts', () => ({ detectCodexCli: vi.fn(), discoverAccounts: vi.fn() }));
-vi.mock('../libs/codex/adminUsage', () => ({ getCodexAdminUsage: vi.fn() }));
 vi.mock('../libs/codex/getUsage', () => ({ buildUsage: vi.fn() }));
-vi.mock('../settings', () => ({ settings: { get: vi.fn(() => ({ openAIUsageProjectId: 'proj-1' })) } }));
 
-import { aiUsageSecrets } from '../libs/aiUsage/secrets';
 import { discoverAccounts } from '../libs/codex/accounts';
-import { getCodexAdminUsage } from '../libs/codex/adminUsage';
 import { buildUsage } from '../libs/codex/getUsage';
 
 await import('./ipcCodex');
@@ -23,18 +18,15 @@ describe('Codex usage IPC', () => {
     vi.clearAllMocks();
     vi.mocked(discoverAccounts).mockReturnValue([account]);
     vi.mocked(buildUsage).mockResolvedValue(local as never);
-    vi.mocked(aiUsageSecrets.get).mockReturnValue('sk-admin-secret');
   });
 
-  it('adds the admin report to local usage', async () => {
-    vi.mocked(getCodexAdminUsage).mockResolvedValue({ metric: { id: 'month' }, spend: { amountUsdMicros: 2 } } as never);
-    const result = await handlers['codex:usage']({}, account) as { metrics: unknown[]; spend: unknown };
-    expect(result.metrics).toEqual([{ id: 'five-hour' }, { id: 'month' }]);
-    expect(result.spend).toEqual({ amountUsdMicros: 2 });
-  });
-
-  it('keeps local usage when the admin report fails', async () => {
-    vi.mocked(getCodexAdminUsage).mockRejectedValue(new Error('admin failed'));
+  it('returns only local usage for the discovered account', async () => {
     await expect(handlers['codex:usage']({}, account)).resolves.toEqual(local);
+    expect(buildUsage).toHaveBeenCalledWith(account, expect.any(Number));
+  });
+
+  it.each([null, {}, { ...account, provider: 'cursor' }, { ...account, dir: '/forged' }])('rejects an untrusted account %j', async (value) => {
+    await expect(handlers['codex:usage']({}, value)).rejects.toThrow();
+    expect(buildUsage).not.toHaveBeenCalled();
   });
 });

@@ -1,8 +1,10 @@
-import { ipcMain, safeStorage } from 'electron';
+import { app, ipcMain, safeStorage } from 'electron';
 
 import { settings } from '../settings';
 
 ipcMain.handle('settings:get', (_, key) => settings.get(key));
+
+ipcMain.handle('settings:getVersion', () => app.getVersion());
 
 ipcMain.handle('settings:set', (_, key, value, safe?: boolean) => {
   const state = settings.get(key);

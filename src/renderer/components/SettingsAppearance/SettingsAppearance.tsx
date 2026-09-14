@@ -1,54 +1,22 @@
-import { Divider, Switch } from '@blueprintjs/core';
-import { useAppSettings } from 'renderer/hooks/useAppSettings';
-
 import { StyleSelector } from '../StyleSelector';
 import { ThemeSelector } from '../ThemeSelector';
 
-export const SettingsAppearance = () => {
-  const { autoUpdate, set, showLogo, showWorktrees } = useAppSettings();
+export const SettingsAppearance = () => (
+  <div className="select-none">
+    <h2 className="text-[18px] leading-6 font-semibold">Appearance</h2>
 
-  return (
-    <div className="select-none p-4">
-      <h2 className="text-xl font-semibold mb-1">Appearance</h2>
-      <Divider />
-      <h3 className="text-sm font-semibold mt-4 mb-2.5">Color Theme</h3>
-      <ThemeSelector />
-      <Divider className="my-6!" />
-      <h3 className="text-sm font-semibold mt-4 mb-2.5">Style</h3>
-      <StyleSelector />
-      <Divider className="my-6!" />
-      <h3 className="text-sm font-semibold mt-4 mb-2.5">Updates</h3>
+    <div className="mt-5 space-y-6">
+      <div>
+        <h3 className="text-sm leading-5 font-semibold">Color Theme</h3>
+        <p className="mt-1.5 mb-3 text-[13px] leading-[19px] text-bp-gray-1 dark:text-bp-gray-4">Choose the app colors. The system theme follows your Mac.</p>
+        <ThemeSelector />
+      </div>
 
-      <Switch
-        checked={autoUpdate ?? true}
-        className="mt-4 mb-1"
-        label="Auto update"
-        onChange={() => set({ autoUpdate: !(autoUpdate ?? true) })}
-      />
-
-      <p className="text-xs text-bp-gray-1 dark:text-bp-gray-4">
-        Download updates in the background. You choose when to restart. Turn this off to download with Update in the footer.
-      </p>
-
-      <Divider className="my-6!" />
-      <h3 className="text-sm font-semibold mt-4 mb-2.5">Git</h3>
-
-      <Switch
-        checked={showWorktrees}
-        className="mt-4"
-        label="Worktrees"
-        onChange={() => set({ showWorktrees: !showWorktrees })}
-      />
-
-      <Divider className="my-6!" />
-      <h3 className="text-sm font-semibold mt-4 mb-2.5">Misc</h3>
-
-      <Switch
-        checked={showLogo}
-        className="mt-4"
-        label="Logo"
-        onChange={() => set({ showLogo: !showLogo })}
-      />
+      <div>
+        <h3 className="text-sm leading-5 font-semibold">Style</h3>
+        <p className="mt-1.5 mb-3 text-[13px] leading-[19px] text-bp-gray-1 dark:text-bp-gray-4">Choose the look of app windows and cards.</p>
+        <StyleSelector />
+      </div>
     </div>
-  );
-};
+  </div>
+);

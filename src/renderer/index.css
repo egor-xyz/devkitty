@@ -271,48 +271,139 @@
   white-space: nowrap !important;
 }
 
-/* Settings page tabs styling */
-.settings-root .bp6-tabs {
-  height: 100%;
-}
-
-.settings-root .bp6-tab-list {
-  padding-top: 14px;
-  border-right: 1px solid #e5e8eb;
-}
-
-.settings-root .bp6-tab-panel {
-  width: 100%;
-  height: 100%;
-  padding: 14px 20px 20px 20px;
+/* One settings page with a sidebar and one content scrollbar. */
+.settings-root {
+  --settings-rule: #dce0e5;
+  --settings-active-bg: rgba(45, 114, 210, 0.12);
+  --settings-active-text: #215db0;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
   background-color: #f6f7f9;
-  /* A long panel — the hidden lists, say — scrolls inside itself instead of
-     running off the bottom of the window. */
-  overflow-y: auto;
-  box-sizing: border-box;
 }
 
-.settings-root .bp6-tab-panel .bp6-divider {
-  margin: 10px 0;
-}
-
-/* Dark mode settings */
-.bp6-dark.settings-root .bp6-tab-list,
-.bp6-dark .settings-root .bp6-tab-list {
-  border-right: 1px solid #2f343c;
-}
-
-.bp6-dark.settings-root .bp6-tab-panel,
-.bp6-dark .settings-root .bp6-tab-panel {
+.settings-root.bp6-dark,
+.bp6-dark .settings-root {
+  --settings-rule: #404854;
+  --settings-active-bg: rgba(77, 144, 235, 0.2);
+  --settings-active-text: #a6caff;
   background-color: #252a31;
 }
 
-/* Sunset: the settings panel drops its solid fill so the app gradient reads
-   through, matching the rest of the window. */
-.settings-root.theme-sunset .bp6-tab-panel,
-.bp6-dark.settings-root.theme-sunset .bp6-tab-panel,
-.bp6-dark .settings-root.theme-sunset .bp6-tab-panel {
+.settings-root.theme-sunset,
+.bp6-dark .settings-root.theme-sunset {
+  --settings-rule: rgba(255, 255, 255, 0.2);
+  --settings-active-bg: rgba(127, 167, 255, 0.22);
+  --settings-active-text: #c9dcff;
   background-color: transparent;
+}
+
+.settings-close.bp6-button {
+  position: absolute;
+  top: 12px;
+  right: 16px;
+  z-index: 1;
+  min-width: 36px;
+  min-height: 36px;
+}
+
+.settings-layout {
+  display: flex;
+  min-height: 0;
+  min-width: 0;
+  flex: 1;
+}
+
+.settings-sidebar {
+  display: flex;
+  flex: 0 0 196px;
+  flex-direction: column;
+  gap: 4px;
+  padding: 56px 12px 16px;
+  border-right: 1px solid var(--settings-rule);
+  overflow-y: auto;
+}
+
+.settings-sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  min-height: 40px;
+  padding: 8px 10px;
+  border: 0;
+  border-radius: 7px;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font: inherit;
+  font-size: 14px;
+  font-weight: 500;
+  line-height: 20px;
+  text-align: left;
+}
+
+.settings-sidebar-link:hover {
+  background-color: rgba(45, 114, 210, 0.07);
+}
+
+.settings-sidebar-link[aria-current='location'] {
+  background-color: var(--settings-active-bg);
+  color: var(--settings-active-text);
+}
+
+.settings-sidebar-link:focus-visible {
+  outline: 2px solid #2d72d2;
+  outline-offset: 2px;
+}
+
+.settings-version {
+  margin-top: auto;
+  padding: 20px 10px 0;
+  color: inherit;
+  font-size: 12px;
+  line-height: 18px;
+  opacity: 0.65;
+}
+
+.settings-content {
+  flex: 1;
+  min-width: 0;
+  overflow-y: auto;
+  padding: 56px 32px 48px;
+  box-sizing: border-box;
+}
+
+.settings-content-inner {
+  width: 100%;
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.settings-section {
+  min-width: 0;
+  scroll-margin-top: 32px;
+}
+
+.settings-section + .settings-section {
+  margin-top: 40px;
+  padding-top: 28px;
+  border-top: 1px solid var(--settings-rule);
+}
+
+.bp6-dark .settings-sidebar-link:hover,
+.theme-sunset .settings-sidebar-link:hover {
+  background-color: rgba(127, 167, 255, 0.12);
+}
+
+@media (max-width: 900px) {
+  .settings-content { padding-right: 20px; padding-left: 20px; }
+}
+
+@media (max-width: 680px) {
+  .settings-sidebar { flex-basis: 160px; padding: 56px 8px 12px; }
+  .settings-sidebar-link { padding: 8px; }
+  .settings-content { padding: 56px 16px 40px; }
 }
 
 /* Style-selector card previews — the real theme background rendered inside a
@@ -413,6 +504,11 @@
    The results already pick up the theme via .bp6-menu above, but the input kept
    Blueprint's default grey, reading as a disconnected bar. Make the input blend
    into one continuous palette surface. */
+.bp6-omnibar {
+  border-radius: 12px;
+  overflow: hidden;
+}
+
 .bp6-dark .bp6-omnibar .bp6-input,
 .bp6-dark.bp6-omnibar .bp6-input {
   background: transparent !important;
