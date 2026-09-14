@@ -173,7 +173,9 @@ export const demoBridge = {
   },
   updater: {
     download: noop,
-    getState: () => Promise.resolve({ status: 'idle' as const }),
+    getState: () => Promise.resolve(process.env.DK_UPDATE_PREVIEW === '1'
+      ? { status: 'available' as const, version: '4.5.0' }
+      : { status: 'idle' as const }),
     install: noop,
     onState: (_callback: (state: UpdateState) => void) => () => {}
   },

@@ -27,7 +27,7 @@ export const SettingsAppearance = () => {
       />
 
       <p className="text-xs text-bp-gray-1 dark:text-bp-gray-4">
-        Download updates in the background. You choose when to restart. Turn this off to download with Update in the top bar.
+        Download updates in the background. You choose when to restart. Turn this off to download with Update in the footer.
       </p>
 
       <Divider className="my-6!" />
