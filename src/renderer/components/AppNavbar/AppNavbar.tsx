@@ -95,7 +95,7 @@ const ClipboardDownscaleDetail = ({ enabled, last }: { enabled: boolean; last: D
 
 export const AppNavbar = () => {
   const { themeSource, toggleDarkMode } = useDarkMode();
-  const { claudeEnabled, clipboardDownscale, set, showClaudeUsage, showLogo } = useAppSettings();
+  const { claudeEnabled, clipboardDownscale, set, showClaudeUsage } = useAppSettings();
   const isSunset = useIsSunset();
   const aiAvailable = useAIUsage((s) => s.accounts.length > 0 || Object.values(s.detection).some(({ installed }) => installed) || Object.keys(s.discoveryErrors).length > 0);
   const refreshAIUsage = useAIUsage((s) => s.init);
@@ -342,12 +342,8 @@ export const AppNavbar = () => {
           </NavLink>
         </ButtonGroup>
 
-        {showLogo && (
-          <>
-            <Navbar.Divider className="shrink-0" />
-            <Devkitty className="h-7 shrink-0 devkitty-logo" />
-          </>
-        )}
+        <Navbar.Divider className="shrink-0" />
+        <Devkitty className="h-7 shrink-0 devkitty-logo" />
       </Navbar.Group>
     </Navbar>
   );

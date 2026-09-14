@@ -113,6 +113,8 @@ describe('demoBridge codex', () => {
     const usages = await Promise.all(codexAccounts.map((account) => demoBridge.codex.usage(account)));
     expect(usages.map((usage) => usage.account.dir)).toEqual(codexAccounts.map((account) => account.dir));
     expect(usages[0].account.dir).not.toBe(usages[1].account.dir);
+    expect(usages[0].metrics.map((metric) => metric.id)).toEqual(['seven-day']);
+    expect('spend' in usages[0]).toBe(false);
     await expect(demoBridge.codex.usage({ dir: claudeAccounts[0].dir })).rejects.toThrow('Unknown Codex profile');
   });
 });
@@ -124,15 +126,6 @@ describe('demoBridge cursor', () => {
     expect(usage.metrics.map(({ id }) => id)).toEqual(['cursor-models', 'other-models']);
     expect(usage.spend?.label).toBe('On-demand');
     expect(usage.account.surfaces).toEqual(['ide', 'cli', 'grok-bot']);
-  });
-});
-
-describe('demoBridge AI usage credentials', () => {
-  it('returns saved status without returning a key', async () => {
-    await demoBridge.aiUsageCredentials.set('openai', 'sk-admin-demo');
-    expect(await demoBridge.aiUsageCredentials.status()).toEqual({ anthropic: false, openai: true });
-    await demoBridge.aiUsageCredentials.clear('openai');
-    expect(await demoBridge.aiUsageCredentials.status()).toEqual({ anthropic: false, openai: false });
   });
 });
 
@@ -261,6 +254,13 @@ describe('demoBridge projects', () => {
 });
 
 describe('demoBridge settings', () => {
+  it('reads the installed version through the real settings IPC', async () => {
+    invoke.mockResolvedValueOnce('4.5.0');
+
+    await expect(demoBridge.settings.getVersion()).resolves.toBe('4.5.0');
+    expect(invoke).toHaveBeenCalledWith('settings:getVersion');
+  });
+
   it('reads a stored key and merges a partial update into appSettings', async () => {
     const before = await demoBridge.settings.get('appSettings');
     expect(before.theme).toBe('sunset');

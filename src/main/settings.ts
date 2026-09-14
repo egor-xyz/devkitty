@@ -11,6 +11,15 @@ if (isDev) {
   app.setPath('userData', path.resolve('./.tmp'));
 }
 
+// Retire the unused Admin API keys without reading or decrypting them.
+try {
+  const retiredSecrets = new Store({ name: 'devkitty.ai-usage-secrets' });
+  retiredSecrets.delete('anthropic');
+  retiredSecrets.delete('openai');
+} catch {
+  // A damaged or inaccessible retired store must not prevent startup.
+}
+
 export const settings = new Store<Settings>({
   beforeEachMigration: (store, context) => {
     console.log(`[main-config] migrate from ${context.fromVersion} → ${context.toVersion}`);
@@ -35,8 +44,6 @@ export const settings = new Store<Settings>({
       },
       shells: [],
       showClaudeUsage: false,
-      showLogo: true,
-      showWorktrees: true,
       telemetry: true,
       theme: 'sunset'
     },

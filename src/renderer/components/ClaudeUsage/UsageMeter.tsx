@@ -17,14 +17,8 @@ const PROVIDER_NAMES: Record<AIProvider, string> = {
   codex: 'Codex',
   cursor: 'Cursor'
 };
-const SCOPE_NAMES: Record<AIUsageMetric['scope'], string> = {
-  account: 'Account',
-  organization: 'Org',
-  project: 'Project',
-  workspace: 'Workspace'
-};
+const SCOPE_NAMES: Record<AIUsageMetric['scope'], string> = { account: 'Account' };
 const SOURCE_NAMES: Record<AIUsageMetric['source'], string> = {
-  admin: 'Admin API',
   local: 'Local files',
   provider: 'Provider report'
 };
@@ -41,7 +35,6 @@ const scopeLabel = (scope: AIUsageMetric['scope']) => SCOPE_NAMES[scope];
 const clockTime = (ms: number) => new Date(ms).toLocaleTimeString([], { hour: 'numeric', minute: '2-digit' });
 const metricPercent = (metric: AIUsageMetric) => metric.percent === undefined ? undefined : Math.round(metric.percent * 100);
 const localHistoryLabel = (metric: AIUsageMetric) => {
-  if (metric.source === 'admin') return 'Provider report for this calendar month';
   if (metric.tokensPeriod === 'provider-period') return 'Local tokens in this quota period';
   if (metric.id === 'five-hour') return 'Local token history for the last 5 hours';
   if (metric.id === 'seven-day') return 'Local token history for the last 7 days';
@@ -115,11 +108,9 @@ const Detail = ({ metric, note, now, provider, reportedAt }: Props) => {
             <span className="shrink-0 font-semibold tabular-nums">{formatTokens(metric.tokens)}</span>
           </div>
 
-          {metric.source !== 'admin' && (
-            <div className="mt-2 text-[11px] leading-snug text-bp-gray-2">
-              Local log tokens can miss use on other machines. They are not billed spend and do not match the quota percent.
-            </div>
-          )}
+          <div className="mt-2 text-[11px] leading-snug text-bp-gray-2">
+            Local log tokens can miss use on other machines. They are not billed spend and do not match the quota percent.
+          </div>
 
           {models.length > 0 && (
             <div className="mt-2 flex flex-col gap-1.5">
@@ -202,12 +193,11 @@ const money = (micros: number) => new Intl.NumberFormat(undefined, { currency: '
 export const SpendMeter = ({ spend }: { spend: AIUsageSpend }) => {
   const percent = spend.limitUsdMicros && spend.limitUsdMicros > 0 ? Math.min(1, spend.amountUsdMicros / spend.limitUsdMicros) : undefined;
   const text = `${money(spend.amountUsdMicros)}${spend.limitUsdMicros ? ` of ${money(spend.limitUsdMicros)}` : ''}`;
-  const period = spend.period === 'calendar-month' ? 'Current calendar month' : 'Current billing cycle';
   return (
     <Popover content={(
       <div className="w-[260px] p-4 text-sm">
         <div className="font-semibold">{spend.label}</div>
-        <div className="mt-1 text-xs text-bp-gray-2">{scopeLabel(spend.scope)} · {period}</div>
+        <div className="mt-1 text-xs text-bp-gray-2">{scopeLabel(spend.scope)} · Current billing cycle</div>
         <div className="mt-3 text-lg font-bold tabular-nums">{text}</div>
 
         {percent !== undefined && (

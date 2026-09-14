@@ -16,13 +16,3 @@ it('routes Cursor as one provider', () => {
   bridge.cursor.usage(account);
   expect(invoke.mock.calls).toEqual([['cursor:detect'], ['cursor:accounts'], ['cursor:usage', account]]);
 });
-
-it('routes admin key calls without any read-key call', () => {
-  bridge.aiUsageCredentials.status();
-  bridge.aiUsageCredentials.set('openai', 'sk-admin-test');
-  bridge.aiUsageCredentials.clear('openai');
-  expect(invoke.mock.calls.slice(-3)).toEqual([
-    ['aiUsageCredentials:status'], ['aiUsageCredentials:set', 'openai', 'sk-admin-test'], ['aiUsageCredentials:clear', 'openai']
-  ]);
-  expect(Object.keys(bridge.aiUsageCredentials)).toEqual(['clear', 'set', 'status']);
-});

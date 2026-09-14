@@ -11,12 +11,14 @@ export const StyleSelector = () => {
   const active = theme ?? 'sunset';
 
   return (
-    <div className="w-[420px] flex gap-[30px] mx-auto mb-5">
+    <div className="flex w-full flex-wrap justify-start gap-x-4 gap-y-3">
       {OPTIONS.map(({ key, label }) => (
-        <div
-          className="text-center cursor-pointer flex flex-col gap-1 text-[13px]"
+        <button
+          aria-pressed={active === key}
+          className="flex flex-col items-center gap-1.5 rounded-lg p-1 text-center text-sm leading-5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-500"
           key={key}
           onClick={() => set({ theme: key })}
+          type="button"
         >
           {/* The card renders the theme's real window background so the choice
               reads at a glance: the Sunset gradient vs. the flat neutral. */}
@@ -37,8 +39,8 @@ export const StyleSelector = () => {
             />
           </div>
 
-          <div>{label}</div>
-        </div>
+          <span>{label}</span>
+        </button>
       ))}
     </div>
   );

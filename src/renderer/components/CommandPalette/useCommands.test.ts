@@ -44,8 +44,6 @@ describe('useCommands', () => {
       selectedShell: undefined,
       shells: [],
       showClaudeUsage: false,
-      showLogo: true,
-      showWorktrees: true,
       theme: 'sunset'
     });
 
@@ -153,13 +151,10 @@ describe('useCommands', () => {
     expect(mocks.navigate).toHaveBeenCalledWith('/');
   });
 
-  it('calls useAppSettings.set with the correct partial for a simple toggle', () => {
+  it('does not offer a command to hide the logo', () => {
     const { result } = renderHook(() => useCommands());
 
-    const item = result.current.find((i) => i.id === 'appearance-toggle-show-logo');
-    item?.perform();
-
-    expect(window.bridge.settings.set).toHaveBeenCalledWith('appSettings', { showLogo: false }, undefined);
+    expect(result.current.some((item) => item.id === 'appearance-toggle-show-logo')).toBe(false);
   });
 
   it('does not expose the global worktree visibility command', () => {
