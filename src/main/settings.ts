@@ -17,6 +17,7 @@ export const settings = new Store<Settings>({
   },
   defaults: {
     appSettings: {
+      autoUpdate: true,
       claudeEnabled: true,
       clipboardDownscale: false,
       editors: [],

@@ -115,7 +115,6 @@ export const AppNavbar = () => {
   const searchRef = useRef<HTMLInputElement>(null);
   const onHome = useLocation().pathname === '/';
   const [lastDownscale, setLastDownscale] = useState<DownscaleResult | null>(null);
-
   // Toast whenever the main process shrinks a clipboard image, wherever the
   // toggle was flipped from.
   useEffect(
