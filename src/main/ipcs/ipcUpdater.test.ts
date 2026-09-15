@@ -16,7 +16,7 @@ const mock = vi.hoisted(() => {
     on: vi.fn((event: string, listener: (...args: unknown[]) => void) => { listeners[event] = listener; }),
     quitAndInstall: vi.fn()
   };
-  return { app, getSettings: vi.fn(), handlers, listeners, onDidChange: vi.fn(), updater, window };
+  return { app, getSettings: vi.fn(), handlers, listeners, logError: vi.fn(), onDidChange: vi.fn(), updater, window };
 });
 
 vi.mock('electron', () => ({
@@ -25,7 +25,7 @@ vi.mock('electron', () => ({
   ipcMain: { handle: (channel: string, handler: (...args: unknown[]) => unknown) => { mock.handlers[channel] = handler; } }
 }));
 vi.mock('electron-updater', () => ({ default: { autoUpdater: mock.updater } }));
-vi.mock('electron-log', () => ({ default: { error: vi.fn() } }));
+vi.mock('electron-log', () => ({ default: { error: mock.logError } }));
 vi.mock('../settings', () => ({ settings: { get: mock.getSettings, onDidChange: mock.onDidChange } }));
 
 const flush = async (): Promise<void> => { await Promise.resolve(); await Promise.resolve(); };
@@ -153,15 +153,19 @@ describe('ipcUpdater', () => {
     expect(mock.updater.downloadUpdate).not.toHaveBeenCalled();
   });
 
-  it('reports unsupported builds and check errors to the menu', async () => {
+  it('reports unsupported builds and a safe check error to the menu', async () => {
     mock.app.isPackaged = false;
     const { checkForUpdatesManually } = await import('./ipcUpdater');
     expect(await checkForUpdatesManually()).toBe('unsupported');
     expect(mock.updater.checkForUpdates).not.toHaveBeenCalled();
 
     mock.app.isPackaged = true;
-    mock.updater.checkForUpdates.mockRejectedValueOnce(new Error('network error'));
-    expect(await checkForUpdatesManually()).toEqual({ error: 'network error', status: 'error', version: undefined });
+    const error = new Error('network error');
+    mock.updater.checkForUpdates.mockRejectedValueOnce(error);
+    expect(await checkForUpdatesManually()).toEqual({
+      error: 'The update failed. Try again later.', status: 'error', version: undefined
+    });
+    expect(mock.logError).toHaveBeenCalledWith('Update failed', error);
     expect(mock.updater.downloadUpdate).not.toHaveBeenCalled();
   });
 
@@ -172,7 +176,7 @@ describe('ipcUpdater', () => {
     });
     const { checkForUpdatesManually } = await import('./ipcUpdater');
     expect(await checkForUpdatesManually()).toEqual({
-      error: 'immediate error', status: 'error', version: undefined
+      error: 'The update failed. Try again later.', status: 'error', version: undefined
     });
 
     mock.updater.checkForUpdates.mockImplementationOnce(async () => {
@@ -261,10 +265,17 @@ describe('ipcUpdater', () => {
     expect(mock.updater.downloadUpdate).toHaveBeenCalledTimes(1);
   });
 
-  it('shows a check error and retries from the button', async () => {
-    mock.updater.checkForUpdates.mockRejectedValueOnce(new Error('network error'));
+  it('hides a raw 404 error and retries from the button', async () => {
+    const rawError = new Error('404 https://token@example.com/latest-mac.yml headers={"authorization":"secret"} body=missing');
+    rawError.stack = `HttpError: ${rawError.message}\n at ElectronHttpExecutor.handleResponse`;
+    mock.updater.checkForUpdates.mockRejectedValueOnce(rawError);
     await setup(false);
-    expect(mock.handlers['updater:getState']()).toEqual({ error: 'network error', status: 'error', version: undefined });
+    const errorState = mock.handlers['updater:getState']();
+    expect(errorState).toEqual({
+      error: 'The update failed. Try again later.', status: 'error', version: undefined
+    });
+    expect(JSON.stringify(errorState)).not.toMatch(/latest-mac|https|headers|authorization|secret|body|stack/i);
+    expect(mock.logError).toHaveBeenCalledWith('Update failed', rawError);
 
     mock.updater.checkForUpdates.mockImplementationOnce(async () => {
       mock.listeners['update-available']({ version: '4.5.0' });
@@ -274,6 +285,32 @@ describe('ipcUpdater', () => {
     expect(mock.updater.downloadUpdate).toHaveBeenCalledTimes(1);
   });
 
+  it('recovers from a failed check and can still find and finish an update', async () => {
+    mock.updater.checkForUpdates.mockRejectedValueOnce(new Error('temporary outage'));
+    await setup(false);
+    expect(mock.handlers['updater:getState']()).toEqual({
+      error: 'The update failed. Try again later.', status: 'error', version: undefined
+    });
+
+    const { checkForUpdatesManually } = await import('./ipcUpdater');
+    mock.updater.checkForUpdates.mockImplementationOnce(async () => {
+      mock.listeners['update-not-available']();
+    });
+    expect(await checkForUpdatesManually()).toEqual({ status: 'idle' });
+
+    mock.updater.checkForUpdates.mockImplementationOnce(async () => {
+      mock.listeners['update-available']({ version: '4.7.0' });
+    });
+    expect(await checkForUpdatesManually()).toEqual({ status: 'available', version: '4.7.0' });
+
+    mock.updater.downloadUpdate.mockImplementationOnce(async () => {
+      mock.listeners['update-downloaded']({ version: '4.7.0' });
+      return [];
+    });
+    await mock.handlers['updater:download']();
+    expect(mock.handlers['updater:getState']()).toEqual({ status: 'ready', version: '4.7.0' });
+  });
+
   it('shows a download error and retries without another check', async () => {
     mock.updater.checkForUpdates.mockImplementationOnce(async () => {
       mock.listeners['update-available']({ version: '4.5.0' });
@@ -281,7 +318,9 @@ describe('ipcUpdater', () => {
     mock.updater.downloadUpdate.mockRejectedValueOnce(new Error('download failed'));
     await setup(false);
     await mock.handlers['updater:download']();
-    expect(mock.handlers['updater:getState']()).toEqual({ error: 'download failed', status: 'error', version: '4.5.0' });
+    expect(mock.handlers['updater:getState']()).toEqual({
+      error: 'The update failed. Try again later.', status: 'error', version: '4.5.0'
+    });
     await mock.handlers['updater:download']();
     expect(mock.updater.downloadUpdate).toHaveBeenCalledTimes(2);
     expect(mock.updater.checkForUpdates).toHaveBeenCalledTimes(1);
@@ -302,7 +341,9 @@ describe('ipcUpdater', () => {
     expect(mock.updater.quitAndInstall).toHaveBeenCalledTimes(1);
 
     mock.listeners.error(new Error('install failed'));
-    expect(mock.handlers['updater:getState']()).toEqual({ error: 'install failed', status: 'error', version: '4.5.0' });
+    expect(mock.handlers['updater:getState']()).toEqual({
+      error: 'The update failed. Try again later.', status: 'error', version: '4.5.0'
+    });
     await mock.handlers['updater:download']();
     expect(mock.handlers['updater:getState']()).toEqual({ status: 'ready', version: '4.5.0' });
     mock.handlers['updater:install']();

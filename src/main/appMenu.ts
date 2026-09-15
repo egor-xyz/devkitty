@@ -1,6 +1,9 @@
 import { app, BrowserWindow, dialog, Menu, type MenuItemConstructorOptions } from 'electron';
+import log from 'electron-log';
 
 import { checkForUpdatesManually } from './ipcs/ipcUpdater';
+
+const UPDATE_ERROR_DETAIL = 'Try again later.';
 
 const focusWindow = (): BrowserWindow | undefined => {
   const window = BrowserWindow.getFocusedWindow()
@@ -26,14 +29,15 @@ const checkForUpdates = async (): Promise<void> => {
     if (state === 'unsupported') {
       await showResult('Updates unavailable', 'Check for updates in an installed macOS app.');
     } else if (state.status === 'error') {
-      await showResult('Update check failed', 'Devkitty could not check for updates.', state.error, 'error');
+      await showResult('Update check failed', 'Devkitty could not check for updates.', UPDATE_ERROR_DETAIL, 'error');
     } else if (state.status === 'idle') {
       await showResult('No updates available', 'Devkitty is up to date.');
     } else {
       focusWindow();
     }
   } catch (error) {
-    await showResult('Update check failed', 'Devkitty could not check for updates.', String(error), 'error');
+    log.error('Manual update check failed', error);
+    await showResult('Update check failed', 'Devkitty could not check for updates.', UPDATE_ERROR_DETAIL, 'error');
   }
 };
 

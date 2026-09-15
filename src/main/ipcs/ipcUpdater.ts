@@ -7,6 +7,7 @@ import { settings } from '../settings';
 
 const { autoUpdater } = electronUpdater;
 const CHECK_INTERVAL_MS = 5 * 60 * 1000;
+const UPDATE_ERROR_MESSAGE = 'The update failed. Try again later.';
 const canUpdate = (): boolean => app.isPackaged && process.platform === 'darwin';
 let state: UpdateState = { status: 'idle' };
 let checkPromise: Promise<void> | undefined;
@@ -28,10 +29,9 @@ const isReady = (): boolean => state.status === 'ready';
 const reportError = (error: unknown): void => {
   downloading = false;
   installing = false;
-  const message = error instanceof Error ? error.message : String(error);
-  if (state.status === 'error' && state.error === message) return;
   log.error('Update failed', error);
-  publishState({ error: message, status: 'error', version: state.version });
+  if (state.status === 'error' && state.error === UPDATE_ERROR_MESSAGE) return;
+  publishState({ error: UPDATE_ERROR_MESSAGE, status: 'error', version: state.version });
 };
 
 const download = async (): Promise<void> => {
