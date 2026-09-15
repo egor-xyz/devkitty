@@ -12,6 +12,7 @@ import { type Run } from 'types/gitHub';
 import { type Project } from 'types/project';
 
 import { isPullRun } from '../../hooks/useRepoData/groupByBranch';
+import { formatDuration, getRunDuration } from './workflowDuration';
 import { WorkflowGraph } from './WorkflowGraph';
 
 type Job = {
@@ -38,25 +39,9 @@ type Props = {
 
 const tagLength = 75;
 
-const formatDuration = (start?: string, end?: string) => {
-  if (!start) return null;
-  const startMs = new Date(start).getTime();
-  const endMs = end ? new Date(end).getTime() : Date.now();
-  if (Number.isNaN(startMs) || Number.isNaN(endMs) || endMs < startMs) return null;
-  const totalSeconds = Math.floor((endMs - startMs) / 1000);
-  const hours = Math.floor(totalSeconds / 3600);
-  const minutes = Math.floor((totalSeconds % 3600) / 60);
-  const seconds = totalSeconds % 60;
-
-  if (hours > 0) return `${hours}h ${minutes}m`;
-  if (minutes > 0) return `${minutes}m ${seconds}s`;
-  return `${seconds}s`;
-};
-
 export const Workflow: FC<Props> = ({ isRoot = false, onRefresh, project, run, stickyTop = 55 }) => {
   const {
     conclusion,
-    created_at,
     display_title,
     event,
     head_branch,
@@ -119,7 +104,7 @@ export const Workflow: FC<Props> = ({ isRoot = false, onRefresh, project, run, s
       window.clearInterval(timer);
     };
   }, [conclusion]);
-  const runDuration = formatDuration(created_at, conclusion ? updated_at : undefined);
+  const runDuration = getRunDuration(run);
 
   const openInBrowser = () => {
     window.open(html_url, '_blank');
