@@ -53,6 +53,17 @@ jobs:
       - name: Install dependencies
         run: pnpm install --frozen-lockfile
 
+      - name: Verify Analytics release secret
+        if: github.event.inputs.dry_run != 'true'
+        shell: bash
+        env:
+          MAIN_VITE_GA_API_SECRET: ${{ secrets.MAIN_VITE_GA_API_SECRET }}
+        run: |
+          if [[ -z "${MAIN_VITE_GA_API_SECRET//[[:space:]]/}" ]]; then
+            echo "Analytics release secret is missing."
+            exit 1
+          fi
+
       - name: Bumb version
         id: version
         run: |
@@ -81,6 +92,8 @@ jobs:
       - name: Verify packaged runtime dependencies
         if: github.event.inputs.dry_run != 'true'
         shell: bash
+        env:
+          MAIN_VITE_GA_API_SECRET: ${{ secrets.MAIN_VITE_GA_API_SECRET }}
         run: |
           set -euo pipefail
           archives=()

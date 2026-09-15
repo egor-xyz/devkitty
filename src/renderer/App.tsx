@@ -1,5 +1,6 @@
 import { Classes, FocusStyleManager } from '@blueprintjs/core';
 import { type CSSProperties, useEffect, useState } from 'react';
+import { useAnalyticsPageView } from 'renderer/hooks/useAnalyticsPageView';
 import { useIsSunset } from 'renderer/hooks/useAppSettings';
 import { useDarkMode } from 'renderer/hooks/useDarkMode';
 import { useModal } from 'renderer/hooks/useModal';
@@ -13,6 +14,8 @@ import { Routing } from './Routing';
 FocusStyleManager.onlyShowFocusOnTabs();
 
 export const App = () => {
+  useAnalyticsPageView();
+
   const { darkMode } = useDarkMode();
   const { Modal } = useModal();
   const [footerHeight, setFooterHeight] = useState(0);

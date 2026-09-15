@@ -35,6 +35,50 @@ function findDependency(directory, name, archivedPaths) {
   }
 }
 
+function analyticsErrors(main, expectedSecret) {
+  const errors = []
+  const secretMatch = main.match(/\b(?:const|let|var)\s+apiSecret\s*=\s*(["'])([^"'\r\n]*)\1/)
+  const compiledSecret = secretMatch?.[2]
+
+  if (!expectedSecret) {
+    errors.push('Missing expected Analytics API secret')
+  } else if (!compiledSecret) {
+    errors.push('Missing non-empty compiled Analytics API secret')
+  } else if (compiledSecret !== expectedSecret) {
+    errors.push('Compiled Analytics API secret does not match release secret')
+  }
+  if (!main.includes('G-KVS84N7CDJ')) {
+    errors.push('Missing Analytics measurement ID')
+  }
+  if (!main.includes('/mp/collect')) {
+    errors.push('Missing Analytics collect endpoint')
+  }
+
+  return errors
+}
+
+function selfCheck() {
+  const valid = 'const apiSecret = "fixture-key"; const id = "G-KVS84N7CDJ"; const endpoint = "/mp/collect";'
+  const cases = [
+    [valid, 'fixture-key', 0],
+    [valid, 'wrong-key', 1],
+    [valid, '', 1],
+    [valid.replace('const apiSecret = "fixture-key"; ', ''), 'fixture-key', 1],
+    [valid.replace('G-KVS84N7CDJ', 'fixture-id'), 'fixture-key', 1],
+    [valid.replace('/mp/collect', '/fixture'), 'fixture-key', 1]
+  ]
+
+  for (const [main, expectedSecret, expectedErrors] of cases) {
+    if (analyticsErrors(main, expectedSecret).length !== expectedErrors) {
+      console.error('Analytics packaged-runtime self-check failed')
+      return false
+    }
+  }
+
+  console.log('Analytics packaged-runtime self-check passed')
+  return true
+}
+
 function checkArchive(archive) {
   const paths = asar.listPackage(archive)
   const archivedPaths = new Set(paths)
@@ -77,6 +121,7 @@ function checkArchive(archive) {
   // root package.json also lists renderer packages that Electron does not load.
   if (archivedPaths.has('/out/main/index.mjs')) {
     const main = asar.extractFile(archive, 'out/main/index.mjs').toString()
+    errors.push(...analyticsErrors(main, process.env.MAIN_VITE_GA_API_SECRET))
     const imports = main.matchAll(/^import\s+(?:[^;]*?\s+from\s+)?["']([^"']+)["'];/gm)
     for (const [, name] of imports) {
       if (name === 'electron' || builtin.has(name.replace(/^node:/, '')) || name.startsWith('.') || name.startsWith('/')) continue
@@ -129,6 +174,9 @@ function checkArchive(archive) {
 }
 
 const archives = process.argv.slice(2)
+if (archives.length === 1 && archives[0] === '--self-test') {
+  process.exit(selfCheck() ? 0 : 1)
+}
 if (archives.length === 0) {
   console.error('Usage: node scripts/check-packaged-deps.cjs APP_ASAR [APP_ASAR...]')
   process.exit(2)

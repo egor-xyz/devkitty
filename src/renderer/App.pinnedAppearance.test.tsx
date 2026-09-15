@@ -7,6 +7,7 @@ vi.mock('renderer/hooks/useAppSettings', (): object => ({
   useIsSunset: () => false
 }));
 vi.mock('renderer/hooks/useDarkMode', (): object => ({ useDarkMode: () => ({ darkMode: false }) }));
+vi.mock('renderer/hooks/useAnalyticsPageView', (): object => ({ useAnalyticsPageView: vi.fn() }));
 vi.mock('renderer/hooks/useModal', (): object => ({ useModal: () => ({ Modal: (): null => null }) }));
 vi.mock('./components/AppNavbar', (): object => ({ AppNavbar: (): null => null }));
 vi.mock('./components/ClaudeUsage', (): object => ({ ClaudeFooter: (): null => null }));
