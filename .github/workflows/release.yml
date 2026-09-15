@@ -25,26 +25,40 @@ on:
 
 concurrency:
   group: ${{ github.event.repository.name }}-release
-  cancel-in-progress: true
+  cancel-in-progress: false
+
+permissions:
+  contents: write
 
 jobs:
   release:
     if: github.ref != 'refs/heads/test/signed-updater'
     runs-on: macos-26
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v7.0.1
+        with:
+          fetch-depth: 0
 
       - name: Prepare Git
         id: prepare-git
         shell: bash
         run: |
+          set -euo pipefail
+          if [[ "$GITHUB_REF_TYPE" != "branch" ]]; then
+            echo "Run this workflow from a branch."
+            exit 1
+          fi
           git config user.name github-actions
           git config user.email github-actions@github.com
+          git fetch --prune origin \
+            "+refs/heads/${GITHUB_REF_NAME}:refs/remotes/origin/${GITHUB_REF_NAME}" \
+            --tags
+          git checkout -B release-work "origin/${GITHUB_REF_NAME}"
 
       - name: Enable pnpm
         run: corepack enable pnpm
 
-      - uses: actions/setup-node@v6
+      - uses: actions/setup-node@v7.0.0
         with:
           cache: pnpm
           check-latest: true
@@ -64,11 +78,111 @@ jobs:
             exit 1
           fi
 
-      - name: Bumb version
+      - name: Bump version
         id: version
+        shell: bash
+        env:
+          BUMP: ${{ github.event.inputs.bump }}
+          DRY_RUN: ${{ github.event.inputs.dry_run }}
         run: |
-          pnpm version ${{ github.event.inputs.bump }}
-          echo "new_tag=$(git describe --tags --abbrev=0 | sed 's/v//')" >> $GITHUB_OUTPUT
+          set -euo pipefail
+          marker="[release-run:${GITHUB_RUN_ID}]"
+
+          if [[ "$DRY_RUN" == "true" ]]; then
+            pnpm version "$BUMP" --no-git-tag-version
+          else
+            release_commits="$(git log --format=%H --fixed-strings \
+              --grep="$marker" "origin/${GITHUB_REF_NAME}")"
+            release_commit=""
+            release_count=0
+            while IFS= read -r commit; do
+              if [[ -n "$commit" ]]; then
+                release_commit="$commit"
+                release_count=$((release_count + 1))
+              fi
+            done <<< "$release_commits"
+
+            if [[ "$release_count" -gt 1 ]]; then
+              echo "More than one version commit has marker $marker."
+              exit 1
+            fi
+
+            if [[ "$release_count" -eq 1 ]]; then
+              newest_release_commit=""
+              while IFS=$'\t' read -r commit subject; do
+                if [[ "$subject" =~ ^([^[:space:]]+)\ \[release-run:[0-9]+\]$ ]]; then
+                  newest_release_commit="$commit"
+                  break
+                fi
+              done < <(git log --format='%H%x09%s' "origin/${GITHUB_REF_NAME}")
+
+              if [[ -z "$newest_release_commit" ]]; then
+                echo "The branch has no release marker commit."
+                exit 1
+              fi
+              if [[ "$newest_release_commit" != "$release_commit" ]]; then
+                echo "A newer release exists on the branch. This old run cannot continue."
+                exit 1
+              fi
+
+              git checkout --detach "$release_commit"
+              version="$(node -p "require('./package.json').version")"
+              subject="$(git log -1 --format=%s)"
+              if [[ "$subject" != "$version $marker" ]]; then
+                echo "The marked version commit has an invalid message."
+                exit 1
+              fi
+
+              tag="v${version}"
+              if ! git show-ref --verify --quiet "refs/tags/${tag}"; then
+                echo "The marked version commit has no ${tag} tag."
+                exit 1
+              fi
+              if [[ "$(git rev-list -n 1 "$tag")" != "$release_commit" ]]; then
+                echo "The ${tag} tag does not point to the marked version commit."
+                exit 1
+              fi
+            else
+              pnpm version "$BUMP" --no-git-tag-version
+              version="$(node -p "require('./package.json').version")"
+              tag="v${version}"
+              changed_files="$(git diff --name-only)"
+              if [[ "$changed_files" != $'package-lock.json\npackage.json' ]]; then
+                echo "The version command changed an unexpected tracked file."
+                printf '%s\n' "$changed_files"
+                exit 1
+              fi
+              git add package.json package-lock.json
+              git commit -m "$version $marker"
+              git tag "$tag"
+            fi
+          fi
+
+          version="$(node -p "require('./package.json').version")"
+          echo "new_tag=$version" >> "$GITHUB_OUTPUT"
+          if [[ -n "${release_commit:-}" ]]; then
+            echo "reused=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "reused=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Push version commit and tag
+        if: github.event.inputs.dry_run != 'true'
+        shell: bash
+        run: |
+          set -euo pipefail
+          tag="v${{ steps.version.outputs.new_tag }}"
+          if [[ "${{ steps.version.outputs.reused }}" == "true" ]]; then
+            if ! git merge-base --is-ancestor HEAD "origin/${GITHUB_REF_NAME}"; then
+              echo "The marked version commit is not on the current branch."
+              exit 1
+            fi
+            echo "The version commit and tag already exist."
+            exit 0
+          fi
+          git push --atomic origin \
+            "HEAD:refs/heads/${GITHUB_REF_NAME}" \
+            "refs/tags/${tag}"
 
       - name: Make
         if: github.event.inputs.dry_run != 'true'
@@ -111,17 +225,176 @@ jobs:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           dry_run: 'true'
 
-      - name: Push changes and tags
+      - name: Inspect existing release
+        id: existing-release
         if: github.event.inputs.dry_run != 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REQUESTED_DRAFT: ${{ github.event.inputs.draft }}
+          TAG: v${{ steps.version.outputs.new_tag }}
         run: |
-          git push
+          set -euo pipefail
+          echo "already_complete=false" >> "$GITHUB_OUTPUT"
 
-      - name: Create a GitHub release
-        if: github.event.inputs.dry_run != 'true'
-        uses: ncipollo/release-action@v1
+          shopt -s nullglob
+          zip_files=(dist/*.zip)
+          if [[ "${#zip_files[@]}" -eq 0 ]]; then
+            echo "No local ZIP file exists."
+            exit 1
+          fi
+          if [[ ! -s dist/latest-mac.yml ]]; then
+            echo "The local latest-mac.yml file is missing or empty."
+            exit 1
+          fi
+          local_files=("${zip_files[@]}" dist/latest-mac.yml)
+
+          release_file="${RUNNER_TEMP}/existing-release.json"
+          if ! gh api "repos/${GITHUB_REPOSITORY}/releases/tags/${TAG}" \
+            > "$release_file" 2> "${RUNNER_TEMP}/existing-release-error.txt"; then
+            if grep -q 'HTTP 404' "${RUNNER_TEMP}/existing-release-error.txt"; then
+              echo "No release exists for ${TAG}."
+              exit 0
+            fi
+            echo "GitHub did not return the release for ${TAG}."
+            cat "${RUNNER_TEMP}/existing-release-error.txt"
+            exit 1
+          fi
+
+          if ! jq -e --arg tag "$TAG" '.tag_name == $tag' \
+            "$release_file" > /dev/null; then
+            echo "The existing release has an unexpected tag."
+            exit 1
+          fi
+          if [[ "$(jq -r '.draft' "$release_file")" == "true" ]]; then
+            echo "The existing release is a draft."
+            exit 0
+          fi
+          if [[ "$REQUESTED_DRAFT" == "true" ]]; then
+            echo "A public release exists, but this run requested a draft."
+            exit 1
+          fi
+
+          assets_file="${RUNNER_TEMP}/existing-release-assets.json"
+          release_id="$(jq -r '.id' "$release_file")"
+          if [[ ! "$release_id" =~ ^[0-9]+$ ]]; then
+            echo "The existing release has an invalid ID."
+            exit 1
+          fi
+          gh api --paginate \
+            "repos/${GITHUB_REPOSITORY}/releases/${release_id}/assets?per_page=100" \
+            --slurp > "$assets_file"
+
+          for local_file in "${local_files[@]}"; do
+            if [[ ! -s "$local_file" ]]; then
+              echo "The local file $local_file is empty."
+              exit 1
+            fi
+            asset_name="$(basename "$local_file")"
+            asset_count="$(jq --arg name "$asset_name" \
+              '[.[][] | select(.name == $name)] | length' "$assets_file")"
+            asset_size="$(jq --arg name "$asset_name" \
+              '[.[][] | select(.name == $name)][0].size // 0' "$assets_file")"
+            if [[ "$asset_count" -ne 1 || "$asset_size" -le 0 ]]; then
+              echo "The public release does not have one non-empty $asset_name file."
+              exit 1
+            fi
+          done
+
+          echo "The public release is already complete."
+          echo "already_complete=true" >> "$GITHUB_OUTPUT"
+
+      - name: Create or update draft release
+        id: release
+        if: >-
+          github.event.inputs.dry_run != 'true' &&
+          steps.existing-release.outputs.already_complete != 'true'
+        uses: ncipollo/release-action@v1.21.0
         with:
           tag: v${{ steps.version.outputs.new_tag }}
           name: Release v${{ steps.version.outputs.new_tag }}
           body: ${{ steps.changelog.outputs.changelog }}
           artifacts: 'dist/*.zip,dist/latest-mac.yml'
-          draft: ${{ github.event.inputs.draft }}
+          draft: true
+          allowUpdates: true
+          updateOnlyUnreleased: true
+          artifactErrorsFailBuild: true
+          replacesArtifacts: true
+
+      - name: Verify release artifacts
+        if: >-
+          github.event.inputs.dry_run != 'true' &&
+          steps.existing-release.outputs.already_complete != 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_ID: ${{ steps.release.outputs.id }}
+        run: |
+          set -euo pipefail
+          if [[ ! "$RELEASE_ID" =~ ^[0-9]+$ ]]; then
+            echo "The release action did not return a valid release ID."
+            exit 1
+          fi
+
+          shopt -s nullglob
+          zip_files=(dist/*.zip)
+          if [[ "${#zip_files[@]}" -eq 0 ]]; then
+            echo "No local ZIP file exists."
+            exit 1
+          fi
+          if [[ ! -s dist/latest-mac.yml ]]; then
+            echo "The local latest-mac.yml file is missing or empty."
+            exit 1
+          fi
+
+          local_files=("${zip_files[@]}" dist/latest-mac.yml)
+          release_file="${RUNNER_TEMP}/release.json"
+          assets_file="${RUNNER_TEMP}/release-assets.json"
+          gh api \
+            "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" \
+            > "$release_file"
+          if ! jq -e \
+            --arg id "$RELEASE_ID" \
+            --arg tag "v${{ steps.version.outputs.new_tag }}" \
+            '.id == ($id | tonumber) and .draft == true and .tag_name == $tag' \
+            "$release_file" > /dev/null; then
+            echo "The release ID does not point to the expected draft release."
+            exit 1
+          fi
+
+          gh api \
+            "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}/assets?per_page=100" \
+            > "$assets_file"
+
+          for local_file in "${local_files[@]}"; do
+            if [[ ! -s "$local_file" ]]; then
+              echo "The local file $local_file is empty."
+              exit 1
+            fi
+
+            asset_name="$(basename "$local_file")"
+            asset_count="$(jq --arg name "$asset_name" \
+              '[.[] | select(.name == $name)] | length' "$assets_file")"
+            asset_size="$(jq --arg name "$asset_name" \
+              '[.[] | select(.name == $name)][0].size // 0' "$assets_file")"
+            if [[ "$asset_count" -ne 1 || "$asset_size" -le 0 ]]; then
+              echo "The draft release does not have one non-empty $asset_name file."
+              exit 1
+            fi
+          done
+
+      - name: Publish GitHub release
+        if: >-
+          github.event.inputs.dry_run != 'true' &&
+          github.event.inputs.draft != 'true' &&
+          steps.existing-release.outputs.already_complete != 'true'
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_ID: ${{ steps.release.outputs.id }}
+        run: |
+          set -euo pipefail
+          gh api --method PATCH \
+            "repos/${GITHUB_REPOSITORY}/releases/${RELEASE_ID}" \
+            -F draft=false \
+            -f make_latest=true

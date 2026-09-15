@@ -17,6 +17,7 @@ const mock = vi.hoisted(() => {
     checkForUpdatesManually: vi.fn(),
     getAllWindows: vi.fn(() => [window]),
     getFocusedWindow: vi.fn(() => window),
+    logError: vi.fn(),
     setApplicationMenu: vi.fn(),
     showMessageBox: vi.fn(async () => ({ response: 0 })),
     window
@@ -32,6 +33,7 @@ vi.mock('electron', () => ({
   dialog: { showMessageBox: mock.showMessageBox },
   Menu: { buildFromTemplate: mock.buildFromTemplate, setApplicationMenu: mock.setApplicationMenu }
 }));
+vi.mock('electron-log', () => ({ default: { error: mock.logError } }));
 vi.mock('./ipcs/ipcUpdater', () => ({ checkForUpdatesManually: mock.checkForUpdatesManually }));
 
 const install = async (): Promise<MenuItemConstructorOptions[]> => {
@@ -94,13 +96,26 @@ describe('macOS app menu', () => {
     }));
   });
 
-  it('shows an error when a check fails', async () => {
-    mock.checkForUpdatesManually.mockResolvedValue({ error: 'Network lost', status: 'error' });
+  it('shows only safe text when a check fails', async () => {
+    const rawError = '404 https://token@example.com/latest-mac.yml headers authorization secret body stack';
+    mock.checkForUpdatesManually.mockResolvedValue({ error: rawError, status: 'error' });
     const template = await install();
     await clickCheck(template);
-    expect(mock.showMessageBox).toHaveBeenCalledWith(mock.window, expect.objectContaining({
-      buttons: ['OK'], detail: 'Network lost', type: 'error'
-    }));
+    const [, options] = mock.showMessageBox.mock.calls.at(0)!;
+    expect(options).toEqual(expect.objectContaining({ buttons: ['OK'], detail: 'Try again later.', type: 'error' }));
+    expect(JSON.stringify(options)).not.toMatch(/latest-mac|https|headers|authorization|secret|body|stack/i);
+  });
+
+  it('logs a thrown check error and shows only safe text', async () => {
+    const rawError = new Error('404 https://token@example.com/latest-mac.yml headers=secret body=missing');
+    mock.checkForUpdatesManually.mockRejectedValue(rawError);
+    const template = await install();
+    await clickCheck(template);
+
+    const [, options] = mock.showMessageBox.mock.calls.at(0)!;
+    expect(mock.logError).toHaveBeenCalledWith('Manual update check failed', rawError);
+    expect(options).toEqual(expect.objectContaining({ detail: 'Try again later.', type: 'error' }));
+    expect(JSON.stringify(options)).not.toMatch(/latest-mac|https|headers|secret|body|stack/i);
   });
 
   it('explains that checks need an installed app in development', async () => {
