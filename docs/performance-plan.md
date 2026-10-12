@@ -24,7 +24,10 @@ Lower CPU use in the open Projects view without delaying data for a card that th
 - Lint on changed code: passed. Production build: passed.
 - TypeScript: the base tree and this worktree have the same 103 known errors.
 - Demo app: opened the Projects view, scrolled through worktrees, and saw live run times after returning.
-- After install, compare 30-second idle CPU samples in Projects and Settings with the same data. Aim to cut Projects CPU by at least 30% from the current sample.
+- Local packaged app: opened the Projects view with saved data. Five 2-second CPU samples summed to about 3.6% on average across the main, renderer, and graphics processes. The installed 4.6.2 app averaged about 55% in the same view during a separate short sample. The samples were about one hour apart, so this is a useful signal, not a controlled comparison.
+- Dev mode: opened and showed project data. Its CPU use is not comparable to a packaged app.
+- Memory: these short samples do not show a reliable change in app memory use.
+- The local packaged app was for testing only. The installed app was not changed.
 
 ## Risk
 
