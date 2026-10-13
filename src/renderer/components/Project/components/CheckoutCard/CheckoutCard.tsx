@@ -4,6 +4,7 @@ import { FaCopy, FaRegCopy } from 'react-icons/fa';
 import { GitStatusBadge } from 'renderer/components/GitStatusBadge';
 import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
 import { useModal } from 'renderer/hooks/useModal';
+import { useOnScreen } from 'renderer/hooks/useOnScreen';
 import { usePoll } from 'renderer/services/poller';
 import { cn } from 'renderer/utils/cn';
 import { type Run } from 'types/gitHub';
@@ -76,6 +77,7 @@ export const CheckoutCard: FC<Props> = ({
     selectedShell
   } = useAppSettings();
   const isSunset = useIsSunset();
+  const { onScreen, ref: headerRef } = useOnScreen<HTMLDivElement>();
   const [showStray, setShowStray] = useState(false);
   const [showHidden, setShowHidden] = useState(false);
   const [showAllOwn, setShowAllOwn] = useState(false);
@@ -103,7 +105,7 @@ export const CheckoutCard: FC<Props> = ({
     fetch: () => (isMain ? Promise.resolve({ success: false }) : window.bridge.worktree.getStatus(worktree.path)),
     interval: () => (isMain ? Infinity : fetchInterval > 2000 ? fetchInterval : 10000),
     key: `worktreeStatus:${worktree.path}`
-  });
+  }, !isMain && onScreen);
 
   const status: CheckoutStatus | null = isMain
     ? gitStatus?.status
@@ -257,6 +259,7 @@ export const CheckoutCard: FC<Props> = ({
           expanded && 'shadow-[0_2px_6px_-1px_rgba(0,0,0,0.20)] dark:shadow-[0_2px_6px_-1px_rgba(0,0,0,0.6)]',
           deleting && 'opacity-50 pointer-events-none'
         )}
+        ref={headerRef}
       >
         {/* The row itself is the toggle — no chevron. The repo name sits inside
             it too, so clicking the obvious part of the header works; the

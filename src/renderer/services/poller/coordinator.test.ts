@@ -176,6 +176,33 @@ describe('subscribe', () => {
     expect(fetchFn).toHaveBeenCalledTimes(1);
     expect(getSnapshot('k9')).toEqual({ n: 7 });
   });
+
+  it('refreshes stale cached data when a row subscribes again', async () => {
+    const fetchFn = vi.fn().mockResolvedValue({ n: 7 });
+    const spec = { fetch: fetchFn, interval: () => 1000, key: 'returned-row' };
+    const unsubscribe = subscribe(spec, vi.fn());
+    await vi.advanceTimersByTimeAsync(500);
+    unsubscribe();
+
+    await vi.advanceTimersByTimeAsync(2000);
+    const onData = vi.fn();
+    subscribe(spec, onData);
+    expect(onData).toHaveBeenCalledWith({ n: 7 });
+    await vi.advanceTimersByTimeAsync(500);
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
+  it('evicts old idle data when the cache has more than 100 rows', async () => {
+    for (let i = 0; i < 101; i++) {
+      const unsubscribe = subscribe({ fetch: () => Promise.resolve(i), interval: () => 60_000, key: `row:${i}` }, vi.fn());
+      await vi.advanceTimersByTimeAsync(500);
+      unsubscribe();
+    }
+
+    expect(getSnapshot('row:0')).toBeUndefined();
+    expect(getSnapshot('row:1')).toBe(1);
+    expect(getSnapshot('row:100')).toBe(100);
+  });
 });
 
 describe('refresh', () => {

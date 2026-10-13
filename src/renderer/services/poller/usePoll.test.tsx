@@ -108,4 +108,28 @@ describe('usePoll', () => {
     unmount();
     expect(unsubscribe).toHaveBeenCalledTimes(1);
   });
+
+  it('subscribes only while enabled and keeps the last value', () => {
+    const unsubscribe = vi.fn();
+    let onData: ((value: unknown) => void) | undefined;
+    subscribeMock.mockImplementation((_spec: Spec, callback: (value: unknown) => void) => {
+      onData = callback;
+      return unsubscribe;
+    });
+    const spec = { fetch: vi.fn(), interval: vi.fn(), key: 'visible-row' };
+    const { rerender, result } = renderHook(({ enabled }) => usePoll(spec, enabled), {
+      initialProps: { enabled: false }
+    });
+    expect(subscribeMock).not.toHaveBeenCalled();
+
+    rerender({ enabled: true });
+    expect(subscribeMock).toHaveBeenCalledTimes(1);
+    act(() => onData?.({ n: 1 }));
+    rerender({ enabled: false });
+    expect(unsubscribe).toHaveBeenCalledTimes(1);
+    expect(result.current.data).toEqual({ n: 1 });
+
+    rerender({ enabled: true });
+    expect(subscribeMock).toHaveBeenCalledTimes(2);
+  });
 });

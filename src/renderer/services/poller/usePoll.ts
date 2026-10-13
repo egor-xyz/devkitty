@@ -17,9 +17,10 @@ export type UsePollResult<T> = {
  * fresh via refs on every render, so re-renders with new closures never
  * force a resubscribe — only a change in `spec.key` does.
  */
-export function usePoll<T>(spec: PollSpec<T>): UsePollResult<T> {
+export function usePoll<T>(spec: PollSpec<T>, enabled = true): UsePollResult<T> {
   const specRef = useRef(spec);
   specRef.current = spec;
+  const lastKey = useRef(spec.key);
 
   const [state, setState] = useState<UsePollResult<T>>({
     data: undefined,
@@ -28,7 +29,11 @@ export function usePoll<T>(spec: PollSpec<T>): UsePollResult<T> {
   });
 
   useEffect(() => {
-    setState({ data: undefined, error: undefined, loading: true });
+    if (lastKey.current !== spec.key) {
+      lastKey.current = spec.key;
+      setState({ data: undefined, error: undefined, loading: true });
+    }
+    if (!enabled) return;
 
     const liveSpec: PollSpec<T> = {
       fetch: () => specRef.current.fetch(),
@@ -50,7 +55,7 @@ export function usePoll<T>(spec: PollSpec<T>): UsePollResult<T> {
     return unsubscribe;
     // Only `spec.key` should trigger a resubscribe; fetch/interval stay live via specRef.
      
-  }, [spec.key]);
+  }, [enabled, spec.key]);
 
   return state;
 }

@@ -53,6 +53,7 @@ const MIN_INTERVAL_MS = 1000;
 const MAX_BACKOFF_MS = 300_000;
 const DEFAULT_BACKOFF_BASE_MS = 5_000;
 const HOT_REPOLL_DELAYS_MS = [800, 1500];
+const MAX_IDLE_CACHE_ENTRIES = 100;
 
 const registry = new Map<string, Entry>();
 
@@ -108,21 +109,38 @@ export function subscribe<T>(
   ensureLoop();
 
   const entry = getOrCreateEntry(spec);
+  const wasInactive = entry.subscribers.size === 0;
   const subscriber = { onData, onError } as unknown as Subscriber<unknown>;
   entry.subscribers.add(subscriber);
 
   if (entry.lastData !== undefined) {
     // Cache hit: deliver instantly, no extra fetch.
     onData(entry.lastData as T);
-  } else if (!entry.inFlight) {
-    entry.nextDue = now();
+  }
+  if (wasInactive && !entry.inFlight) {
+    const interval = clampInterval(entry.spec.interval(entry.lastData));
+    entry.nextDue = entry.lastData === undefined || now() - entry.lastFetched >= interval
+      ? now()
+      : entry.lastFetched + interval;
   }
 
+  let subscribed = true;
   return () => {
+    if (!subscribed) return;
+    subscribed = false;
     entry.subscribers.delete(subscriber);
     if (entry.subscribers.size === 0) {
       // Keep the cache, stop polling until someone subscribes/refreshes again.
       entry.nextDue = Infinity;
+      if (registry.get(spec.key) === entry) {
+        registry.delete(spec.key);
+        registry.set(spec.key, entry);
+        pruneIdleCache();
+      }
+      if (![...registry.values()].some((item) => item.subscribers.size > 0)) {
+        stopLoop();
+        removeGatesIfInstalled();
+      }
     }
   };
 }
@@ -214,6 +232,17 @@ function markStaleSubscribedEntriesDue(): void {
 
 function now(): number {
   return Date.now();
+}
+
+function pruneIdleCache(): void {
+  let idleCount = [...registry.values()].filter((entry) => entry.subscribers.size === 0).length;
+  if (idleCount <= MAX_IDLE_CACHE_ENTRIES) return;
+
+  for (const [key, entry] of registry) {
+    if (entry.subscribers.size > 0) continue;
+    registry.delete(key);
+    if (--idleCount <= MAX_IDLE_CACHE_ENTRIES) break;
+  }
 }
 
 function removeGatesIfInstalled(): void {
