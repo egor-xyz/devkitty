@@ -38,6 +38,8 @@ type Entry = {
   /** Last finite (clamped) interval this key resolved to; used as the backoff base. */
   lastFiniteInterval?: number;
   nextDue: number;
+  /** When the backoff after the last failure ends; kept across unsubscribes. */
+  retryAt?: number;
   spec: PollSpec<unknown>;
   subscribers: Set<Subscriber<unknown>>;
 };
@@ -119,9 +121,10 @@ export function subscribe<T>(
   }
   if (wasInactive && !entry.inFlight) {
     const interval = clampInterval(entry.spec.interval(entry.lastData));
-    entry.nextDue = entry.lastData === undefined || now() - entry.lastFetched >= interval
-      ? now()
-      : entry.lastFetched + interval;
+    const due = entry.failures > 0
+      ? entry.retryAt ?? now()
+      : entry.lastData === undefined ? now() : entry.lastFetched + interval;
+    entry.nextDue = Math.max(now(), due);
   }
 
   let subscribed = true;
@@ -219,6 +222,8 @@ function markStaleSubscribedEntriesDue(): void {
   const t = now();
   for (const entry of registry.values()) {
     if (entry.subscribers.size === 0) continue;
+    // A failing key waits out its backoff even when the window regains focus.
+    if (entry.failures > 0 && (entry.retryAt ?? 0) > t) continue;
 
     const interval = clampInterval(entry.spec.interval(entry.lastData));
     if (interval === Infinity) continue;
@@ -272,6 +277,7 @@ async function runFetch(key: string, entry: Entry): Promise<void> {
     entry.lastData = data;
     entry.lastFetched = now();
     entry.failures = 0;
+    entry.retryAt = undefined;
 
     for (const sub of entry.subscribers) {
       sub.onData(data);
@@ -293,6 +299,7 @@ async function runFetch(key: string, entry: Entry): Promise<void> {
     const backoffBase = Math.min(base * 2 ** entry.failures, MAX_BACKOFF_MS);
     const jitter = backoffBase * (Math.random() * 0.4 - 0.2); // +/- 20%
     entry.nextDue = now() + backoffBase + jitter;
+    entry.retryAt = entry.nextDue;
   } finally {
     entry.inFlight = undefined;
   }

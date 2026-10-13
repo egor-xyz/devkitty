@@ -92,7 +92,7 @@ export const Workflow: FC<Props> = ({ isRoot = false, onRefresh, project, run, s
   const hasFailed = conclusion === 'failure' || conclusion === 'timed_out' || conclusion === 'cancelled';
   const [, setLoading] = useState(false);
   const [, setRefresh] = useState(0);
-  const { onScreen, ref: rowRef } = useOnScreen<HTMLDivElement>();
+  const { endRef, onScreen, ref: startRef } = useOnScreen<HTMLDivElement>();
 
   // Only tick the duration timer while the workflow is still running
   useEffect(() => {
@@ -177,6 +177,11 @@ export const Workflow: FC<Props> = ({ isRoot = false, onRefresh, project, run, s
 
   return (
     <>
+      {/* Marks the row's top and bottom for useOnScreen. */}
+      <div aria-hidden
+        ref={startRef}
+      />
+
       <div
         aria-expanded={isOpen}
         className={cn(
@@ -200,7 +205,6 @@ export const Workflow: FC<Props> = ({ isRoot = false, onRefresh, project, run, s
           event.preventDefault();
           toggleJobs();
         }}
-        ref={rowRef}
         role="button"
         style={isOpen ? { top: stickyTop } : undefined}
         tabIndex={0}
@@ -349,6 +353,10 @@ export const Workflow: FC<Props> = ({ isRoot = false, onRefresh, project, run, s
           jobs={jobs}
         />
       </Collapse>
+
+      <div aria-hidden
+        ref={endRef}
+      />
     </>
   );
 };

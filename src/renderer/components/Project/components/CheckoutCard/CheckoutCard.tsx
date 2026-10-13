@@ -77,7 +77,7 @@ export const CheckoutCard: FC<Props> = ({
     selectedShell
   } = useAppSettings();
   const isSunset = useIsSunset();
-  const { onScreen, ref: headerRef } = useOnScreen<HTMLDivElement>();
+  const { endRef, onScreen, ref: startRef } = useOnScreen<HTMLDivElement>();
   const [showStray, setShowStray] = useState(false);
   const [showHidden, setShowHidden] = useState(false);
   const [showAllOwn, setShowAllOwn] = useState(false);
@@ -249,6 +249,11 @@ export const CheckoutCard: FC<Props> = ({
 
   return (
     <>
+      {/* Marks the row's top and bottom for useOnScreen. */}
+      <div aria-hidden
+        ref={startRef}
+      />
+
       <div
         className={cn(
           'flex relative items-center justify-start py-1 pl-5 pr-4 gap-3 w-full box-border shrink-0 mt-0.5',
@@ -259,7 +264,6 @@ export const CheckoutCard: FC<Props> = ({
           expanded && 'shadow-[0_2px_6px_-1px_rgba(0,0,0,0.20)] dark:shadow-[0_2px_6px_-1px_rgba(0,0,0,0.6)]',
           deleting && 'opacity-50 pointer-events-none'
         )}
-        ref={headerRef}
       >
         {/* The row itself is the toggle — no chevron. The repo name sits inside
             it too, so clicking the obvious part of the header works; the
@@ -467,6 +471,10 @@ export const CheckoutCard: FC<Props> = ({
           )}
         </div>
       </Collapse>
+
+      <div aria-hidden
+        ref={endRef}
+      />
     </>
   );
 };
