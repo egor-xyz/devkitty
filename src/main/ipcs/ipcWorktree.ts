@@ -1,5 +1,5 @@
 import { BrowserWindow, dialog, ipcMain } from 'electron';
-import { copyFile } from 'fs/promises';
+import { copyFile, readFile } from 'fs/promises';
 import path from 'path';
 import { simpleGit } from 'simple-git';
 import { type Worktree } from 'types/worktree';
@@ -91,10 +91,23 @@ ipcMain.handle('git:worktree:remove', async (_, id: string, worktreePath: string
 
     return { message: 'Worktree removed', success: true };
   } catch (e) {
+    let { message } = e;
+    if (message?.includes('validation failed, cannot remove working tree') && message.includes('is not a .git file')) {
+      const gitFile = path.join(worktreePath, '.git');
+      try {
+        await readFile(gitFile);
+        message = `Git could not validate ${gitFile}. Check the worktree link before you try again.`;
+      } catch (readError) {
+        const { code } = readError as NodeJS.ErrnoException;
+        message = code === 'EACCES' || code === 'EPERM'
+          ? `Devkitty cannot read ${gitFile}. Give Devkitty access to this folder and try again.`
+          : `Git could not read ${gitFile}. Check that the file exists before you try again.`;
+      }
+    }
     const needsForce =
       e.message?.includes('contains modified or untracked files') ||
       e.message?.includes('locked working tree');
-    return { message: e.message, needsForce, success: false };
+    return { message, needsForce, success: false };
   }
 });
 

@@ -4,6 +4,7 @@ import { FaCopy, FaRegCopy } from 'react-icons/fa';
 import { getStatusIcon } from 'renderer/assets/gitHubStatusUtils';
 import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
 import { useModal } from 'renderer/hooks/useModal';
+import { useOnScreen } from 'renderer/hooks/useOnScreen';
 import { refresh, subscribe } from 'renderer/services/poller';
 import { cn } from 'renderer/utils/cn';
 import { addScope, parseIgnored, type WorkflowScope } from 'renderer/utils/ignoredWorkflows';
@@ -91,10 +92,13 @@ export const Workflow: FC<Props> = ({ isRoot = false, onRefresh, project, run, s
   const hasFailed = conclusion === 'failure' || conclusion === 'timed_out' || conclusion === 'cancelled';
   const [, setLoading] = useState(false);
   const [, setRefresh] = useState(0);
+  const { onScreen, ref: rowRef } = useOnScreen<HTMLDivElement>();
 
   // Only tick the duration timer while the workflow is still running
   useEffect(() => {
-    if (conclusion) return;
+    if (conclusion || !onScreen) return;
+
+    setRefresh((prev) => prev + 1);
 
     const timer = window.setInterval(() => {
       setRefresh((prev) => prev + 1);
@@ -103,7 +107,7 @@ export const Workflow: FC<Props> = ({ isRoot = false, onRefresh, project, run, s
     return () => {
       window.clearInterval(timer);
     };
-  }, [conclusion]);
+  }, [conclusion, onScreen]);
   const runDuration = getRunDuration(run);
 
   const openInBrowser = () => {
@@ -196,6 +200,7 @@ export const Workflow: FC<Props> = ({ isRoot = false, onRefresh, project, run, s
           event.preventDefault();
           toggleJobs();
         }}
+        ref={rowRef}
         role="button"
         style={isOpen ? { top: stickyTop } : undefined}
         tabIndex={0}

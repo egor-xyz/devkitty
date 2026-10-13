@@ -24,7 +24,8 @@ vi.mock('electron', () => ({
 }));
 
 vi.mock('fs/promises', () => ({
-  copyFile: vi.fn()
+  copyFile: vi.fn(),
+  readFile: vi.fn()
 }));
 
 vi.mock('path', () => ({
@@ -44,7 +45,7 @@ vi.mock('../libs/git', () => ({
 }));
 
 import { dialog } from 'electron';
-import { copyFile } from 'fs/promises';
+import { copyFile, readFile } from 'fs/promises';
 
 import { getGit, getWorktreeGit, parseWorktreeList } from '../libs/git';
 
@@ -55,6 +56,7 @@ const mockGetWorktreeGit = vi.mocked(getWorktreeGit);
 const mockParseWorktreeList = vi.mocked(parseWorktreeList);
 const mockDialog = vi.mocked(dialog);
 const mockCopyFile = vi.mocked(copyFile);
+const mockReadFile = vi.mocked(readFile);
 
 describe('ipcWorktree', () => {
   beforeEach(() => {
@@ -293,6 +295,29 @@ describe('ipcWorktree', () => {
       const result = await handlers['git:worktree:remove']({}, 'proj-1', '/path/to/worktree');
 
       expect(result.success).toBe(false);
+      expect(result.needsForce).toBe(false);
+    });
+
+    it('explains a blocked worktree link without suggesting force', async () => {
+      mockGit.raw.mockRejectedValue(new Error("fatal: validation failed, cannot remove working tree: '/path/to/worktree/.git' is not a .git file"));
+      mockReadFile.mockRejectedValueOnce(Object.assign(new Error('Operation not permitted'), { code: 'EPERM' }));
+
+      const result = await handlers['git:worktree:remove']({}, 'proj-1', '/path/to/worktree');
+
+      expect(result).toEqual({
+        message: 'Devkitty cannot read /path/to/worktree/.git. Give Devkitty access to this folder and try again.',
+        needsForce: false,
+        success: false
+      });
+    });
+
+    it('reports a broken worktree link when it can read the file', async () => {
+      mockGit.raw.mockRejectedValue(new Error("fatal: validation failed, cannot remove working tree: '/path/to/worktree/.git' is not a .git file"));
+      mockReadFile.mockResolvedValueOnce(Buffer.from('gitdir: /missing/path'));
+
+      const result = await handlers['git:worktree:remove']({}, 'proj-1', '/path/to/worktree');
+
+      expect(result.message).toBe('Git could not validate /path/to/worktree/.git. Check the worktree link before you try again.');
       expect(result.needsForce).toBe(false);
     });
   });
