@@ -1,12 +1,12 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest';
 
-vi.mock('./lastUsage', () => ({ readReportedUsage: vi.fn() }));
+vi.mock('./cliUsage', () => ({ readCliUsage: vi.fn() }));
 vi.mock('./transcripts', () => ({ readEntries: vi.fn() }));
 
 import type { ClaudeAccount } from 'types/claudeUsage';
 
+import { readCliUsage } from './cliUsage';
 import { buildUsage } from './getUsage';
-import { readReportedUsage } from './lastUsage';
 import { readEntries } from './transcripts';
 
 const NOW = Date.UTC(2026, 0, 15, 12);
@@ -22,7 +22,7 @@ describe('Claude common usage model', () => {
 
   it('keeps provider quota and local token detail separate', async () => {
     vi.mocked(readEntries).mockResolvedValue(entries);
-    vi.mocked(readReportedUsage).mockReturnValue({
+    vi.mocked(readCliUsage).mockResolvedValue({
       capturedAt: NOW - 500,
       fiveHour: { pct: 0.42, resetsAt: NOW + 1000 },
       sevenDay: { pct: 0.1, resetsAt: NOW + 2000 }
@@ -38,7 +38,7 @@ describe('Claude common usage model', () => {
 
   it('shows local tokens without inventing a quota percent', async () => {
     vi.mocked(readEntries).mockResolvedValue(entries);
-    vi.mocked(readReportedUsage).mockReturnValue(null);
+    vi.mocked(readCliUsage).mockResolvedValue(null);
     const result = await buildUsage(account, NOW);
     expect(result.reportedAt).toBeUndefined();
     expect(result.metrics[0]).toMatchObject({ label: '5H · Quota unavailable', source: 'local', tokens: 100, tokensPeriod: 'trailing-window' });
@@ -48,9 +48,9 @@ describe('Claude common usage model', () => {
 
   it('reads the selected account and time', async () => {
     vi.mocked(readEntries).mockResolvedValue([]);
-    vi.mocked(readReportedUsage).mockReturnValue(null);
+    vi.mocked(readCliUsage).mockResolvedValue(null);
     await buildUsage(account, NOW);
-    expect(readReportedUsage).toHaveBeenCalledWith(account.dir);
+    expect(readCliUsage).toHaveBeenCalledWith(account.dir, NOW);
     expect(readEntries).toHaveBeenCalledWith(account.dir, NOW);
   });
 
@@ -59,7 +59,7 @@ describe('Claude common usage model', () => {
       { model: 'claude-opus', requestId: 'old', tokens: 900, ts: NOW - 4.5 * 60 * 60 * 1000 },
       { model: 'claude-sonnet', requestId: 'current', tokens: 100, ts: NOW - 1000 }
     ]);
-    vi.mocked(readReportedUsage).mockReturnValue({
+    vi.mocked(readCliUsage).mockResolvedValue({
       capturedAt: NOW - 500,
       fiveHour: { pct: 0.2, resetsAt: NOW + 60 * 60 * 1000 }
     });
@@ -74,7 +74,7 @@ describe('Claude common usage model', () => {
 
   it.each([0, NOW - 1])('does not use an old quota reset at %s', async (resetsAt) => {
     vi.mocked(readEntries).mockResolvedValue(entries);
-    vi.mocked(readReportedUsage).mockReturnValue({
+    vi.mocked(readCliUsage).mockResolvedValue({
       capturedAt: NOW - 500,
       fiveHour: { pct: 0.9, resetsAt },
       sevenDay: { pct: 0.8, resetsAt }

@@ -2,13 +2,12 @@ import { type AIUsage } from 'types/aiUsage';
 import { type ClaudeAccount } from 'types/claudeUsage';
 
 import { buildLocalMetric } from '../aiUsage/localMetric';
-import { readReportedUsage } from './lastUsage';
+import { readCliUsage } from './cliUsage';
 import { readEntries } from './transcripts';
 import { FIVE_HOURS_MS, SEVEN_DAYS_MS } from './usage';
 
 export const buildUsage = async (account: ClaudeAccount, now: number): Promise<AIUsage> => {
-  const reported = readReportedUsage(account.dir);
-  const entries = await readEntries(account.dir, now);
+  const [reported, entries] = await Promise.all([readCliUsage(account.dir, now), readEntries(account.dir, now)]);
   const fiveHour = reported?.fiveHour && reported.fiveHour.resetsAt > now ? reported.fiveHour : undefined;
   const sevenDay = reported?.sevenDay && reported.sevenDay.resetsAt > now ? reported.sevenDay : undefined;
 
