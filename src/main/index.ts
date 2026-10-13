@@ -11,6 +11,7 @@ import { track } from './analytics';
 import { installAppMenu } from './appMenu';
 import './ipcs';
 import { startUpdater } from './ipcs/ipcUpdater';
+import { stopCliUsage } from './libs/claude/cliUsage';
 import { initClipboardDownscale, stopClipboardWatcher } from './libs/clipboardDownscale';
 import { updateEditorsAndShells } from './libs/integrations/integrations';
 import { loadWindowState, saveBounds, WINDOW_MINIMUM_SIZE } from './libs/window';
@@ -82,7 +83,10 @@ app.on('ready', async () => {
   void track('app_launch');
 });
 
-app.on('will-quit', () => stopClipboardWatcher());
+app.on('will-quit', () => {
+  stopClipboardWatcher();
+  stopCliUsage();
+});
 
 app.on('activate', () => {
   if (BrowserWindow.getAllWindows().length === 0) {

@@ -5,8 +5,10 @@ const handlers: Record<string, Handler> = {};
 vi.mock('electron', () => ({ ipcMain: { handle: vi.fn((channel: string, handler: Handler) => { handlers[channel] = handler; }) } }));
 vi.mock('../libs/claude/accounts', () => ({ detectClaudeCli: vi.fn(), discoverAccounts: vi.fn() }));
 vi.mock('../libs/claude/getUsage', () => ({ buildUsage: vi.fn() }));
+vi.mock('../libs/claude/cliUsage', () => ({ readCliUsage: vi.fn() }));
 
 import { discoverAccounts } from '../libs/claude/accounts';
+import { readCliUsage } from '../libs/claude/cliUsage';
 import { buildUsage } from '../libs/claude/getUsage';
 
 await import('./ipcClaude');
@@ -18,6 +20,13 @@ describe('Claude usage IPC', () => {
     vi.clearAllMocks();
     vi.mocked(discoverAccounts).mockReturnValue([account]);
     vi.mocked(buildUsage).mockResolvedValue(local as never);
+  });
+
+  it('lists only accounts Claude Code reports usage for', async () => {
+    const other = { dir: '/claude-b', label: 'claude-b' };
+    vi.mocked(discoverAccounts).mockReturnValue([account, other]);
+    vi.mocked(readCliUsage).mockImplementation(async (dir) => (dir === account.dir ? { capturedAt: 1 } : null));
+    expect(await handlers['claude:accounts']({})).toEqual([account]);
   });
 
   it('returns only local usage for the discovered account', async () => {
