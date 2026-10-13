@@ -192,6 +192,25 @@ describe('subscribe', () => {
     expect(fetchFn).toHaveBeenCalledTimes(2);
   });
 
+  it('keeps the failure backoff when a failing row subscribes again or the window gains focus', async () => {
+    const fetchFn = vi.fn().mockRejectedValue(new Error('boom'));
+    const randomSpy = vi.spyOn(Math, 'random').mockReturnValue(0.5); // neutralizes +/-20% jitter
+    const spec = { fetch: fetchFn, interval: () => 10_000, key: 'failing-row' };
+    const unsubscribe = subscribe(spec, vi.fn(), vi.fn());
+    await vi.advanceTimersByTimeAsync(500); // failure #1 at t=500, retry due at t=10500
+    unsubscribe();
+
+    await vi.advanceTimersByTimeAsync(2000);
+    subscribe(spec, vi.fn(), vi.fn());
+    win.dispatchEvent('focus');
+    await vi.advanceTimersByTimeAsync(7999);
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+    await vi.advanceTimersByTimeAsync(500);
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+
+    randomSpy.mockRestore();
+  });
+
   it('evicts old idle data when the cache has more than 100 rows', async () => {
     for (let i = 0; i < 101; i++) {
       const unsubscribe = subscribe({ fetch: () => Promise.resolve(i), interval: () => 60_000, key: `row:${i}` }, vi.fn());
