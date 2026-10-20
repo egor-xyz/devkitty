@@ -65,41 +65,53 @@ const isScreenshot = (png: Buffer, formats: string[]): boolean => {
   return SCREENSHOT_FILE.test(clipboard.read('public.file-url'));
 };
 
-const readClipboardImage = (): null | { formats: string[]; image: NativeImage; size: ImageSize; source: Buffer } => {
+type ClipboardProbe = { image: () => NativeImage; size: ImageSize; source: Buffer };
+
+// Cheap checks (size, then the screenshot heuristic) run before any decode or PNG
+// encode; the PNG decode is deferred behind `image()` until after the seen-set check.
+// Returns null when the clipboard should be left alone.
+const readClipboardImage = (): ClipboardProbe | null => {
   const formats = clipboard.availableFormats();
   const png = clipboard.readBuffer('public.png');
   const dims = pngDimensions(png);
-  if (dims) return { formats, image: nativeImage.createFromBuffer(png), size: dims, source: png };
+  if (dims) {
+    if (Math.max(dims.width, dims.height) <= CLIPBOARD_MAX_EDGE) return null;
+    if (!isScreenshot(png, formats)) return null;
+
+    return { image: () => nativeImage.createFromBuffer(png), size: dims, source: png };
+  }
 
   if (!formats.some((format) => format.startsWith('image/')) || formats.includes('text/uri-list')) return null;
 
   const image = clipboard.readImage();
   if (image.isEmpty()) return null;
 
-  return { formats, image, size: image.getSize(), source: image.toPNG() };
+  const size = image.getSize();
+  if (Math.max(size.width, size.height) <= CLIPBOARD_MAX_EDGE) return null;
+
+  const source = image.toPNG();
+  if (!isScreenshot(source, formats)) return null;
+
+  return { image: () => image, size, source };
 };
 
 export const downscaleClipboard = (): DownscaleResult | null => {
   const probe = readClipboardImage();
   if (!probe) return null;
 
-  const { formats, image, size, source } = probe;
-  const longest = Math.max(size.width, size.height);
-  if (longest <= CLIPBOARD_MAX_EDGE) return null;
-
-  if (!isScreenshot(source, formats)) return null;
-
+  const { size, source } = probe;
   const hash = fingerprint(source);
   if (seen.has(hash)) return null;
   remember(hash);
 
+  const longest = Math.max(size.width, size.height);
   const scale = CLIPBOARD_MAX_EDGE / longest;
   const to: ImageSize = {
     height: Math.max(1, Math.round(size.height * scale)),
     width: Math.max(1, Math.round(size.width * scale))
   };
 
-  const resized = image.resize({ height: to.height, quality: 'best', width: to.width });
+  const resized = probe.image().resize({ height: to.height, quality: 'best', width: to.width });
   const out = resized.toPNG();
   clipboard.writeImage(resized);
 

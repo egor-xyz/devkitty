@@ -1,4 +1,5 @@
 import { Button, ButtonGroup, Collapse, Menu, MenuDivider, MenuItem, Popover, Tooltip } from '@blueprintjs/core';
+import isEqual from 'lodash/isEqual';
 import { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FaCopy, FaRegCopy } from 'react-icons/fa';
 import { getStatusIcon } from 'renderer/assets/gitHubStatusUtils';
@@ -154,7 +155,7 @@ export const Workflow: FC<Props> = ({ isRoot = false, onRefresh, project, run, s
       },
       (res) => {
         if (res.success && res.jobs) {
-          setJobs(res.jobs);
+          setJobs((prev) => (isEqual(prev, res.jobs) ? prev : res.jobs));
 
           // If all jobs are done but the workflow run hasn't updated yet, trigger a refresh
           if (!conclusionRef.current && res.jobs.length > 0 && res.jobs.every((j: Job) => j.conclusion)) {

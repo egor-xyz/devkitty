@@ -1,3 +1,4 @@
+import isEqual from 'lodash/isEqual';
 import { useEffect, useState } from 'react';
 import { subscribe } from 'renderer/services/poller';
 import { appToaster } from 'renderer/utils/appToaster';
@@ -46,7 +47,7 @@ export const useGit = () => {
         interval: () => (fetchInterval <= 2000 ? Infinity : fetchInterval),
         key: gitStatusKey(polledId)
       },
-      (data) => setGitStatus(data)
+      (data) => setGitStatus((prev) => (isEqual(prev, data) ? prev : data))
     );
 
     return unsubscribe;

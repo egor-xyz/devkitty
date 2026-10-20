@@ -1,12 +1,17 @@
 import { execFile } from 'child_process';
 import { ipcMain, safeStorage } from 'electron';
 import log from 'electron-log';
+import { omit } from 'lodash';
 import { Octokit } from 'octokit';
 import { type MergeableState, type MergeMethod, type PRStatusResult, type PullType, type Run } from 'types/gitHub';
 import { promisify } from 'util';
 
 import { getProjectPath, getRepoInfo } from '../libs/git';
 import { settings } from '../settings';
+
+// The renderer never reads `repository` / `head_repository` from a run; the two
+// make up about 64% of each run's JSON, so they are dropped before crossing IPC.
+const slimRun = (run: Run): Run => omit(run, ['repository', 'head_repository']) as Run;
 
 const protectedBranches = ['master', 'main'];
 
@@ -127,7 +132,7 @@ ipcMain.handle('git:api:getRuns', async (_, id: string, deep = false) => {
     // aside so a card can offer a peek at what it is holding back.
     const runs = collected.filter((run) => new Date(run.created_at).getTime() > since);
 
-    return { runs, success: true };
+    return { runs: runs.map(slimRun), success: true };
   } catch (e) {
     log.error(e);
     return { message: e.message, success: false };
@@ -153,7 +158,7 @@ ipcMain.handle('git:api:getRunsPage', async (_, id: string, page: number, branch
     });
     log.info(`runs history page ${page} of ${branch ?? 'all branches'} for ${owner}/${repo}: ${data.workflow_runs.length} runs`);
 
-    return { last: data.workflow_runs.length < 100, runs: data.workflow_runs, success: true };
+    return { last: data.workflow_runs.length < 100, runs: data.workflow_runs.map(slimRun), success: true };
   } catch (e) {
     log.error(e);
     return { message: e.message, success: false };
@@ -184,7 +189,7 @@ ipcMain.handle('git:api:getPinnedRuns', async (_, id: string) => {
       runs.push(...data.workflow_runs);
     }
 
-    return { runs, success: true };
+    return { runs: runs.map(slimRun), success: true };
   } catch (e) {
     log.error(e);
     return { message: e.message, success: false };
@@ -227,7 +232,7 @@ ipcMain.handle('git:api:searchRuns', async (_, id: string, query: string) => {
       runs.push(...page.workflow_runs);
     }
 
-    return { runs, success: true };
+    return { runs: runs.map(slimRun), success: true };
   } catch (e) {
     log.error(e);
     return { message: e.message, success: false };

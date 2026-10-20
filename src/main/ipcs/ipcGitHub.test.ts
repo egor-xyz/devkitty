@@ -124,6 +124,16 @@ describe('ipcGitHub', () => {
       expect(result).toEqual({ last: true, runs: [{ id: 1 }], success: true });
     });
 
+    it('should drop the repository objects from every run', async () => {
+      mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockResolvedValue({
+        data: { workflow_runs: [{ head_repository: { id: 8 }, id: 1, name: 'ci', repository: { id: 7 } }] }
+      });
+
+      const result = await handlers['git:api:getRunsPage']({}, 'proj-1', 1);
+
+      expect(result).toEqual({ last: true, runs: [{ id: 1, name: 'ci' }], success: true });
+    });
+
     it('should page the whole repo when no branch is given', async () => {
       mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockResolvedValue({
         data: { workflow_runs: Array.from({ length: 100 }, (_, index) => ({ id: index })) }
@@ -204,6 +214,18 @@ describe('ipcGitHub', () => {
         gitHubActions: { count: 5, inProgress: false },
         gitHubToken: Buffer.from('token')
       } as any);
+    });
+
+    it('should drop the repository objects from every run', async () => {
+      mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockResolvedValue({
+        data: {
+          workflow_runs: [{ created_at: recent, head_repository: { id: 8 }, id: 1, name: 'ci', repository: { id: 7 } }]
+        }
+      });
+
+      const result = await handlers['git:api:getRuns']({}, 'proj-1');
+
+      expect(result).toEqual({ runs: [{ created_at: recent, id: 1, name: 'ci' }], success: true });
     });
 
     it('should return runs from every branch without slicing', async () => {
@@ -405,6 +427,20 @@ describe('ipcGitHub', () => {
       expect(result).toEqual({ runs: [{ id: 99 }], success: true });
     });
 
+    it('should drop the repository objects from every run', async () => {
+      mockSettings.get.mockReturnValue({
+        gitHubActions: { pinnedWorkflows: ['.github/workflows/deploy.yml'] },
+        gitHubToken: Buffer.from('token')
+      } as unknown as ReturnType<typeof mockSettings.get>);
+      mockOctokitInstance.rest.actions.listWorkflowRuns.mockResolvedValue({
+        data: { workflow_runs: [{ head_repository: { id: 8 }, id: 99, name: 'deploy', repository: { id: 7 } }] }
+      });
+
+      const result = await handlers['git:api:getPinnedRuns']({}, 'proj-1');
+
+      expect(result).toEqual({ runs: [{ id: 99, name: 'deploy' }], success: true });
+    });
+
     it('should skip the API entirely when nothing is pinned', async () => {
       mockSettings.get.mockReturnValue({
         gitHubActions: {},
@@ -458,6 +494,19 @@ describe('ipcGitHub', () => {
         expect.objectContaining({ workflow_id: 1 })
       );
       expect(result).toEqual({ runs: [{ id: 501 }], success: true });
+    });
+
+    it('should drop the repository objects from every run', async () => {
+      mockOctokitInstance.rest.actions.listRepoWorkflows.mockResolvedValue({
+        data: { workflows: [{ id: 1, name: 'Deploy' }] }
+      });
+      mockOctokitInstance.rest.actions.listWorkflowRuns.mockResolvedValue({
+        data: { workflow_runs: [{ head_repository: { id: 8 }, id: 501, name: 'Deploy', repository: { id: 7 } }] }
+      });
+
+      const result = await handlers['git:api:searchRuns']({}, 'proj-1', 'deploy');
+
+      expect(result).toEqual({ runs: [{ id: 501, name: 'Deploy' }], success: true });
     });
 
     it('should return error when repo info is not found', async () => {
