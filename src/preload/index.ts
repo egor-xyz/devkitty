@@ -46,7 +46,8 @@ const bridge = {
   },
   git: {
     checkout: (id: string, branch: string) => ipcRenderer.invoke('git:checkout', id, branch),
-    getStatus: (id: string): Promise<GitStatus> => ipcRenderer.invoke('git:getStatus', id),
+    getStatus: (id: string, force?: boolean): Promise<GitStatus> =>
+      force ? ipcRenderer.invoke('git:getStatus', id, true) : ipcRenderer.invoke('git:getStatus', id),
     mergeTo: (id: string, from: string, to: string) => ipcRenderer.invoke('git:mergeTo', id, from, to),
     pull: (id: string) => ipcRenderer.invoke('git:pull', id),
     reset: (id: string, target: string, force: boolean) => ipcRenderer.invoke('git:reset', id, target, force)

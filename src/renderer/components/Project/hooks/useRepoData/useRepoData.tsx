@@ -30,6 +30,10 @@ const pinnedInterval = 60000;
 // API every tick.
 const minRunsPollInterval = 2000;
 
+// After the window regains focus, git status and pulls refresh alongside runs
+// and may land later; a run on a not-yet-known branch is held back this long.
+const FOCUS_GRACE_MS = 30_000;
+
 const getHidden = (key: string): Set<number> =>
   new Set(parseHidden(sessionStorage.getItem(key)).map((entry) => entry.id));
 
@@ -90,6 +94,7 @@ export const useRepoData = (
   const prevConclusions = useRef<Map<number, null | string>>(new Map());
   const notifyArmed = useRef(false);
   const notifyBranches = useRef<Set<string>>(new Set());
+  const focusedAt = useRef(0);
   const hiddenWorkflows = useRef<IgnoredWorkflow[]>([]);
   // The pieces `getRuns` needs to place a run in root vs worktree, kept in a ref
   // so a branch-list change never rebuilds the poll.
@@ -151,6 +156,15 @@ export const useRepoData = (
   }, [pulls, worktreeBranches]);
 
   useEffect(() => {
+    const onFocus = () => {
+      focusedAt.current = Date.now();
+    };
+    window.addEventListener('focus', onFocus);
+
+    return () => window.removeEventListener('focus', onFocus);
+  }, []);
+
+  useEffect(() => {
     rootContext.current = { mainBranch, worktrees: new Set(worktreeBranches) };
   }, [mainBranch, worktreeBranches]);
 
@@ -173,9 +187,7 @@ export const useRepoData = (
 
     for (const run of nextRuns) {
       const prev = prevConclusions.current.get(run.id);
-      if (prev === undefined && prevConclusions.current.size > 0 && run.conclusion) {
-        // New run that already has a conclusion — skip notification
-      } else if (
+      const wouldNotify =
         notifyArmed.current &&
         prev !== undefined &&
         !prev &&
@@ -187,15 +199,28 @@ export const useRepoData = (
             path: run.path
           })
         ) &&
-        notificationsRef.current &&
-        notifyBranches.current.has(run.head_branch ?? '')
-      ) {
+        notificationsRef.current;
+      const branchKnown = notifyBranches.current.has(run.head_branch ?? '');
+
+      if (prev === undefined && prevConclusions.current.size > 0 && run.conclusion) {
+        // New run that already has a conclusion — skip notification
+      } else if (wouldNotify && branchKnown) {
         const status = run.conclusion === 'success' ? 'passed' : 'failed';
         const event = run.event !== 'workflow_dispatch' ? run.event : 'manual';
         window.bridge.notification.show(
           `${projectNameRef.current}: ${run.name} ${status}`,
           `${event} » ${run.head_branch} (#${run.run_number})\n${run.display_title}`
         );
+      } else if (
+        wouldNotify &&
+        typeof document !== 'undefined' &&
+        (!document.hasFocus() || Date.now() - focusedAt.current < FOCUS_GRACE_MS)
+      ) {
+        // The git status and pulls polls are paused while unfocused (and land
+        // alongside runs right after focus), so the branch may just not be
+        // known yet. Leave the run unrecorded so the decision is re-made once
+        // they have refreshed.
+        continue;
       }
       prevConclusions.current.set(run.id, run.conclusion ?? null);
     }
@@ -268,7 +293,8 @@ export const useRepoData = (
       {
         fetch: fetchRuns,
         interval: () => (pollRunsRef.current && fetchIntervalRef.current > minRunsPollInterval ? fetchIntervalRef.current : Infinity),
-        key: `runs:${project.id}`
+        key: `runs:${project.id}`,
+        priority: 'background'
       },
       ({ arm, res }) => processRuns(res, arm)
     );

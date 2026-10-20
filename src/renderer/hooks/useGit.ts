@@ -21,14 +21,15 @@ export const useGit = () => {
   /**
    * `polling` asks the hook to keep this project's status fresh from now on.
    * `silent` is for those repeat reads: they must not flip `loading`, or every
-   * tick would flash the skeletons.
+   * tick would flash the skeletons. `force` bypasses the main-process fetch
+   * throttle (user-initiated refresh only).
    */
-  const getStatus = async (id: string, polling = true, silent = false) => {
+  const getStatus = async (id: string, polling = true, silent = false, force = false) => {
     if (polling) setPolledId(id);
 
     if (!silent) setLoading(true);
 
-    const res = await window.bridge.git.getStatus(id);
+    const res = await (force ? window.bridge.git.getStatus(id, true) : window.bridge.git.getStatus(id));
 
     setGitStatus(res);
     if (!silent) setLoading(false);
