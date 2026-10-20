@@ -5,6 +5,11 @@
 import { type PRStatus } from 'types/gitHub';
 import { vi } from 'vitest';
 
+// jsdom's document.hasFocus() is always false. The poll coordinator pauses
+// non-background polls while the window is unfocused, so tests default to a
+// focused window; focus-policy tests override this per case.
+if (typeof document !== 'undefined') document.hasFocus = () => true;
+
 const emptyPRStatus: PRStatus = {
   allowedMergeMethods: [],
   autoMergeAllowed: false,

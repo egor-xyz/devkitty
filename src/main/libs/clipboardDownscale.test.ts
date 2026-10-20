@@ -255,6 +255,61 @@ describe('clipboardDownscale', () => {
       expect(mockClipboard.writeImage).not.toHaveBeenCalled();
     });
 
+    describe('decode only after the cheap checks pass', () => {
+      const resizable = () => ({ resize: vi.fn(() => ({ toPNG: vi.fn(() => Buffer.alloc(10)) })) });
+
+      it('does not decode a PNG within the max edge', () => {
+        mockClipboard.availableFormats.mockReturnValue(['image/png']);
+        mockClipboard.readBuffer.mockReturnValue(fakePng(800, 600));
+
+        expect(downscaleClipboard()).toBeNull();
+        expect(mockNativeImage.createFromBuffer).not.toHaveBeenCalled();
+      });
+
+      it('does not decode a large PNG that is not a screenshot', () => {
+        mockClipboard.availableFormats.mockReturnValue(['image/png', 'text/html']);
+        mockClipboard.readBuffer.mockReturnValue(fakePng(4000, 2400));
+
+        expect(downscaleClipboard()).toBeNull();
+        expect(mockNativeImage.createFromBuffer).not.toHaveBeenCalled();
+      });
+
+      it('does not decode a large screenshot that was already seen', () => {
+        mockClipboard.availableFormats.mockReturnValue(['image/png']);
+        mockClipboard.readBuffer.mockReturnValue(fakePng(4000, 2400));
+        mockNativeImage.createFromBuffer.mockReturnValue(resizable());
+        expect(downscaleClipboard()).not.toBeNull();
+        mockNativeImage.createFromBuffer.mockClear();
+
+        expect(downscaleClipboard()).toBeNull();
+        expect(mockNativeImage.createFromBuffer).not.toHaveBeenCalled();
+      });
+
+      it('decodes and writes once for a large screenshot not yet seen', () => {
+        mockClipboard.availableFormats.mockReturnValue(['image/png']);
+        mockClipboard.readBuffer.mockReturnValue(fakePng(4000, 2400));
+        mockNativeImage.createFromBuffer.mockReturnValue(resizable());
+
+        expect(downscaleClipboard()).not.toBeNull();
+        expect(mockNativeImage.createFromBuffer).toHaveBeenCalledTimes(1);
+        expect(mockClipboard.writeImage).toHaveBeenCalledTimes(1);
+      });
+
+      it('does not encode a small fallback image to PNG', () => {
+        const image = {
+          getSize: vi.fn(() => ({ height: 600, width: 800 })),
+          isEmpty: vi.fn(() => false),
+          toPNG: vi.fn(() => Buffer.alloc(10))
+        };
+        mockClipboard.availableFormats.mockReturnValue(['image/png']);
+        mockClipboard.readBuffer.mockReturnValue(emptyBuffer);
+        mockClipboard.readImage.mockReturnValue(image);
+
+        expect(downscaleClipboard()).toBeNull();
+        expect(image.toPNG).not.toHaveBeenCalled();
+      });
+    });
+
     it('falls back to clipboard.readImage() when no public.png buffer is available', () => {
       const out = Buffer.alloc(300);
       const image = {

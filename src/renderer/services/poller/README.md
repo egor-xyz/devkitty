@@ -17,7 +17,7 @@ type PollSpec<T> = {
   key: string; // stable identity, e.g. `prChecks:${projectId}:${prNumber}`
   fetch: () => Promise<T>;
   interval: (data: T | undefined) => number; // ms until next poll; Infinity = stop auto-polling
-  priority?: Priority; // default 'active', reserved for future budget tiers
+  priority?: Priority; // default 'active': pauses while the window is unfocused (refreshes on focus). 'background' keeps polling while unfocused but visible. Both pause when hidden/offline. Note: with DevTools focused, hasFocus() is false, so active polls pause.
 };
 
 type Unsubscribe = () => void;

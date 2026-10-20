@@ -162,20 +162,36 @@ export const splitOverflow = <T,>(items: T[], limit = overflowLimit): { hidden: 
 
 const dayMs = 86400000;
 
+// The fields that move while a run is in flight. A re-run keeps its id but bumps
+// `run_attempt` and `updated_at`, so both must stay in the comparison.
+const sameRun = (a: Run, b: Run): boolean =>
+  a.updated_at === b.updated_at &&
+  a.status === b.status &&
+  a.conclusion === b.conclusion &&
+  a.run_attempt === b.run_attempt;
+
 /**
  * A poll only sees the newest page of a repo's runs, and a busy repo pushes a
  * branch off that page within the hour. Merging each poll into what is already
  * on screen keeps a checkout's runs visible for the full 24h window instead of
- * blinking out as soon as the repo gets loud. Fresh copies win, so a run that
- * finished between polls updates in place.
+ * blinking out as soon as the repo gets loud. A fresh copy replaces the held one
+ * only when updated_at, status, conclusion or run_attempt changed; otherwise the
+ * old reference (and array) is kept so state setters bail out.
  */
 export const mergeRuns = (previous: Run[], incoming: Run[], now: number): Run[] => {
   const byId = new Map<number, Run>();
 
   for (const run of previous) byId.set(run.id, run);
-  for (const run of incoming) byId.set(run.id, run);
+  for (const run of incoming) {
+    const prev = byId.get(run.id);
 
-  return [...byId.values()].filter((run) => new Date(run.created_at).getTime() > now - dayMs);
+    if (!prev || !sameRun(prev, run)) byId.set(run.id, run);
+  }
+
+  const result = [...byId.values()].filter((run) => new Date(run.created_at).getTime() > now - dayMs);
+
+  // Nothing changed: hand back the same array so the state setter bails out.
+  return result.length === previous.length && result.every((run, index) => run === previous[index]) ? previous : result;
 };
 
 // A pull request's checks pass all day long; only a failure is worth a desktop

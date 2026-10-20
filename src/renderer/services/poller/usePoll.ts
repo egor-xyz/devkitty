@@ -1,3 +1,4 @@
+import isEqual from 'lodash/isEqual';
 import { useEffect, useRef, useState } from 'react';
 
 import type { PollSpec } from './coordinator';
@@ -45,7 +46,11 @@ export function usePoll<T>(spec: PollSpec<T>, enabled = true): UsePollResult<T> 
     const unsubscribe = subscribe<T>(
       liveSpec,
       (data) => {
-        setState({ data, error: undefined, loading: false });
+        setState((prev) =>
+          !prev.loading && prev.error === undefined && isEqual(prev.data, data)
+            ? prev
+            : { data, error: undefined, loading: false }
+        );
       },
       (error) => {
         setState((prev) => ({ data: prev.data, error, loading: false }));

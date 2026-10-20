@@ -4,6 +4,7 @@ import { useLocation } from 'react-router';
 import { UpdateAction, useUpdateAction } from 'renderer/components/UpdateAction/UpdateAction';
 import { AI_PROVIDER_CONFIG, AI_PROVIDERS, aiAccountKey, useAIUsage } from 'renderer/hooks/useAIUsage';
 import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
+import { useWindowActive } from 'renderer/hooks/useWindowActive';
 import { cn } from 'renderer/utils/cn';
 import { type AIProvider } from 'types/aiUsage';
 
@@ -65,10 +66,13 @@ export const ClaudeFooter = ({ onHeightChange }: { onHeightChange?: (height: num
   }, [visible, onHeightChange]);
   useEffect(() => () => onHeightChange?.(0), [onHeightChange]);
   const [now, setNow] = useState(() => Date.now());
+  const windowActive = useWindowActive();
   useEffect(() => {
+    if (!windowActive) return;
+    setNow(Date.now());
     const timer = window.setInterval(() => setNow(Date.now()), 30000);
     return () => window.clearInterval(timer);
-  }, []);
+  }, [windowActive]);
   useEffect(() => {
     if (!aiVisible) return;
     const onKeyDown = (event: KeyboardEvent) => {

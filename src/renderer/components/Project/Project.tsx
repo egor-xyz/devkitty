@@ -211,7 +211,7 @@ export const Project: FC<Props> = ({ project }) => {
 
   const updateProject = () => {
     refresh();
-    getStatus(id);
+    getStatus(id, true, false, true);
   };
 
   // `useGit.pull` never touched `loading`, so the button sat there looking

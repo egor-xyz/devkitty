@@ -638,6 +638,55 @@ describe('mergeRuns', () => {
   it('should return the incoming runs when nothing was held before', () => {
     expect(mergeRuns([], [at(1, '2026-08-16T11:00:00Z')], now).map((item) => item.id)).toEqual([1]);
   });
+
+  describe('when nothing changed', () => {
+    const base = (id: number) => ({
+      ...at(id, '2026-08-16T11:00:00Z'),
+      conclusion: 'success',
+      run_attempt: 1,
+      status: 'completed',
+      updated_at: '2026-08-16T11:05:00Z'
+    });
+
+    it('should return the same array reference for equal incoming copies', () => {
+      const previous = [base(1), base(2)];
+
+      expect(mergeRuns(previous, [base(1), base(2)], now)).toBe(previous);
+    });
+
+    it.each([
+      ['status', { status: 'in_progress' }],
+      ['conclusion', { conclusion: 'failure' }],
+      ['updated_at', { updated_at: '2026-08-16T11:30:00Z' }],
+      ['run_attempt', { run_attempt: 2 }]
+    ])('should return a new array with the new object when %s changes', (_name, change) => {
+      const previous = [base(1)];
+      const incoming = { ...base(1), ...change };
+
+      const result = mergeRuns(previous, [incoming], now);
+
+      expect(result).not.toBe(previous);
+      expect(result[0]).toBe(incoming);
+    });
+
+    it('should append a brand-new id', () => {
+      const previous = [base(1)];
+
+      const result = mergeRuns(previous, [base(2)], now);
+
+      expect(result).not.toBe(previous);
+      expect(result.map((item) => item.id)).toEqual([1, 2]);
+    });
+
+    it('should return a new array when a run ages out of the window', () => {
+      const previous = [base(1), { ...base(2), created_at: '2026-08-15T11:00:00Z' }];
+
+      const result = mergeRuns(previous, [], now);
+
+      expect(result).not.toBe(previous);
+      expect(result.map((item) => item.id)).toEqual([1]);
+    });
+  });
 });
 
 describe('splitOverflow', () => {

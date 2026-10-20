@@ -1,4 +1,4 @@
-import { beforeEach, describe, expect, it, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 const handlers: Record<string, (...args: any[]) => any> = {};
 
@@ -31,7 +31,7 @@ vi.mock('../libs/git', () => ({
 
 import { getGit, parseWorktreeList } from '../libs/git';
 
-await import('./ipcGit');
+const { __resetFetchThrottle } = await import('./ipcGit');
 
 const mockGetGit = vi.mocked(getGit);
 const mockParseWorktreeList = vi.mocked(parseWorktreeList);
@@ -39,11 +39,75 @@ const mockParseWorktreeList = vi.mocked(parseWorktreeList);
 describe('ipcGit', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    __resetFetchThrottle();
     mockGetGit.mockResolvedValue(mockGit as any);
     mockParseWorktreeList.mockReturnValue([]);
   });
 
   describe('git:getStatus', () => {
+    describe('background fetch throttle', () => {
+      const primeStatus = () => {
+        // Fresh object per call: the handler deletes `isClean` from what it gets.
+        mockGit.status.mockImplementation(async () => ({ current: 'main', files: [], isClean: () => true }));
+        mockGit.remote.mockResolvedValue('git@github.com:owner/repo.git');
+        mockGit.branch.mockResolvedValue({ all: ['main'], current: 'main' });
+        mockGit.raw.mockResolvedValue('');
+        mockGit.fetch.mockResolvedValue(undefined);
+      };
+
+      beforeEach(() => {
+        vi.useFakeTimers();
+        vi.setSystemTime(new Date('2026-01-01T00:00:00Z'));
+        primeStatus();
+      });
+
+      afterEach(() => {
+        vi.useRealTimers();
+      });
+
+      it('should fetch on the first poll and skip polls within 5 minutes', async () => {
+        await handlers['git:getStatus']({}, 'proj-1');
+        expect(mockGit.fetch).toHaveBeenCalledTimes(1);
+
+        vi.setSystemTime(Date.now() + 4 * 60_000);
+        const result = await handlers['git:getStatus']({}, 'proj-1');
+
+        expect(result.success).toBe(true);
+        expect(mockGit.fetch).toHaveBeenCalledTimes(1);
+        expect(mockGit.status).toHaveBeenCalledTimes(2);
+      });
+
+      it('should fetch again once 5 minutes have passed', async () => {
+        await handlers['git:getStatus']({}, 'proj-1');
+        vi.setSystemTime(Date.now() + 5 * 60_000);
+        await handlers['git:getStatus']({}, 'proj-1');
+
+        expect(mockGit.fetch).toHaveBeenCalledTimes(2);
+      });
+
+      it('should fetch within 5 minutes when forced', async () => {
+        await handlers['git:getStatus']({}, 'proj-1');
+        vi.setSystemTime(Date.now() + 60_000);
+        await handlers['git:getStatus']({}, 'proj-1', true);
+        expect(mockGit.fetch).toHaveBeenCalledTimes(2);
+
+        // A forced fetch records the timestamp, so the next plain poll is throttled.
+        vi.setSystemTime(Date.now() + 60_000);
+        await handlers['git:getStatus']({}, 'proj-1');
+        expect(mockGit.fetch).toHaveBeenCalledTimes(2);
+      });
+
+      it('should throttle each repo independently', async () => {
+        await handlers['git:getStatus']({}, 'proj-1');
+        await handlers['git:getStatus']({}, 'proj-2');
+        expect(mockGit.fetch).toHaveBeenCalledTimes(2);
+
+        await handlers['git:getStatus']({}, 'proj-1');
+        await handlers['git:getStatus']({}, 'proj-2');
+        expect(mockGit.fetch).toHaveBeenCalledTimes(2);
+      });
+    });
+
     it('should return git status with branch summary on success', async () => {
       mockGit.status.mockResolvedValue({
         current: 'main',

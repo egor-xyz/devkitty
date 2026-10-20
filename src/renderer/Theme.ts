@@ -1,5 +1,5 @@
 // Focus handling
-document.body.classList.add('is-focused');
+document.body.classList.toggle('is-focused', document.hasFocus());
 window.addEventListener('focus', () => {
   document.body.classList.add('is-focused');
 });

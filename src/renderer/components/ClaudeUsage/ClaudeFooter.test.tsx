@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { fireEvent, render, screen } from '@testing-library/react';
+import { act, fireEvent, render, screen } from '@testing-library/react';
 import { type ReactNode } from 'react';
 import { type AIAccount, type AIUsage } from 'types/aiUsage';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
@@ -61,6 +61,30 @@ describe('AI Analytics footer', () => {
     rerender(<ClaudeFooter />);
     expect(screen.getByRole('button', { name: /7D: 25% of current quota period/ })).toBeDefined();
     expect(screen.getByRole('contentinfo').className).toContain('h-11');
+  });
+
+  it('stops the 30 second timer when the window blurs and restarts it on focus', () => {
+    const setSpy = vi.spyOn(window, 'setInterval');
+    const clearSpy = vi.spyOn(window, 'clearInterval');
+    const thirtySecond = () => setSpy.mock.calls.filter(([, delay]) => delay === 30000).length;
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+    });
+    render(<ClaudeFooter />);
+    const started = thirtySecond();
+    expect(started).toBeGreaterThan(0);
+
+    const clearedBefore = clearSpy.mock.calls.length;
+    act(() => {
+      window.dispatchEvent(new Event('blur'));
+    });
+    expect(clearSpy.mock.calls.length).toBeGreaterThan(clearedBefore);
+    expect(thirtySecond()).toBe(started);
+
+    act(() => {
+      window.dispatchEvent(new Event('focus'));
+    });
+    expect(thirtySecond()).toBe(started + 1);
   });
 
   it('uses the official Cursor SVG mark and shows its key hint', () => {
