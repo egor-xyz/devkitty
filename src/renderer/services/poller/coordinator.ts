@@ -22,7 +22,11 @@ export type PollSpec<T> = {
   interval: (data: T | undefined) => number;
   /** Stable identity for the poll, e.g. `prChecks:${projectId}:${prNumber}`. */
   key: string;
-  /** Reserved for future budget tiers. Defaults to `'active'`. */
+  /**
+   * `'active'` (default) pauses while the window is unfocused; it refreshes on
+   * focus. `'background'` keeps its cadence while the window is unfocused but
+   * visible. Both pause while hidden or offline.
+   */
   priority?: Priority;
 };
 
@@ -50,6 +54,7 @@ type Subscriber<T> = {
 };
 
 const TICK_MS = 500;
+const INACTIVE_TICK_MS = 5_000;
 const MAX_CONCURRENCY = 4;
 const MIN_INTERVAL_MS = 1000;
 const MAX_BACKOFF_MS = 300_000;
@@ -60,10 +65,12 @@ const MAX_IDLE_CACHE_ENTRIES = 100;
 const registry = new Map<string, Entry>();
 
 let timer: ReturnType<typeof setInterval> | undefined;
+let tickMs = TICK_MS;
 let gatesInstalled = false;
 let gateHandlers:
   | undefined
   | {
+      onBlur: () => void;
       onFocus: () => void;
       onOnline: () => void;
       onVisibilityChange: () => void;
@@ -72,6 +79,7 @@ let gateHandlers:
 /** Test-only: clears the registry and stops the loop so tests are isolated. */
 export function __reset(): void {
   registry.clear();
+  tickMs = TICK_MS;
   stopLoop();
   removeGatesIfInstalled();
 }
@@ -154,9 +162,14 @@ function clampInterval(ms: number): number {
   return Math.max(MIN_INTERVAL_MS, ms);
 }
 
+function desiredTickMs(): number {
+  return isWindowFocused() && !(hasDocument() && document.hidden) ? TICK_MS : INACTIVE_TICK_MS;
+}
+
 function ensureLoop(): void {
   if (timer !== undefined) return;
-  timer = setInterval(tick, TICK_MS);
+  tickMs = desiredTickMs();
+  timer = setInterval(tick, tickMs);
   installGatesOnce();
 }
 
@@ -192,14 +205,19 @@ function installGatesOnce(): void {
   if (!hasWindow()) return;
 
   const onVisibilityChange = (): void => {
+    syncLoopSpeed();
     if (!hasDocument() || !document.hidden) {
       markStaleSubscribedEntriesDue();
     }
   };
   const onOnline = (): void => markStaleSubscribedEntriesDue();
-  const onFocus = (): void => markStaleSubscribedEntriesDue();
+  const onFocus = (): void => {
+    syncLoopSpeed();
+    markStaleSubscribedEntriesDue();
+  };
+  const onBlur = (): void => syncLoopSpeed();
 
-  gateHandlers = { onFocus, onOnline, onVisibilityChange };
+  gateHandlers = { onBlur, onFocus, onOnline, onVisibilityChange };
 
   if (hasDocument() && typeof document.addEventListener === 'function') {
     document.addEventListener('visibilitychange', onVisibilityChange);
@@ -207,6 +225,7 @@ function installGatesOnce(): void {
   if (typeof window.addEventListener === 'function') {
     window.addEventListener('online', onOnline);
     window.addEventListener('focus', onFocus);
+    window.addEventListener('blur', onBlur);
   }
 
   gatesInstalled = true;
@@ -216,6 +235,11 @@ function isHiddenOrOffline(): boolean {
   const hidden = hasDocument() && Boolean(document.hidden);
   const offline = typeof navigator !== 'undefined' && navigator.onLine === false;
   return hidden || offline;
+}
+
+/** A missing `document.hasFocus` (tests, non-DOM callers) counts as focused. */
+function isWindowFocused(): boolean {
+  return !hasDocument() || typeof document.hasFocus !== 'function' || document.hasFocus();
 }
 
 function markStaleSubscribedEntriesDue(): void {
@@ -263,6 +287,7 @@ function removeGatesIfInstalled(): void {
   if (hasWindow() && typeof window.removeEventListener === 'function') {
     window.removeEventListener('online', gateHandlers.onOnline);
     window.removeEventListener('focus', gateHandlers.onFocus);
+    window.removeEventListener('blur', gateHandlers.onBlur);
   }
 
   gateHandlers = undefined;
@@ -326,12 +351,24 @@ function stopLoop(): void {
   }
 }
 
+/** Restarts the interval only when the speed actually changes. */
+function syncLoopSpeed(): void {
+  const next = desiredTickMs();
+  if (timer !== undefined && next !== tickMs) {
+    clearInterval(timer);
+    timer = setInterval(tick, next);
+  }
+  tickMs = next;
+}
+
 function tick(): void {
   if (isHiddenOrOffline()) return;
 
+  const focused = isWindowFocused();
   const t = now();
   const due: [string, Entry][] = [];
   for (const [key, entry] of registry) {
+    if (!focused && entry.spec.priority !== 'background') continue;
     if (entry.subscribers.size > 0 && !entry.inFlight && entry.nextDue <= t) {
       due.push([key, entry]);
     }

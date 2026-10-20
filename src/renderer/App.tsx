@@ -52,7 +52,7 @@ export const App = () => {
           {/* Inset shadow — recesses the content into the gradient frame for depth. */}
           <div
             aria-hidden
-            className="pointer-events-none fixed inset-0 z-40 shadow-[inset_0_0_28px_1px_rgba(0,0,0,0.5)] dark:shadow-[inset_0_0_32px_2px_rgba(0,0,0,0.65)]"
+            className="devkitty-inset-shadow pointer-events-none fixed inset-0 z-40 shadow-[inset_0_0_28px_1px_rgba(0,0,0,0.5)] dark:shadow-[inset_0_0_32px_2px_rgba(0,0,0,0.65)]"
           />
 
           {/* Gradient frame edges — connect the header band to the footer band. */}

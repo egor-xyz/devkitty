@@ -1,10 +1,12 @@
 import { Button, ButtonGroup, Collapse, Menu, MenuDivider, MenuItem, Popover, Tooltip } from '@blueprintjs/core';
+import isEqual from 'lodash/isEqual';
 import { type FC, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { FaCopy, FaRegCopy } from 'react-icons/fa';
 import { getStatusIcon } from 'renderer/assets/gitHubStatusUtils';
 import { useAppSettings, useIsSunset } from 'renderer/hooks/useAppSettings';
 import { useModal } from 'renderer/hooks/useModal';
 import { useOnScreen } from 'renderer/hooks/useOnScreen';
+import { useWindowActive } from 'renderer/hooks/useWindowActive';
 import { refresh, subscribe } from 'renderer/services/poller';
 import { cn } from 'renderer/utils/cn';
 import { addScope, parseIgnored, type WorkflowScope } from 'renderer/utils/ignoredWorkflows';
@@ -93,10 +95,11 @@ export const Workflow: FC<Props> = ({ isRoot = false, onRefresh, project, run, s
   const [, setLoading] = useState(false);
   const [, setRefresh] = useState(0);
   const { endRef, onScreen, ref: startRef } = useOnScreen<HTMLDivElement>();
+  const windowActive = useWindowActive();
 
   // Only tick the duration timer while the workflow is still running
   useEffect(() => {
-    if (conclusion || !onScreen) return;
+    if (conclusion || !onScreen || !windowActive) return;
 
     setRefresh((prev) => prev + 1);
 
@@ -107,7 +110,7 @@ export const Workflow: FC<Props> = ({ isRoot = false, onRefresh, project, run, s
     return () => {
       window.clearInterval(timer);
     };
-  }, [conclusion, onScreen]);
+  }, [conclusion, onScreen, windowActive]);
   const runDuration = getRunDuration(run);
 
   const openInBrowser = () => {
@@ -154,7 +157,7 @@ export const Workflow: FC<Props> = ({ isRoot = false, onRefresh, project, run, s
       },
       (res) => {
         if (res.success && res.jobs) {
-          setJobs(res.jobs);
+          setJobs((prev) => (isEqual(prev, res.jobs) ? prev : res.jobs));
 
           // If all jobs are done but the workflow run hasn't updated yet, trigger a refresh
           if (!conclusionRef.current && res.jobs.length > 0 && res.jobs.every((j: Job) => j.conclusion)) {

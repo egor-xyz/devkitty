@@ -27,7 +27,15 @@ const withRepoLock = <T>(id: string, task: () => Promise<T>): Promise<T> => {
   return run;
 };
 
-ipcMain.handle('git:getStatus', async (_, id: string): Promise<GitStatus> => {
+// The status poll runs every 10 s per project, but remote refs do not need to
+// be that fresh: fetch in the background at most once per 5 minutes per repo.
+// A Pull still fetches by itself.
+const FETCH_EVERY_MS = 5 * 60_000;
+const lastFetchAt = new Map<string, number>();
+
+export const __resetFetchThrottle = (): void => lastFetchAt.clear();
+
+ipcMain.handle('git:getStatus', async (_, id: string, force?: boolean): Promise<GitStatus> => {
   try {
     const git = await getGit(id);
 
@@ -57,8 +65,14 @@ ipcMain.handle('git:getStatus', async (_, id: string): Promise<GitStatus> => {
       /* worktree list not supported or failed */
     }
 
-    // Fire-and-forget, but serialized against any pull on this repo.
-    withRepoLock(id, () => git.fetch());
+    // Fire-and-forget, throttled per repo, and serialized against any pull on
+    // this repo. The timestamp is set first so concurrent polls do not double-fetch.
+    // `force` (the Refresh button) skips the throttle but still records the fetch.
+    const now = Date.now();
+    if (force || now - (lastFetchAt.get(id) ?? 0) >= FETCH_EVERY_MS) {
+      lastFetchAt.set(id, now);
+      withRepoLock(id, () => git.fetch());
+    }
 
     return { branchSummary, organization, status: gitStatus, success: true, worktrees };
   } catch (e) {

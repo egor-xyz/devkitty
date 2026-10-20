@@ -18,7 +18,7 @@ vi.mock('readline', () => ({
 import fs from 'fs';
 import readline from 'readline';
 
-import { readEntries } from './transcripts';
+import { readEntries, resetTranscriptCache } from './transcripts';
 import { LOOKBACK_MS } from './usage';
 
 const mockReaddirSync = vi.mocked(fs.readdirSync);
@@ -42,21 +42,26 @@ const fakeInterface = () => {
   return emitter;
 };
 
+const interfaceWithLines = (lines: string[]) => {
+  const emitter = new EventEmitter();
+  queueMicrotask(() => {
+    for (const line of lines) emitter.emit('line', line);
+    emitter.emit('close');
+  });
+  return emitter as unknown as ReturnType<typeof readline.createInterface>;
+};
+
 /** Queues one fake readline interface per call to createInterface, each emitting the given lines then closing. */
 const queueFileLines = (...linesPerFile: string[][]) => {
   for (const lines of linesPerFile) {
-    const emitter = fakeInterface();
-    // Emit asynchronously so the Promise executor in readFileEntries has
-    // already attached its listeners before events fire.
-    queueMicrotask(() => {
-      for (const line of lines) emitter.emit('line', line);
-      emitter.emit('close');
-    });
+    // Lines are emitted asynchronously, at the moment readFileEntries creates
+    // the interface, so files read one after another each get their own lines.
+    mockCreateInterface.mockImplementationOnce(() => interfaceWithLines(lines));
   }
 };
 
 /** Sets up fs mocks for a projectsDir containing the given projects, each with the given transcript files. */
-const setupProjectTree = (projects: Record<string, { files: string[]; mtimeMsByFile?: Record<string, number> }>) => {
+const setupProjectTree = (projects: Record<string, { files: string[]; mtimeMsByFile?: Record<string, number>; sizeByFile?: Record<string, number> }>) => {
   mockReaddirSync.mockImplementation((dir: unknown) => {
     if (dir === PROJECTS_DIR) return Object.keys(projects) as unknown as ReturnType<typeof fs.readdirSync>;
     for (const [project, config] of Object.entries(projects)) {
@@ -78,7 +83,7 @@ const setupProjectTree = (projects: Record<string, { files: string[]; mtimeMsByF
       for (const file of config.files) {
         if (asString === `${PROJECTS_DIR}/${project}/${file}`) {
           const mtimeMs = config.mtimeMsByFile?.[file] ?? NOW;
-          return { mtimeMs } as unknown as ReturnType<typeof fs.statSync>;
+          return { mtimeMs, size: config.sizeByFile?.[file] ?? 100 } as unknown as ReturnType<typeof fs.statSync>;
         }
       }
     }
@@ -92,6 +97,8 @@ const setupProjectTree = (projects: Record<string, { files: string[]; mtimeMsByF
 describe('readEntries', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockCreateInterface.mockReset();
+    resetTranscriptCache();
   });
 
   it('returns no entries when the projects directory cannot be read', async () => {
@@ -402,5 +409,142 @@ describe('readEntries', () => {
         ts: Date.parse(timestamp)
       }
     ]);
+  });
+
+  describe('per-file cache', () => {
+    const timestamp = new Date(NOW).toISOString();
+    const entryLine = (requestId: string, ts = timestamp) =>
+      JSON.stringify({
+        message: { model: 'claude-x', usage: { input_tokens: 10 } },
+        requestId,
+        timestamp: ts,
+        type: 'assistant'
+      });
+
+    it('does not re-read a file whose size and mtime are unchanged', async () => {
+      setupProjectTree({ proj: { files: ['a.jsonl'] } });
+      queueFileLines([entryLine('a1')]);
+
+      const first = await readEntries(CONFIG_DIR, NOW);
+      const second = await readEntries(CONFIG_DIR, NOW);
+
+      expect(mockCreateReadStream).toHaveBeenCalledTimes(1);
+      expect(second).toEqual(first);
+      expect(second).toHaveLength(1);
+    });
+
+    it('re-reads only the file whose size changed', async () => {
+      setupProjectTree({ proj: { files: ['a.jsonl', 'b.jsonl'] } });
+      queueFileLines([entryLine('a1')], [entryLine('b1')]);
+      await readEntries(CONFIG_DIR, NOW);
+      expect(mockCreateReadStream).toHaveBeenCalledTimes(2);
+
+      setupProjectTree({ proj: { files: ['a.jsonl', 'b.jsonl'], sizeByFile: { 'b.jsonl': 200 } } });
+      queueFileLines([entryLine('b1'), entryLine('b2')]);
+      const result = await readEntries(CONFIG_DIR, NOW);
+
+      expect(mockCreateReadStream).toHaveBeenCalledTimes(3);
+      expect(mockCreateReadStream).toHaveBeenLastCalledWith(`${PROJECTS_DIR}/proj/b.jsonl`, 'utf8');
+      expect(result.map((e) => e.requestId)).toEqual(['a1', 'b1', 'b2']);
+    });
+
+    it('drops a file missing from the listing and reads it again when it reappears', async () => {
+      setupProjectTree({ proj: { files: ['a.jsonl', 'b.jsonl'] } });
+      queueFileLines([entryLine('a1')], [entryLine('b1')]);
+      await readEntries(CONFIG_DIR, NOW);
+
+      setupProjectTree({ proj: { files: ['a.jsonl'] } });
+      const second = await readEntries(CONFIG_DIR, NOW);
+      expect(second.map((e) => e.requestId)).toEqual(['a1']);
+      expect(mockCreateReadStream).toHaveBeenCalledTimes(2);
+
+      setupProjectTree({ proj: { files: ['a.jsonl', 'b.jsonl'] } });
+      queueFileLines([entryLine('b1')]);
+      const third = await readEntries(CONFIG_DIR, NOW);
+
+      expect(mockCreateReadStream).toHaveBeenCalledTimes(3);
+      expect(third.map((e) => e.requestId)).toEqual(['a1', 'b1']);
+    });
+
+    it('filters a cached entry that falls outside the cutoff once now moves forward', async () => {
+      setupProjectTree({ proj: { files: ['a.jsonl'] } });
+      // Just inside the window at NOW, outside it at `later`.
+      queueFileLines([entryLine('a1', new Date(CUTOFF + 1000).toISOString())]);
+      expect(await readEntries(CONFIG_DIR, NOW)).toHaveLength(1);
+
+      const later = NOW + 2000;
+      const result = await readEntries(CONFIG_DIR, later);
+
+      expect(result).toEqual([]);
+      expect(mockCreateReadStream).toHaveBeenCalledTimes(1);
+    });
+
+    it('does not cache a file whose read errored, so the next call reads it again', async () => {
+      setupProjectTree({ proj: { files: ['a.jsonl'] } });
+      const emitter = fakeInterface();
+      queueMicrotask(() => emitter.emit('error', new Error('transient')));
+      expect(await readEntries(CONFIG_DIR, NOW)).toEqual([]);
+
+      queueFileLines([entryLine('a1')]);
+      const result = await readEntries(CONFIG_DIR, NOW);
+
+      expect(mockCreateReadStream).toHaveBeenCalledTimes(2);
+      expect(result.map((e) => e.requestId)).toEqual(['a1']);
+    });
+
+    it('does not let two config dirs evict each other', async () => {
+      const otherDir = '/other/dir';
+      const treeFor = (dir: string, file: string) => {
+        mockReaddirSync.mockImplementation((d: unknown) => {
+          if (d === `${dir}/projects`) return ['proj'] as unknown as ReturnType<typeof fs.readdirSync>;
+          if (d === `${dir}/projects/proj`) return [file] as unknown as ReturnType<typeof fs.readdirSync>;
+          throw new Error(`ENOENT: ${String(d)}`);
+        });
+        mockStatSync.mockImplementation((p: unknown) => {
+          if (String(p) === `${dir}/projects/proj`) return { isDirectory: () => true } as unknown as ReturnType<typeof fs.statSync>;
+          return { mtimeMs: NOW, size: 100 } as unknown as ReturnType<typeof fs.statSync>;
+        });
+      };
+
+      treeFor(CONFIG_DIR, 'a.jsonl');
+      queueFileLines([entryLine('a1')]);
+      await readEntries(CONFIG_DIR, NOW);
+
+      treeFor(otherDir, 'o.jsonl');
+      queueFileLines([entryLine('o1')]);
+      await readEntries(otherDir, NOW);
+      expect(mockCreateReadStream).toHaveBeenCalledTimes(2);
+
+      treeFor(CONFIG_DIR, 'a.jsonl');
+      const first = await readEntries(CONFIG_DIR, NOW);
+      treeFor(otherDir, 'o.jsonl');
+      const second = await readEntries(otherDir, NOW);
+
+      expect(mockCreateReadStream).toHaveBeenCalledTimes(2);
+      expect(first.map((e) => e.requestId)).toEqual(['a1']);
+      expect(second.map((e) => e.requestId)).toEqual(['o1']);
+    });
+  });
+
+  it('never JSON-parses a line without a usage field', async () => {
+    setupProjectTree({ proj: { files: ['session.jsonl'] } });
+    const parse = vi.spyOn(JSON, 'parse');
+    queueFileLines([
+      '{"type":"user","message":{"content":"hello"}}',
+      JSON.stringify({
+        message: { model: 'claude-x', usage: { input_tokens: 10 } },
+        requestId: 'u1',
+        timestamp: new Date(NOW).toISOString(),
+        type: 'assistant'
+      })
+    ]);
+
+    const result = await readEntries(CONFIG_DIR, NOW);
+    const parsedLines = parse.mock.calls.map(([text]) => String(text));
+    parse.mockRestore();
+
+    expect(result).toHaveLength(1);
+    expect(parsedLines.some((t) => !t.includes('"usage"'))).toBe(false);
+    expect(parsedLines.length).toBeGreaterThan(0);
   });
 });

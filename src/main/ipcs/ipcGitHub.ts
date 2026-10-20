@@ -1,12 +1,17 @@
 import { execFile } from 'child_process';
 import { ipcMain, safeStorage } from 'electron';
 import log from 'electron-log';
+import { omit } from 'lodash';
 import { Octokit } from 'octokit';
 import { type MergeableState, type MergeMethod, type PRStatusResult, type PullType, type Run } from 'types/gitHub';
 import { promisify } from 'util';
 
 import { getProjectPath, getRepoInfo } from '../libs/git';
 import { settings } from '../settings';
+
+// The renderer never reads `repository` / `head_repository` from a run; the two
+// make up about 64% of each run's JSON, so they are dropped before crossing IPC.
+const slimRun = (run: Run): Run => omit(run, ['repository', 'head_repository']) as Run;
 
 const protectedBranches = ['master', 'main'];
 
@@ -31,6 +36,19 @@ const runGh = async (args: string[]): Promise<{ message?: string; success: boole
   }
 };
 
+// One client per token: building an Octokit on every call allocates a fresh
+// plugin stack and HTTP state for nothing. A token change rebuilds the client
+// and drops the cached runs, so one account's runs are never served to another.
+let client: undefined | { octokit: Octokit; token: string };
+
+type CachedRunsPage = { etag: string; runs: Run[] };
+const runsPage1Cache = new Map<string, CachedRunsPage>(); // key `${owner}/${repo}`
+
+export const __resetGitHubClientCache = (): void => {
+  client = undefined;
+  runsPage1Cache.clear();
+};
+
 const octokit = () => {
   const { gitHubToken } = settings.get('appSettings');
   if (!gitHubToken) throw new Error('GitHub token not found');
@@ -38,7 +56,44 @@ const octokit = () => {
   const token = safeStorage.decryptString(Buffer.from(gitHubToken));
   if (!token) throw new Error('GitHub token not found');
 
-  return new Octokit({ auth: token });
+  if (client?.token !== token) {
+    client = { octokit: new Octokit({ auth: token }), token };
+    runsPage1Cache.clear();
+  }
+
+  return client.octokit;
+};
+
+// Page 1 is polled constantly and rarely changes: send its ETag back so an
+// unchanged page costs a 304 (free against the rate limit) and no new parse.
+// Octokit throws on 304, so that case is caught and answered from the cache.
+const listRunsPage = async (owner: string, repo: string, page: number): Promise<Run[]> => {
+  // Resolve the client first: a token change clears the cache, and a stale
+  // ETag must not be read before that happens.
+  const github = octokit();
+  const requestClient = client;
+  const key = `${owner}/${repo}`;
+  const cached = page === 1 ? runsPage1Cache.get(key) : undefined;
+
+  try {
+    const { data, headers } = await github.rest.actions.listWorkflowRunsForRepo({
+      headers: cached ? { 'if-none-match': cached.etag } : undefined,
+      owner,
+      page,
+      per_page: 100,
+      repo
+    });
+
+    const runs = data.workflow_runs.map(slimRun);
+    // A token change during the await rebuilt the client and cleared the cache:
+    // this response belongs to the old account and must not repopulate it.
+    if (page === 1 && headers?.etag && client === requestClient) runsPage1Cache.set(key, { etag: headers.etag, runs });
+
+    return runs;
+  } catch (e) {
+    if ((e as { status?: number }).status === 304 && cached) return cached.runs;
+    throw e;
+  }
 };
 
 ipcMain.handle('git:api:reset', async (_, id: string, origin: string, target: string) => {
@@ -110,17 +165,12 @@ ipcMain.handle('git:api:getRuns', async (_, id: string, deep = false) => {
     const collected: Run[] = [];
 
     for (let page = 1; page <= (deep ? maxPages : 1); page += 1) {
-      const { data } = await octokit().rest.actions.listWorkflowRunsForRepo({
-        owner,
-        page,
-        per_page: 100,
-        repo
-      });
+      const pageRuns = await listRunsPage(owner, repo, page);
 
-      collected.push(...data.workflow_runs);
+      collected.push(...pageRuns);
 
-      const oldest = data.workflow_runs.at(-1);
-      if (data.workflow_runs.length < 100 || !oldest || new Date(oldest.created_at).getTime() <= since) break;
+      const oldest = pageRuns.at(-1);
+      if (pageRuns.length < 100 || !oldest || new Date(oldest.created_at).getTime() <= since) break;
     }
 
     // Hidden workflows are filtered in the renderer, not here: it keeps them
@@ -153,7 +203,7 @@ ipcMain.handle('git:api:getRunsPage', async (_, id: string, page: number, branch
     });
     log.info(`runs history page ${page} of ${branch ?? 'all branches'} for ${owner}/${repo}: ${data.workflow_runs.length} runs`);
 
-    return { last: data.workflow_runs.length < 100, runs: data.workflow_runs, success: true };
+    return { last: data.workflow_runs.length < 100, runs: data.workflow_runs.map(slimRun), success: true };
   } catch (e) {
     log.error(e);
     return { message: e.message, success: false };
@@ -184,7 +234,7 @@ ipcMain.handle('git:api:getPinnedRuns', async (_, id: string) => {
       runs.push(...data.workflow_runs);
     }
 
-    return { runs, success: true };
+    return { runs: runs.map(slimRun), success: true };
   } catch (e) {
     log.error(e);
     return { message: e.message, success: false };
@@ -227,7 +277,7 @@ ipcMain.handle('git:api:searchRuns', async (_, id: string, query: string) => {
       runs.push(...page.workflow_runs);
     }
 
-    return { runs, success: true };
+    return { runs: runs.map(slimRun), success: true };
   } catch (e) {
     log.error(e);
     return { message: e.message, success: false };

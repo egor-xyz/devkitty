@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { act, renderHook } from '@testing-library/react';
+import { useEffect } from 'react';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 const { subscribeMock } = vi.hoisted(() => ({ subscribeMock: vi.fn() }));
@@ -131,5 +132,67 @@ describe('usePoll', () => {
 
     rerender({ enabled: true });
     expect(subscribeMock).toHaveBeenCalledTimes(2);
+  });
+
+  describe('render bailout', () => {
+    const setup = () => {
+      let onData: ((d: unknown) => void) | undefined;
+      let onError: ((e: unknown) => void) | undefined;
+      subscribeMock.mockImplementation((_spec: Spec, d: (d: unknown) => void, e: (e: unknown) => void) => {
+        onData = d;
+        onError = e;
+        return vi.fn();
+      });
+      // Count commits, not function calls: React may call the component once more
+      // before it bails out of an identical state, but it never commits it.
+      const renders = { count: 0 };
+      const hook = renderHook(() => {
+        const result = usePoll({ fetch: vi.fn(), interval: vi.fn(), key: 'kb' });
+        useEffect(() => {
+          renders.count += 1;
+        });
+        return result;
+      });
+
+      return { deliver: (d: unknown) => act(() => onData?.(d)), fail: (e: unknown) => act(() => onError?.(e)), hook, renders };
+    };
+
+    it('does not re-render when a deep-equal object is delivered again', () => {
+      const { deliver, hook, renders } = setup();
+
+      deliver({ n: 1 });
+      const after = renders.count;
+      const { data } = hook.result.current;
+
+      deliver({ n: 1 });
+
+      expect(renders.count).toBe(after);
+      expect(hook.result.current.data).toBe(data);
+    });
+
+    it('re-renders when the delivered object changes', () => {
+      const { deliver, hook, renders } = setup();
+
+      deliver({ n: 1 });
+      const after = renders.count;
+
+      deliver({ n: 2 });
+
+      expect(renders.count).toBe(after + 1);
+      expect(hook.result.current.data).toEqual({ n: 2 });
+    });
+
+    it('clears an error when equal data arrives after it', () => {
+      const { deliver, fail, hook } = setup();
+
+      deliver({ n: 1 });
+      fail(new Error('boom'));
+      expect(hook.result.current.error).toBeInstanceOf(Error);
+
+      deliver({ n: 1 });
+
+      expect(hook.result.current.error).toBeUndefined();
+      expect(hook.result.current.loading).toBe(false);
+    });
   });
 });

@@ -37,6 +37,7 @@ const mockOctokitInstance = {
 };
 
 const mockExecFile = vi.fn();
+const octokitConstructions = { count: 0 };
 
 vi.mock('electron', () => ({
   ipcMain: {
@@ -62,6 +63,10 @@ vi.mock('octokit', () => ({
     graphql = mockOctokitInstance.graphql;
     paginate = mockOctokitInstance.paginate;
     rest = mockOctokitInstance.rest;
+
+    constructor() {
+      octokitConstructions.count += 1;
+    }
   }
 }));
 
@@ -80,10 +85,12 @@ vi.mock('child_process', () => ({
   execFile: mockExecFile
 }));
 
+import { safeStorage } from 'electron';
+
 import { getProjectPath, getRepoInfo } from '../libs/git';
 import { settings } from '../settings';
 
-await import('./ipcGitHub');
+const { __resetGitHubClientCache } = await import('./ipcGitHub');
 
 const mockSettings = vi.mocked(settings);
 const mockGetRepoInfo = vi.mocked(getRepoInfo);
@@ -100,6 +107,8 @@ const execFileSuccess = (_file: string, _args: string[], _options: unknown, call
 describe('ipcGitHub', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    __resetGitHubClientCache();
+    octokitConstructions.count = 0;
     mockSettings.get.mockReturnValue({
       gitHubActions: { all: true, count: 3, inProgress: false },
       gitHubToken: Buffer.from('encrypted-token')
@@ -122,6 +131,16 @@ describe('ipcGitHub', () => {
       );
       // A short page is the end of that branch's history.
       expect(result).toEqual({ last: true, runs: [{ id: 1 }], success: true });
+    });
+
+    it('should drop the repository objects from every run', async () => {
+      mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockResolvedValue({
+        data: { workflow_runs: [{ head_repository: { id: 8 }, id: 1, name: 'ci', repository: { id: 7 } }] }
+      });
+
+      const result = await handlers['git:api:getRunsPage']({}, 'proj-1', 1);
+
+      expect(result).toEqual({ last: true, runs: [{ id: 1, name: 'ci' }], success: true });
     });
 
     it('should page the whole repo when no branch is given', async () => {
@@ -206,6 +225,18 @@ describe('ipcGitHub', () => {
       } as any);
     });
 
+    it('should drop the repository objects from every run', async () => {
+      mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockResolvedValue({
+        data: {
+          workflow_runs: [{ created_at: recent, head_repository: { id: 8 }, id: 1, name: 'ci', repository: { id: 7 } }]
+        }
+      });
+
+      const result = await handlers['git:api:getRuns']({}, 'proj-1');
+
+      expect(result).toEqual({ runs: [{ created_at: recent, id: 1, name: 'ci' }], success: true });
+    });
+
     it('should return runs from every branch without slicing', async () => {
       mockOctokitInstance.rest.actions.listWorkflowRunsForRepo.mockResolvedValue({
         data: {
@@ -258,6 +289,96 @@ describe('ipcGitHub', () => {
       const result = await handlers['git:api:getRuns']({}, 'proj-1');
 
       expect(result.runs.map((run: any) => run.id)).toEqual([1, 2]);
+    });
+
+    describe('conditional requests and client reuse', () => {
+      const listRuns = mockOctokitInstance.rest.actions.listWorkflowRunsForRepo;
+      const page = () => ({
+        data: { workflow_runs: [{ created_at: recent, id: 1, repository: { id: 7 } }] },
+        headers: { etag: 'W/"e1"' }
+      });
+
+      beforeEach(() => {
+        listRuns.mockReset();
+      });
+
+      it('should send the stored ETag on the next poll', async () => {
+        listRuns.mockResolvedValue(page());
+
+        await handlers['git:api:getRuns']({}, 'proj-1');
+        expect(listRuns.mock.calls[0][0].headers).toBeUndefined();
+
+        await handlers['git:api:getRuns']({}, 'proj-1');
+        expect(listRuns.mock.calls[1][0].headers).toEqual({ 'if-none-match': 'W/"e1"' });
+      });
+
+      it('should answer a 304 from the cached slim runs', async () => {
+        listRuns.mockResolvedValueOnce(page()).mockRejectedValueOnce({ status: 304 });
+
+        await handlers['git:api:getRuns']({}, 'proj-1');
+        const result = await handlers['git:api:getRuns']({}, 'proj-1');
+
+        expect(result).toEqual({ runs: [{ created_at: recent, id: 1 }], success: true });
+      });
+
+      it('should fail a 304 that has no cache entry', async () => {
+        listRuns.mockRejectedValueOnce({ message: 'Not Modified', status: 304 });
+
+        const result = await handlers['git:api:getRuns']({}, 'proj-1');
+
+        expect(result.success).toBe(false);
+      });
+
+      it('should rebuild the client and drop the cache when the token changes', async () => {
+        listRuns.mockResolvedValue(page());
+
+        await handlers['git:api:getRuns']({}, 'proj-1');
+        vi.mocked(safeStorage.decryptString).mockReturnValueOnce('another-token');
+        await handlers['git:api:getRuns']({}, 'proj-1');
+
+        expect(octokitConstructions.count).toBe(2);
+        expect(listRuns.mock.calls[1][0].headers).toBeUndefined();
+      });
+
+      it('should not cache a response that finished after the token changed', async () => {
+        let resolveFirst: (v: ReturnType<typeof page>) => void = () => {};
+        listRuns.mockImplementationOnce(() => new Promise((resolve) => (resolveFirst = resolve)));
+        listRuns.mockResolvedValue({ data: { workflow_runs: [] }, headers: {} });
+
+        const first = handlers['git:api:getRuns']({}, 'proj-1');
+        await vi.waitFor(() => expect(listRuns).toHaveBeenCalledTimes(1));
+
+        vi.mocked(safeStorage.decryptString).mockReturnValueOnce('another-token');
+        await handlers['git:api:getRuns']({}, 'proj-1');
+        resolveFirst(page());
+        await first;
+
+        await handlers['git:api:getRuns']({}, 'proj-1');
+        expect(listRuns.mock.calls[2][0].headers).toBeUndefined();
+      });
+
+      it('should never send an ETag for deep pages', async () => {
+        listRuns.mockResolvedValue({
+          data: { workflow_runs: Array.from({ length: 100 }, (_, index) => ({ created_at: recent, id: index })) },
+          headers: { etag: 'W/"e1"' }
+        });
+
+        await handlers['git:api:getRuns']({}, 'proj-1', true);
+        await handlers['git:api:getRuns']({}, 'proj-1', true);
+
+        const sent = listRuns.mock.calls.map(([args]) => [args.page, args.headers]);
+        expect(sent.filter(([p]) => p !== 1).every(([, h]) => h === undefined)).toBe(true);
+        expect(sent.find(([p], i) => p === 1 && i > 0)?.[1]).toEqual({ 'if-none-match': 'W/"e1"' });
+      });
+
+      it('should build Octokit once for repeated calls with the same token', async () => {
+        listRuns.mockResolvedValue(page());
+
+        await handlers['git:api:getRuns']({}, 'proj-1');
+        await handlers['git:api:getRuns']({}, 'proj-1');
+
+        expect(octokitConstructions.count).toBe(1);
+      });
     });
 
     it('should fail when the repo cannot be resolved', async () => {
@@ -405,6 +526,20 @@ describe('ipcGitHub', () => {
       expect(result).toEqual({ runs: [{ id: 99 }], success: true });
     });
 
+    it('should drop the repository objects from every run', async () => {
+      mockSettings.get.mockReturnValue({
+        gitHubActions: { pinnedWorkflows: ['.github/workflows/deploy.yml'] },
+        gitHubToken: Buffer.from('token')
+      } as unknown as ReturnType<typeof mockSettings.get>);
+      mockOctokitInstance.rest.actions.listWorkflowRuns.mockResolvedValue({
+        data: { workflow_runs: [{ head_repository: { id: 8 }, id: 99, name: 'deploy', repository: { id: 7 } }] }
+      });
+
+      const result = await handlers['git:api:getPinnedRuns']({}, 'proj-1');
+
+      expect(result).toEqual({ runs: [{ id: 99, name: 'deploy' }], success: true });
+    });
+
     it('should skip the API entirely when nothing is pinned', async () => {
       mockSettings.get.mockReturnValue({
         gitHubActions: {},
@@ -458,6 +593,19 @@ describe('ipcGitHub', () => {
         expect.objectContaining({ workflow_id: 1 })
       );
       expect(result).toEqual({ runs: [{ id: 501 }], success: true });
+    });
+
+    it('should drop the repository objects from every run', async () => {
+      mockOctokitInstance.rest.actions.listRepoWorkflows.mockResolvedValue({
+        data: { workflows: [{ id: 1, name: 'Deploy' }] }
+      });
+      mockOctokitInstance.rest.actions.listWorkflowRuns.mockResolvedValue({
+        data: { workflow_runs: [{ head_repository: { id: 8 }, id: 501, name: 'Deploy', repository: { id: 7 } }] }
+      });
+
+      const result = await handlers['git:api:searchRuns']({}, 'proj-1', 'deploy');
+
+      expect(result).toEqual({ runs: [{ id: 501, name: 'Deploy' }], success: true });
     });
 
     it('should return error when repo info is not found', async () => {

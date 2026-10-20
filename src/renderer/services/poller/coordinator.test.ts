@@ -25,7 +25,7 @@ function createFakeTarget(): FakeTarget {
 }
 
 let win: FakeTarget;
-let doc: FakeTarget & { hidden: boolean };
+let doc: FakeTarget & { hasFocus?: () => boolean; hidden: boolean };
 let nav: { onLine: boolean };
 
 beforeEach(() => {
@@ -364,5 +364,61 @@ describe('__reset', () => {
 
     expect(fetchFn2).toHaveBeenCalledTimes(1);
     expect(getSnapshot('k10')).toEqual({ n: 2 });
+  });
+});
+
+describe('window focus policy', () => {
+  it('pauses active keys while unfocused but keeps background keys polling', async () => {
+    doc.hasFocus = () => false;
+    const activeFetch = vi.fn().mockResolvedValue(1);
+    const bgFetch = vi.fn().mockResolvedValue(1);
+    subscribe({ fetch: activeFetch, interval: () => 1000, key: 'fa' }, vi.fn());
+    subscribe({ fetch: bgFetch, interval: () => 1000, key: 'fb', priority: 'background' }, vi.fn());
+
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(activeFetch).not.toHaveBeenCalled();
+    expect(bgFetch.mock.calls.length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('fetches a stale active key within one tick after focus returns', async () => {
+    let focused = true;
+    doc.hasFocus = () => focused;
+    const fetchFn = vi.fn().mockResolvedValue(1);
+    subscribe({ fetch: fetchFn, interval: () => 1000, key: 'fc' }, vi.fn());
+    await vi.advanceTimersByTimeAsync(500);
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+
+    focused = false;
+    win.dispatchEvent('blur');
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+
+    focused = true;
+    win.dispatchEvent('focus');
+    await vi.advanceTimersByTimeAsync(500);
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
+  it('slows the loop to about every 5s for background keys while unfocused', async () => {
+    let focused = true;
+    doc.hasFocus = () => focused;
+    const fetchFn = vi.fn().mockResolvedValue(1);
+    subscribe({ fetch: fetchFn, interval: () => 1000, key: 'fd', priority: 'background' }, vi.fn());
+    await vi.advanceTimersByTimeAsync(500);
+    expect(fetchFn).toHaveBeenCalledTimes(1);
+
+    focused = false;
+    win.dispatchEvent('blur');
+    fetchFn.mockClear();
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(fetchFn).toHaveBeenCalledTimes(2);
+  });
+
+  it('still pauses background keys while the document is hidden', async () => {
+    doc.hidden = true;
+    const fetchFn = vi.fn().mockResolvedValue(1);
+    subscribe({ fetch: fetchFn, interval: () => 1000, key: 'fe', priority: 'background' }, vi.fn());
+    await vi.advanceTimersByTimeAsync(10_000);
+    expect(fetchFn).not.toHaveBeenCalled();
   });
 });
